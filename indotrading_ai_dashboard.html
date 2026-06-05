@@ -1,0 +1,418 @@
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --red:#C8102E;
+  --red-dark:#A00D24;
+  --red-light:#FCEAED;
+  --red-mid:#F5C2CB;
+  --white:#FFFFFF;
+  --gray-50:#F8F8F8;
+  --gray-100:#F0F0F0;
+  --gray-200:#E2E2E2;
+  --gray-400:#9A9A9A;
+  --gray-600:#555555;
+  --gray-800:#222222;
+  --green:#1A7A4A;
+  --green-bg:#EAF5EF;
+  --amber:#996600;
+  --amber-bg:#FFF7E6;
+  --font:'DM Sans',sans-serif;
+}
+body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);font-size:13px;line-height:1.5}
+.shell{display:flex;height:100vh;min-height:700px}
+
+/* SIDEBAR */
+.sidebar{width:220px;background:var(--white);border-right:1px solid var(--gray-200);display:flex;flex-direction:column;flex-shrink:0}
+.sb-brand{padding:18px 20px 16px;border-bottom:1px solid var(--gray-100);display:flex;align-items:center;gap:10px}
+.sb-logo{width:32px;height:32px;background:var(--red);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:700}
+.sb-name{font-size:14px;font-weight:600;color:var(--gray-800)}
+.sb-name small{display:block;font-size:10px;font-weight:400;color:var(--gray-400);letter-spacing:.4px}
+.sb-section{padding:14px 12px 4px;font-size:10px;font-weight:600;color:var(--gray-400);letter-spacing:1.2px;text-transform:uppercase}
+.sb-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;margin:1px 8px;cursor:pointer;color:var(--gray-600);transition:all .15s;text-decoration:none}
+.sb-item:hover{background:var(--gray-100);color:var(--gray-800)}
+.sb-item.active{background:var(--red-light);color:var(--red)}
+.sb-item i{font-size:16px;width:18px;text-align:center;flex-shrink:0}
+.sb-item span{font-size:12.5px;font-weight:500}
+.sb-badge{margin-left:auto;background:var(--red);color:#fff;font-size:10px;font-weight:600;padding:2px 6px;border-radius:10px;min-width:18px;text-align:center}
+.sb-footer{margin-top:auto;padding:12px 8px;border-top:1px solid var(--gray-100)}
+.sb-user{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;cursor:pointer}
+.sb-avatar{width:30px;height:30px;border-radius:50%;background:var(--red);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0}
+.sb-uname{font-size:12px;font-weight:600}
+.sb-urole{font-size:10px;color:var(--gray-400)}
+
+/* MAIN */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.topbar{background:var(--white);border-bottom:1px solid var(--gray-200);padding:0 24px;height:52px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.topbar-left{display:flex;align-items:center;gap:8px}
+.topbar-title{font-size:15px;font-weight:600}
+.topbar-sub{font-size:12px;color:var(--gray-400)}
+.topbar-right{display:flex;align-items:center;gap:6px}
+.tb-btn{display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:8px;border:1px solid var(--gray-200);background:var(--white);cursor:pointer;font-size:12px;font-weight:500;color:var(--gray-600);transition:all .15s}
+.tb-btn:hover{border-color:var(--gray-400)}
+.tb-btn-red{background:var(--red);color:#fff;border-color:var(--red)}
+.tb-btn-red:hover{background:var(--red-dark);border-color:var(--red-dark)}
+.tb-btn i{font-size:14px}
+.tb-notif{width:32px;height:32px;border-radius:8px;border:1px solid var(--gray-200);display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;color:var(--gray-600)}
+.tb-notif-dot{width:7px;height:7px;background:var(--red);border-radius:50%;position:absolute;top:6px;right:6px;border:1.5px solid #fff}
+
+/* CONTENT AREA */
+.content{flex:1;display:flex;overflow:hidden}
+.col-left{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:16px;min-width:0}
+.col-right{width:340px;border-left:1px solid var(--gray-200);background:var(--white);display:flex;flex-direction:column;flex-shrink:0;overflow:hidden}
+
+/* METRIC CARDS */
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.metric-card{background:var(--white);border:1px solid var(--gray-200);border-radius:10px;padding:14px 16px}
+.metric-label{font-size:11px;color:var(--gray-400);font-weight:500;margin-bottom:8px;display:flex;align-items:center;gap:5px}
+.metric-label i{font-size:13px}
+.metric-val{font-size:22px;font-weight:700;color:var(--gray-800);line-height:1;margin-bottom:5px}
+.metric-change{font-size:11px;display:flex;align-items:center;gap:3px}
+.metric-change.up{color:var(--green)}
+.metric-change.down{color:var(--red)}
+.metric-change i{font-size:11px}
+.metric-card.accent{border-left:3px solid var(--red)}
+
+/* SECTION HEADER */
+.sec-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.sec-title{font-size:13px;font-weight:600;color:var(--gray-800)}
+.sec-action{font-size:11px;color:var(--red);cursor:pointer;display:flex;align-items:center;gap:3px}
+
+/* MINI CHART */
+.chart-card{background:var(--white);border:1px solid var(--gray-200);border-radius:10px;padding:16px}
+.chart-wrap{position:relative;height:160px;margin-top:10px}
+.chart-labels{display:flex;justify-content:space-between;font-size:10px;color:var(--gray-400);margin-top:4px}
+
+/* CONVERSATION TABLE */
+.conv-table{background:var(--white);border:1px solid var(--gray-200);border-radius:10px;overflow:hidden}
+.ct-header{display:grid;grid-template-columns:2fr 1.2fr 1fr 1fr .8fr;padding:9px 14px;background:var(--gray-50);border-bottom:1px solid var(--gray-200);font-size:10px;font-weight:600;color:var(--gray-400);letter-spacing:.5px;text-transform:uppercase}
+.ct-row{display:grid;grid-template-columns:2fr 1.2fr 1fr 1fr .8fr;padding:10px 14px;border-bottom:1px solid var(--gray-100);align-items:center;cursor:pointer;transition:background .1s}
+.ct-row:hover{background:var(--gray-50)}
+.ct-row:last-child{border-bottom:none}
+.ct-contact{display:flex;align-items:center;gap:8px}
+.ct-av{width:26px;height:26px;border-radius:50%;background:var(--red-light);color:var(--red);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;flex-shrink:0}
+.ct-nm{font-size:12px;font-weight:500}
+.ct-ch{font-size:10px;color:var(--gray-400);display:flex;align-items:center;gap:3px}
+.ct-ch i{font-size:11px}
+.ct-msg{font-size:11px;color:var(--gray-600);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:100px;font-size:10px;font-weight:600}
+.badge-ai{background:var(--red-light);color:var(--red)}
+.badge-human{background:#EEF2FF;color:#4B5EAA}
+.badge-pending{background:var(--amber-bg);color:var(--amber)}
+.status-dot{width:7px;height:7px;border-radius:50%;display:inline-block}
+.s-open{background:#1A7A4A}
+.s-bot{background:var(--red)}
+.s-wait{background:#D97706}
+.s-closed{background:var(--gray-400)}
+.ct-time{font-size:10px;color:var(--gray-400)}
+
+/* RIGHT PANEL - CHAT */
+.rp-tabs{display:flex;border-bottom:1px solid var(--gray-200)}
+.rp-tab{flex:1;padding:10px 0;text-align:center;font-size:11px;font-weight:600;color:var(--gray-400);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s}
+.rp-tab.active{color:var(--red);border-bottom-color:var(--red)}
+.rp-chat-header{padding:12px 14px;border-bottom:1px solid var(--gray-100);display:flex;align-items:center;justify-content:space-between}
+.rp-contact{display:flex;align-items:center;gap:8px}
+.rp-av{width:32px;height:32px;border-radius:50%;background:var(--red-light);color:var(--red);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600}
+.rp-nm{font-size:12px;font-weight:600}
+.rp-status{font-size:10px;color:var(--green);display:flex;align-items:center;gap:3px}
+.rp-status::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--green);display:inline-block}
+.rp-actions{display:flex;gap:4px}
+.rp-act{width:26px;height:26px;border-radius:6px;border:1px solid var(--gray-200);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--gray-600);font-size:13px}
+.rp-act:hover{background:var(--gray-100)}
+.chat-body{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px}
+.msg{display:flex;flex-direction:column;max-width:85%}
+.msg.user{align-self:flex-end;align-items:flex-end}
+.msg.bot{align-self:flex-start;align-items:flex-start}
+.msg-bubble{padding:8px 11px;border-radius:10px;font-size:12px;line-height:1.5}
+.msg.user .msg-bubble{background:var(--red);color:#fff;border-radius:10px 10px 2px 10px}
+.msg.bot .msg-bubble{background:var(--gray-100);color:var(--gray-800);border-radius:10px 10px 10px 2px}
+.msg-meta{font-size:10px;color:var(--gray-400);margin-top:2px;display:flex;align-items:center;gap:4px}
+.ai-label{background:var(--red-light);color:var(--red);font-size:9px;font-weight:600;padding:1px 5px;border-radius:4px}
+.chat-input-wrap{padding:10px 12px;border-top:1px solid var(--gray-100)}
+.chat-input-row{display:flex;align-items:center;gap:6px;background:var(--gray-50);border:1px solid var(--gray-200);border-radius:8px;padding:6px 10px}
+.chat-input-row input{flex:1;background:none;border:none;outline:none;font-size:12px;color:var(--gray-800)}
+.chat-input-row i{font-size:15px;color:var(--gray-400);cursor:pointer}
+.chat-input-row i:last-child{color:var(--red)}
+
+/* AGENT STATUS ROW */
+.agents-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.agent-card{background:var(--white);border:1px solid var(--gray-200);border-radius:10px;padding:12px 14px}
+.ag-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.ag-name{font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px}
+.ag-name i{font-size:14px;color:var(--red)}
+.ag-on{width:7px;height:7px;border-radius:50%;background:#1A7A4A}
+.ag-stat{font-size:10px;color:var(--gray-400)}
+.ag-bars{display:flex;flex-direction:column;gap:5px}
+.ag-bar-row{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--gray-600)}
+.ag-bar-row span:first-child{width:60px;flex-shrink:0}
+.ag-bar-track{flex:1;height:4px;background:var(--gray-100);border-radius:2px;overflow:hidden}
+.ag-bar-fill{height:100%;border-radius:2px;background:var(--red)}
+.ag-bar-fill.green{background:var(--green)}
+.ag-bar-fill.amber{background:#D97706}
+.ag-bar-val{width:28px;text-align:right;font-size:10px;font-weight:600;color:var(--gray-800)}
+</style>
+
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+
+<h2 class="sr-only">Dashboard AI Agent — ringkasan performa percakapan, metrik, dan status agen</h2>
+
+<div class="shell">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sb-brand">
+      <div class="sb-logo">IT</div>
+      <div class="sb-name">Indotrading AI<small>Admin Dashboard</small></div>
+    </div>
+
+    <div class="sb-section">Menu Utama</div>
+    <a class="sb-item active" href="#"><i class="ti ti-layout-dashboard" aria-hidden="true"></i><span>Overview</span></a>
+    <a class="sb-item" href="#"><i class="ti ti-messages" aria-hidden="true"></i><span>Percakapan</span><span class="sb-badge">24</span></a>
+    <a class="sb-item" href="#"><i class="ti ti-robot" aria-hidden="true"></i><span>AI Agent</span></a>
+    <a class="sb-item" href="#"><i class="ti ti-users" aria-hidden="true"></i><span>Kontak / Leads</span></a>
+    <a class="sb-item" href="#"><i class="ti ti-chart-line" aria-hidden="true"></i><span>Analitik</span></a>
+    <a class="sb-item" href="#"><i class="ti ti-calendar-event" aria-hidden="true"></i><span>Appointment</span></a>
+
+    <div class="sb-section">Konfigurasi</div>
+    <a class="sb-item" href="#"><i class="ti ti-plug-connected" aria-hidden="true"></i><span>Integrasi</span></a>
+    <a class="sb-item" href="#"><i class="ti ti-adjustments-horizontal" aria-hidden="true"></i><span>Pengaturan Agent</span></a>
+    <a class="sb-item" href="#"><i class="ti ti-file-description" aria-hidden="true"></i><span>Knowledge Base</span></a>
+
+    <div class="sb-footer">
+      <div class="sb-user">
+        <div class="sb-avatar">BW</div>
+        <div><div class="sb-uname">Budi Wicaksono</div><div class="sb-urole">Super Admin</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- TOPBAR -->
+    <div class="topbar">
+      <div class="topbar-left">
+        <div class="topbar-title">Overview</div>
+        <div class="topbar-sub" style="margin-left:6px">— Hari ini, Rabu 3 Juni 2025</div>
+      </div>
+      <div class="topbar-right">
+        <button class="tb-btn"><i class="ti ti-calendar-week"></i> 7 hari terakhir</button>
+        <div class="tb-notif"><i class="ti ti-bell" style="font-size:16px"></i><div class="tb-notif-dot"></div></div>
+        <button class="tb-btn tb-btn-red"><i class="ti ti-plus"></i> Buat Agent Baru</button>
+      </div>
+    </div>
+
+    <!-- CONTENT -->
+    <div class="content">
+      <div class="col-left">
+
+        <!-- METRICS -->
+        <div class="metrics">
+          <div class="metric-card accent">
+            <div class="metric-label"><i class="ti ti-messages" aria-hidden="true"></i> Total Percakapan</div>
+            <div class="metric-val">1,284</div>
+            <div class="metric-change up"><i class="ti ti-trending-up"></i> +18% vs minggu lalu</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label"><i class="ti ti-robot" aria-hidden="true"></i> Ditangani AI</div>
+            <div class="metric-val">91%</div>
+            <div class="metric-change up"><i class="ti ti-trending-up"></i> +4% vs minggu lalu</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label"><i class="ti ti-clock" aria-hidden="true"></i> Waktu Respons</div>
+            <div class="metric-val">2.4<span style="font-size:13px;font-weight:500;color:var(--gray-400)"> dtk</span></div>
+            <div class="metric-change up"><i class="ti ti-trending-down"></i> -0.8 dtk lebih cepat</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label"><i class="ti ti-currency-dollar" aria-hidden="true"></i> Revenue dari AI</div>
+            <div class="metric-val">48,2<span style="font-size:13px;font-weight:500;color:var(--gray-400)">jt</span></div>
+            <div class="metric-change up"><i class="ti ti-trending-up"></i> +23% vs minggu lalu</div>
+          </div>
+        </div>
+
+        <!-- CHART + AGENTS ROW -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="chart-card">
+            <div class="sec-head">
+              <div class="sec-title">Volume Percakapan</div>
+              <div class="sec-action"><i class="ti ti-dots" style="font-size:14px"></i></div>
+            </div>
+            <div class="chart-wrap"><canvas id="convChart"></canvas></div>
+            <div class="chart-labels"><span>Sen</span><span>Sel</span><span>Rab</span><span>Kam</span><span>Jum</span><span>Sab</span><span>Min</span></div>
+          </div>
+          <div class="chart-card">
+            <div class="sec-head">
+              <div class="sec-title">Conversion Rate</div>
+              <div class="sec-action"><i class="ti ti-dots" style="font-size:14px"></i></div>
+            </div>
+            <div class="chart-wrap"><canvas id="convRate"></canvas></div>
+            <div class="chart-labels"><span>Sen</span><span>Sel</span><span>Rab</span><span>Kam</span><span>Jum</span><span>Sab</span><span>Min</span></div>
+          </div>
+        </div>
+
+        <!-- AGENT STATUS -->
+        <div>
+          <div class="sec-head">
+            <div class="sec-title">Status AI Agent</div>
+            <div class="sec-action">Kelola <i class="ti ti-chevron-right" style="font-size:11px"></i></div>
+          </div>
+          <div class="agents-row">
+            <div class="agent-card">
+              <div class="ag-head">
+                <div class="ag-name"><i class="ti ti-robot" aria-hidden="true"></i> Agent Sales</div>
+                <div style="display:flex;align-items:center;gap:5px"><div class="ag-on"></div><div class="ag-stat">Aktif</div></div>
+              </div>
+              <div class="ag-bars">
+                <div class="ag-bar-row"><span>Chat aktif</span><div class="ag-bar-track"><div class="ag-bar-fill" style="width:72%"></div></div><div class="ag-bar-val">72%</div></div>
+                <div class="ag-bar-row"><span>Closing</span><div class="ag-bar-track"><div class="ag-bar-fill green" style="width:58%"></div></div><div class="ag-bar-val">58%</div></div>
+                <div class="ag-bar-row"><span>Eskalasi</span><div class="ag-bar-track"><div class="ag-bar-fill amber" style="width:9%"></div></div><div class="ag-bar-val">9%</div></div>
+              </div>
+            </div>
+            <div class="agent-card">
+              <div class="ag-head">
+                <div class="ag-name"><i class="ti ti-headset" aria-hidden="true"></i> Agent Support</div>
+                <div style="display:flex;align-items:center;gap:5px"><div class="ag-on"></div><div class="ag-stat">Aktif</div></div>
+              </div>
+              <div class="ag-bars">
+                <div class="ag-bar-row"><span>Chat aktif</span><div class="ag-bar-track"><div class="ag-bar-fill" style="width:54%"></div></div><div class="ag-bar-val">54%</div></div>
+                <div class="ag-bar-row"><span>Resolved</span><div class="ag-bar-track"><div class="ag-bar-fill green" style="width:83%"></div></div><div class="ag-bar-val">83%</div></div>
+                <div class="ag-bar-row"><span>Eskalasi</span><div class="ag-bar-track"><div class="ag-bar-fill amber" style="width:17%"></div></div><div class="ag-bar-val">17%</div></div>
+              </div>
+            </div>
+            <div class="agent-card">
+              <div class="ag-head">
+                <div class="ag-name"><i class="ti ti-calendar" aria-hidden="true"></i> Agent Booking</div>
+                <div style="display:flex;align-items:center;gap:5px"><div class="ag-on"></div><div class="ag-stat">Aktif</div></div>
+              </div>
+              <div class="ag-bars">
+                <div class="ag-bar-row"><span>Appointment</span><div class="ag-bar-track"><div class="ag-bar-fill green" style="width:91%"></div></div><div class="ag-bar-val">91%</div></div>
+                <div class="ag-bar-row"><span>No-show</span><div class="ag-bar-track"><div class="ag-bar-fill amber" style="width:12%"></div></div><div class="ag-bar-val">12%</div></div>
+                <div class="ag-bar-row"><span>Eskalasi</span><div class="ag-bar-track"><div class="ag-bar-fill amber" style="width:4%"></div></div><div class="ag-bar-val">4%</div></div>
+              </div>
+            </div>
+            <div class="agent-card">
+              <div class="ag-head">
+                <div class="ag-name"><i class="ti ti-speakerphone" aria-hidden="true"></i> Agent Voice</div>
+                <div style="display:flex;align-items:center;gap:5px"><div style="width:7px;height:7px;border-radius:50%;background:var(--amber)"></div><div class="ag-stat" style="color:var(--amber)">Standby</div></div>
+              </div>
+              <div class="ag-bars">
+                <div class="ag-bar-row"><span>Panggilan</span><div class="ag-bar-track"><div class="ag-bar-fill" style="width:33%"></div></div><div class="ag-bar-val">33%</div></div>
+                <div class="ag-bar-row"><span>Answered</span><div class="ag-bar-track"><div class="ag-bar-fill green" style="width:97%"></div></div><div class="ag-bar-val">97%</div></div>
+                <div class="ag-bar-row"><span>Drop rate</span><div class="ag-bar-track"><div class="ag-bar-fill amber" style="width:3%"></div></div><div class="ag-bar-val">3%</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CONVERSATION TABLE -->
+        <div>
+          <div class="sec-head">
+            <div class="sec-title">Percakapan Terbaru</div>
+            <div class="sec-action">Lihat semua <i class="ti ti-chevron-right" style="font-size:11px"></i></div>
+          </div>
+          <div class="conv-table">
+            <div class="ct-header"><span>Kontak</span><span>Pesan Terakhir</span><span>Channel</span><span>Ditangani</span><span>Status</span></div>
+            <div class="ct-row">
+              <div class="ct-contact"><div class="ct-av">BW</div><div><div class="ct-nm">Budi Wicaksono</div><div class="ct-ch"><i class="ti ti-brand-whatsapp"></i> WhatsApp</div></div></div>
+              <div class="ct-msg">Oke mas, saya mau order 2 box...</div>
+              <div><span class="badge badge-ai"><i class="ti ti-brand-whatsapp" style="font-size:9px;margin-right:2px"></i>WA</span></div>
+              <div><span class="badge badge-ai">AI Agent</span></div>
+              <div style="display:flex;align-items:center;gap:5px"><span class="status-dot s-bot"></span><span style="font-size:11px;color:var(--gray-600)">Bot</span></div>
+            </div>
+            <div class="ct-row">
+              <div class="ct-contact"><div class="ct-av">RS</div><div><div class="ct-nm">Rina Sari</div><div class="ct-ch"><i class="ti ti-brand-instagram"></i> Instagram</div></div></div>
+              <div class="ct-msg">Harga untuk 50 pcs berapa ya?</div>
+              <div><span class="badge badge-ai" style="background:#FFF0F5;color:#C2185B"><i class="ti ti-brand-instagram" style="font-size:9px;margin-right:2px"></i>IG</span></div>
+              <div><span class="badge badge-ai">AI Agent</span></div>
+              <div style="display:flex;align-items:center;gap:5px"><span class="status-dot s-open"></span><span style="font-size:11px;color:var(--gray-600)">Open</span></div>
+            </div>
+            <div class="ct-row">
+              <div class="ct-contact"><div class="ct-av">AN</div><div><div class="ct-nm">Andi Nugroho</div><div class="ct-ch"><i class="ti ti-world"></i> Website</div></div></div>
+              <div class="ct-msg">Saya ingin komplain soal pengiriman</div>
+              <div><span class="badge" style="background:#F0F4FF;color:#3B5BDB">Web</span></div>
+              <div><span class="badge badge-human">Agen Manusia</span></div>
+              <div style="display:flex;align-items:center;gap:5px"><span class="status-dot s-wait"></span><span style="font-size:11px;color:var(--gray-600)">Menunggu</span></div>
+            </div>
+            <div class="ct-row">
+              <div class="ct-contact"><div class="ct-av">SK</div><div><div class="ct-nm">Siti Komala</div><div class="ct-ch"><i class="ti ti-brand-whatsapp"></i> WhatsApp</div></div></div>
+              <div class="ct-msg">Terima kasih, sudah selesai!</div>
+              <div><span class="badge badge-ai"><i class="ti ti-brand-whatsapp" style="font-size:9px;margin-right:2px"></i>WA</span></div>
+              <div><span class="badge badge-ai">AI Agent</span></div>
+              <div style="display:flex;align-items:center;gap:5px"><span class="status-dot s-closed"></span><span style="font-size:11px;color:var(--gray-600)">Selesai</span></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- RIGHT PANEL -->
+      <div class="col-right">
+        <div class="rp-tabs">
+          <div class="rp-tab active">Live Chat</div>
+          <div class="rp-tab">Detail Kontak</div>
+          <div class="rp-tab">Ringkasan AI</div>
+        </div>
+        <div class="rp-chat-header">
+          <div class="rp-contact">
+            <div class="rp-av">BW</div>
+            <div><div class="rp-nm">Budi Wicaksono</div><div class="rp-status">Online</div></div>
+          </div>
+          <div class="rp-actions">
+            <div class="rp-act" title="Telepon"><i class="ti ti-phone" aria-label="Telepon"></i></div>
+            <div class="rp-act" title="Alihkan ke Agen"><i class="ti ti-transfer" aria-label="Alihkan"></i></div>
+            <div class="rp-act" title="Opsi lainnya"><i class="ti ti-dots-vertical" aria-label="Opsi"></i></div>
+          </div>
+        </div>
+        <div style="padding:6px 14px;border-bottom:1px solid var(--gray-100);display:flex;align-items:center;gap:6px">
+          <div style="background:var(--red-light);color:var(--red);font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;display:flex;align-items:center;gap:4px"><i class="ti ti-robot" style="font-size:11px"></i> Ditangani AI — Agent Sales</div>
+        </div>
+        <div class="chat-body">
+          <div class="msg user">
+            <div class="msg-bubble">Halo, saya mau tanya soal produk kalian</div>
+            <div class="msg-meta">10:24</div>
+          </div>
+          <div class="msg bot">
+            <div class="msg-bubble">Halo Pak Budi! Senang bisa membantu. Produk apa yang ingin Bapak ketahui? Kami memiliki berbagai kategori industri.</div>
+            <div class="msg-meta"><span class="ai-label">AI</span> 10:24</div>
+          </div>
+          <div class="msg user">
+            <div class="msg-bubble">Saya cari spare part mesin packing, butuh 50 pcs</div>
+            <div class="msg-meta">10:26</div>
+          </div>
+          <div class="msg bot">
+            <div class="msg-bubble">Baik Pak! Untuk spare part mesin packing 50 pcs, kami punya stok tersedia. Boleh tahu tipe mesinnya apa? Saya bisa langsung cekkan harga dan estimasi pengiriman.</div>
+            <div class="msg-meta"><span class="ai-label">AI</span> 10:26</div>
+          </div>
+          <div class="msg user">
+            <div class="msg-bubble">Oke mas, saya mau order 2 box dulu untuk sample. Bisa COD?</div>
+            <div class="msg-meta">10:29</div>
+          </div>
+          <div class="msg bot">
+            <div class="msg-bubble">Bisa Pak! Untuk sample 2 box, kami siapkan dengan pengiriman COD. Total Rp 1.240.000 termasuk ongkir Jakarta. Saya buatkan invoice sekarang ya?</div>
+            <div class="msg-meta"><span class="ai-label">AI</span> 10:29</div>
+          </div>
+        </div>
+        <div class="chat-input-wrap">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <div style="font-size:10px;color:var(--gray-400)">Balas sebagai Admin (override AI)</div>
+            <div style="font-size:10px;color:var(--red);cursor:pointer;display:flex;align-items:center;gap:3px"><i class="ti ti-robot" style="font-size:11px"></i> Biarkan AI</div>
+          </div>
+          <div class="chat-input-row">
+            <i class="ti ti-paperclip" aria-label="Lampirkan file"></i>
+            <input placeholder="Ketik pesan..." readonly/>
+            <i class="ti ti-send" aria-label="Kirim pesan"></i>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+const red='#C8102E', redFade='rgba(200,16,46,0.08)', gray='#E2E2E2', green='#1A7A4A', greenFade='rgba(26,122,74,0.08)';
+const labels=['Sen','Sel','Rab','Kam','Jum','Sab','Min'];
+const sharedOpts={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{enabled:true,backgroundColor:'#fff',titleColor:'#222',bodyColor:'#555',borderColor:gray,borderWidth:1,padding:8,titleFont:{size:11},bodyFont:{size:11}}},scales:{x:{grid:{display:false},ticks:{font:{size:10},color:'#9A9A9A'}},y:{grid:{color:gray},ticks:{font:{size:10},color:'#9A9A9A'},border:{display:false}}}};
+new Chart(document.getElementById('convChart'),{type:'bar',data:{labels,datasets:[{data:[142,187,165,210,198,94,88],backgroundColor:red,borderRadius:4,barPercentage:.6}]},options:sharedOpts});
+new Chart(document.getElementById('convRate'),{type:'line',data:{labels,datasets:[{data:[42,47,44,51,58,55,61],borderColor:red,backgroundColor:redFade,tension:.4,fill:true,pointRadius:3,pointBackgroundColor:red}]},options:{...sharedOpts,scales:{...sharedOpts.scales,y:{...sharedOpts.scales.y,ticks:{...sharedOpts.scales.y.ticks,callback:v=>v+'%'}}}}});
+</script>
