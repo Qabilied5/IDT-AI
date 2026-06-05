@@ -61,142 +61,177 @@
     <div class="content">
       <div class="col-left">
 
-        <!-- METRICS -->
-        <div class="metrics">
-          <div class="metric-card accent">
-            <div class="metric-label"><i class="ti ti-messages" aria-hidden="true"></i> Total Percakapan</div>
-            <div class="metric-val">1,284</div>
-            <div class="metric-change up"><i class="ti ti-trending-up"></i> +18% vs minggu lalu</div>
+        <!-- Halaman Overview -->
+        <div id="overview-page" class="overview-page">
+          <!-- METRICS -->
+          <div class="metrics">
+            <div class="metric-card accent">
+              <div class="metric-label"><i class="ti ti-messages" aria-hidden="true"></i> Total Percakapan</div>
+              <div class="metric-val">1,284</div>
+              <div class="metric-change up"><i class="ti ti-trending-up"></i> +18% vs minggu lalu</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label"><i class="ti ti-robot" aria-hidden="true"></i> Ditangani AI</div>
+              <div class="metric-val">91%</div>
+              <div class="metric-change up"><i class="ti ti-trending-up"></i> +4% vs minggu lalu</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label"><i class="ti ti-clock" aria-hidden="true"></i> Waktu Respons</div>
+              <div class="metric-val">2.4<span style="font-size:13px;font-weight:500;color:var(--gray-400)"> dtk</span></div>
+              <div class="metric-change up"><i class="ti ti-trending-down"></i> -0.8 dtk lebih cepat</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label"><i class="ti ti-currency-dollar" aria-hidden="true"></i> Revenue dari AI</div>
+              <div class="metric-val">48,2<span style="font-size:13px;font-weight:500;color:var(--gray-400)">jt</span></div>
+              <div class="metric-change up"><i class="ti ti-trending-up"></i> +23% vs minggu lalu</div>
+            </div>
           </div>
-          <div class="metric-card">
-            <div class="metric-label"><i class="ti ti-robot" aria-hidden="true"></i> Ditangani AI</div>
-            <div class="metric-val">91%</div>
-            <div class="metric-change up"><i class="ti ti-trending-up"></i> +4% vs minggu lalu</div>
-          </div>
-          <div class="metric-card">
-            <div class="metric-label"><i class="ti ti-clock" aria-hidden="true"></i> Waktu Respons</div>
-            <div class="metric-val">2.4<span style="font-size:13px;font-weight:500;color:var(--gray-400)"> dtk</span></div>
-            <div class="metric-change up"><i class="ti ti-trending-down"></i> -0.8 dtk lebih cepat</div>
-          </div>
-          <div class="metric-card">
-            <div class="metric-label"><i class="ti ti-currency-dollar" aria-hidden="true"></i> Revenue dari AI</div>
-            <div class="metric-val">48,2<span style="font-size:13px;font-weight:500;color:var(--gray-400)">jt</span></div>
-            <div class="metric-change up"><i class="ti ti-trending-up"></i> +23% vs minggu lalu</div>
-          </div>
-        </div>
 
-        <!-- CHART + AGENTS ROW -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-          <div class="chart-card">
+          <!-- CHART + AGENTS ROW -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div class="chart-card">
+              <div class="sec-head">
+                <div class="sec-title">Volume Percakapan</div>
+                <div class="sec-action"><i class="ti ti-dots" style="font-size:14px"></i></div>
+              </div>
+              <div class="chart-wrap"><canvas id="convChart"></canvas></div>
+              <div class="chart-labels"><span>Sen</span><span>Sel</span><span>Rab</span><span>Kam</span><span>Jum</span><span>Sab</span><span>Min</span></div>
+            </div>
+            <div class="chart-card">
+              <div class="sec-head">
+                <div class="sec-title">Conversion Rate</div>
+                <div class="sec-action"><i class="ti ti-dots" style="font-size:14px"></i></div>
+              </div>
+              <div class="chart-wrap"><canvas id="convRate"></canvas></div>
+              <div class="chart-labels"><span>Sen</span><span>Sel</span><span>Rab</span><span>Kam</span><span>Jum</span><span>Sab</span><span>Min</span></div>
+            </div>
+          </div>
+
+          <!-- AGENT STATUS -->
+          <div>
             <div class="sec-head">
-              <div class="sec-title">Volume Percakapan</div>
-              <div class="sec-action"><i class="ti ti-dots" style="font-size:14px"></i></div>
+              <div class="sec-title">Status AI Agent</div>
+              <div class="sec-action">Kelola <i class="ti ti-chevron-right" style="font-size:11px"></i></div>
             </div>
-            <div class="chart-wrap"><canvas id="convChart"></canvas></div>
-            <div class="chart-labels"><span>Sen</span><span>Sel</span><span>Rab</span><span>Kam</span><span>Jum</span><span>Sab</span><span>Min</span></div>
+            <div class="agents-row">
+              <div class="agent-card">
+                <div class="ag-head">
+                  <div class="ag-name"><i class="ti ti-robot" aria-hidden="true"></i> Agent Sales</div>
+                  <div style="display:flex;align-items:center;gap:5px"><div class="ag-on"></div><div class="ag-stat">Aktif</div></div>
+                </div>
+                <div class="ag-bars">
+                  <div class="ag-bar-row"><span>Chat aktif</span><div class="ag-bar-track"><div class="ag-bar-fill" style="width:72%"></div></div><div class="ag-bar-val">72%</div></div>
+                  <div class="ag-bar-row"><span>Closing</span><div class="ag-bar-track"><div class="ag-bar-fill green" style="width:58%"></div></div><div class="ag-bar-val">58%</div></div>
+                  <div class="ag-bar-row"><span>Eskalasi</span><div class="ag-bar-track"><div class="ag-bar-fill amber" style="width:9%"></div></div><div class="ag-bar-val">9%</div></div>
+                </div>
+              </div>
+              <div class="agent-card">
+                <div class="ag-head">
+                  <div class="ag-name"><i class="ti ti-headset" aria-hidden="true"></i> Agent Support</div>
+                  <div style="display:flex;align-items:center;gap:5px"><div class="ag-on"></div><div class="ag-stat">Aktif</div></div>
+                </div>
+                <div class="ag-bars">
+                  <div class="ag-bar-row"><span>Chat aktif</span><div class="ag-bar-track"><div class="ag-bar-fill" style="width:54%"></div></div><div class="ag-bar-val">54%</div></div>
+                  <div class="ag-bar-row"><span>Resolved</span><div class="ag-bar-track"><div class="ag-bar-fill green" style="width:83%"></div></div><div class="ag-bar-val">83%</div></div>
+                  <div class="ag-bar-row"><span>Eskalasi</span><div class="ag-bar-track"><div class="ag-bar-fill amber" style="width:17%"></div></div><div class="ag-bar-val">17%</div></div>
+                </div>
+              </div>
+              <div class="agent-card">
+                <div class="ag-head">
+                  <div class="ag-name"><i class="ti ti-calendar" aria-hidden="true"></i> Agent Booking</div>
+                  <div style="display:flex;align-items:center;gap:5px"><div class="ag-on"></div><div class="ag-stat">Aktif</div></div>
+                </div>
+                <div class="ag-bars">
+                  <div class="ag-bar-row"><span>Appointment</span><div class="ag-bar-track"><div class="ag-bar-fill green" style="width:91%"></div></div><div class="ag-bar-val">91%</div></div>
+                  <div class="ag-bar-row"><span>No-show</span><div class="ag-bar-track"><div class="ag-bar-fill amber" style="width:12%"></div></div><div class="ag-bar-val">12%</div></div>
+                  <div class="ag-bar-row"><span>Eskalasi</span><div class="ag-bar-track"><div class="ag-bar-fill amber" style="width:4%"></div></div><div class="ag-bar-val">4%</div></div>
+                </div>
+              </div>
+              <div class="agent-card">
+                <div class="ag-head">
+                  <div class="ag-name"><i class="ti ti-speakerphone" aria-hidden="true"></i> Agent Voice</div>
+                  <div style="display:flex;align-items:center;gap:5px"><div style="width:7px;height:7px;border-radius:50%;background:var(--amber)"></div><div class="ag-stat" style="color:var(--amber)">Standby</div></div>
+                </div>
+                <div class="ag-bars">
+                  <div class="ag-bar-row"><span>Panggilan</span><div class="ag-bar-track"><div class="ag-bar-fill" style="width:33%"></div></div><div class="ag-bar-val">33%</div></div>
+                  <div class="ag-bar-row"><span>Answered</span><div class="ag-bar-track"><div class="ag-bar-fill green" style="width:97%"></div></div><div class="ag-bar-val">97%</div></div>
+                  <div class="ag-bar-row"><span>Drop rate</span><div class="ag-bar-track"><div class="ag-bar-fill amber" style="width:3%"></div></div><div class="ag-bar-val">3%</div></div>
+                </div>
+              </div>
+            </div>
           </div>
-          <div class="chart-card">
+
+          <!-- CONVERSATION TABLE -->
+          <div>
             <div class="sec-head">
-              <div class="sec-title">Conversion Rate</div>
-              <div class="sec-action"><i class="ti ti-dots" style="font-size:14px"></i></div>
+              <div class="sec-title">Percakapan Terbaru</div>
+              <div class="sec-action">Lihat semua <i class="ti ti-chevron-right" style="font-size:11px"></i></div>
             </div>
-            <div class="chart-wrap"><canvas id="convRate"></canvas></div>
-            <div class="chart-labels"><span>Sen</span><span>Sel</span><span>Rab</span><span>Kam</span><span>Jum</span><span>Sab</span><span>Min</span></div>
+            <div class="conv-table">
+              <div class="ct-header"><span>Kontak</span><span>Pesan Terakhir</span><span>Channel</span><span>Ditangani</span><span>Status</span></div>
+              <div class="ct-row">
+                <div class="ct-contact"><div class="ct-av">BW</div><div><div class="ct-nm">Budi Wicaksono</div><div class="ct-ch"><i class="ti ti-brand-whatsapp"></i> WhatsApp</div></div></div>
+                <div class="ct-msg">Oke mas, saya mau order 2 box...</div>
+                <div><span class="badge badge-ai"><i class="ti ti-brand-whatsapp" style="font-size:9px;margin-right:2px"></i>WA</span></div>
+                <div><span class="badge badge-ai">AI Agent</span></div>
+                <div style="display:flex;align-items:center;gap:5px"><span class="status-dot s-bot"></span><span style="font-size:11px;color:var(--gray-600)">Bot</span></div>
+              </div>
+              <div class="ct-row">
+                <div class="ct-contact"><div class="ct-av">RS</div><div><div class="ct-nm">Rina Sari</div><div class="ct-ch"><i class="ti ti-brand-instagram"></i> Instagram</div></div></div>
+                <div class="ct-msg">Harga untuk 50 pcs berapa ya?</div>
+                <div><span class="badge badge-ai" style="background:#FFF0F5;color:#C2185B"><i class="ti ti-brand-instagram" style="font-size:9px;margin-right:2px"></i>IG</span></div>
+                <div><span class="badge badge-ai">AI Agent</span></div>
+                <div style="display:flex;align-items:center;gap:5px"><span class="status-dot s-open"></span><span style="font-size:11px;color:var(--gray-600)">Open</span></div>
+              </div>
+              <div class="ct-row">
+                <div class="ct-contact"><div class="ct-av">AN</div><div><div class="ct-nm">Andi Nugroho</div><div class="ct-ch"><i class="ti ti-world"></i> Website</div></div></div>
+                <div class="ct-msg">Saya ingin komplain soal pengiriman</div>
+                <div><span class="badge" style="background:#F0F4FF;color:#3B5BDB">Web</span></div>
+                <div><span class="badge badge-human">Agen Manusia</span></div>
+                <div style="display:flex;align-items:center;gap:5px"><span class="status-dot s-wait"></span><span style="font-size:11px;color:var(--gray-600)">Menunggu</span></div>
+              </div>
+              <div class="ct-row">
+                <div class="ct-contact"><div class="ct-av">SK</div><div><div class="ct-nm">Siti Komala</div><div class="ct-ch"><i class="ti ti-brand-whatsapp"></i> WhatsApp</div></div></div>
+                <div class="ct-msg">Terima kasih, sudah selesai!</div>
+                <div><span class="badge badge-ai"><i class="ti ti-brand-whatsapp" style="font-size:9px;margin-right:2px"></i>WA</span></div>
+                <div><span class="badge badge-ai">AI Agent</span></div>
+                <div style="display:flex;align-items:center;gap:5px"><span class="status-dot s-closed"></span><span style="font-size:11px;color:var(--gray-600)">Selesai</span></div>
+              </div>
+            </div>
           </div>
         </div>
+        <!-- Akhir overview-page -->
+        
+        <!-- Halaman Percakapan -->
+        <div id="percakapan-page">
+          <p>Halaman Sedang dibuat</p>
+        </div>
+        <!-- Ending Percakapan Page -->
+        
+        <!-- Halaman AI AGENT -->
+        <div id="ai-agent-page">
+          <p>AI AGENT</p>
+        </div>
+        <!-- Ending AI AGENT -->
+        
+        <!-- Halaman KONTAK / LEADS -->
+        <div id="contact-page">
+          <p>KONTAK LEADS</p>
+        </div>
+        <!-- Ending KONTAK LEADS -->
 
-        <!-- AGENT STATUS -->
-        <div>
-          <div class="sec-head">
-            <div class="sec-title">Status AI Agent</div>
-            <div class="sec-action">Kelola <i class="ti ti-chevron-right" style="font-size:11px"></i></div>
-          </div>
-          <div class="agents-row">
-            <div class="agent-card">
-              <div class="ag-head">
-                <div class="ag-name"><i class="ti ti-robot" aria-hidden="true"></i> Agent Sales</div>
-                <div style="display:flex;align-items:center;gap:5px"><div class="ag-on"></div><div class="ag-stat">Aktif</div></div>
-              </div>
-              <div class="ag-bars">
-                <div class="ag-bar-row"><span>Chat aktif</span><div class="ag-bar-track"><div class="ag-bar-fill" style="width:72%"></div></div><div class="ag-bar-val">72%</div></div>
-                <div class="ag-bar-row"><span>Closing</span><div class="ag-bar-track"><div class="ag-bar-fill green" style="width:58%"></div></div><div class="ag-bar-val">58%</div></div>
-                <div class="ag-bar-row"><span>Eskalasi</span><div class="ag-bar-track"><div class="ag-bar-fill amber" style="width:9%"></div></div><div class="ag-bar-val">9%</div></div>
-              </div>
-            </div>
-            <div class="agent-card">
-              <div class="ag-head">
-                <div class="ag-name"><i class="ti ti-headset" aria-hidden="true"></i> Agent Support</div>
-                <div style="display:flex;align-items:center;gap:5px"><div class="ag-on"></div><div class="ag-stat">Aktif</div></div>
-              </div>
-              <div class="ag-bars">
-                <div class="ag-bar-row"><span>Chat aktif</span><div class="ag-bar-track"><div class="ag-bar-fill" style="width:54%"></div></div><div class="ag-bar-val">54%</div></div>
-                <div class="ag-bar-row"><span>Resolved</span><div class="ag-bar-track"><div class="ag-bar-fill green" style="width:83%"></div></div><div class="ag-bar-val">83%</div></div>
-                <div class="ag-bar-row"><span>Eskalasi</span><div class="ag-bar-track"><div class="ag-bar-fill amber" style="width:17%"></div></div><div class="ag-bar-val">17%</div></div>
-              </div>
-            </div>
-            <div class="agent-card">
-              <div class="ag-head">
-                <div class="ag-name"><i class="ti ti-calendar" aria-hidden="true"></i> Agent Booking</div>
-                <div style="display:flex;align-items:center;gap:5px"><div class="ag-on"></div><div class="ag-stat">Aktif</div></div>
-              </div>
-              <div class="ag-bars">
-                <div class="ag-bar-row"><span>Appointment</span><div class="ag-bar-track"><div class="ag-bar-fill green" style="width:91%"></div></div><div class="ag-bar-val">91%</div></div>
-                <div class="ag-bar-row"><span>No-show</span><div class="ag-bar-track"><div class="ag-bar-fill amber" style="width:12%"></div></div><div class="ag-bar-val">12%</div></div>
-                <div class="ag-bar-row"><span>Eskalasi</span><div class="ag-bar-track"><div class="ag-bar-fill amber" style="width:4%"></div></div><div class="ag-bar-val">4%</div></div>
-              </div>
-            </div>
-            <div class="agent-card">
-              <div class="ag-head">
-                <div class="ag-name"><i class="ti ti-speakerphone" aria-hidden="true"></i> Agent Voice</div>
-                <div style="display:flex;align-items:center;gap:5px"><div style="width:7px;height:7px;border-radius:50%;background:var(--amber)"></div><div class="ag-stat" style="color:var(--amber)">Standby</div></div>
-              </div>
-              <div class="ag-bars">
-                <div class="ag-bar-row"><span>Panggilan</span><div class="ag-bar-track"><div class="ag-bar-fill" style="width:33%"></div></div><div class="ag-bar-val">33%</div></div>
-                <div class="ag-bar-row"><span>Answered</span><div class="ag-bar-track"><div class="ag-bar-fill green" style="width:97%"></div></div><div class="ag-bar-val">97%</div></div>
-                <div class="ag-bar-row"><span>Drop rate</span><div class="ag-bar-track"><div class="ag-bar-fill amber" style="width:3%"></div></div><div class="ag-bar-val">3%</div></div>
-              </div>
-            </div>
-          </div>
+        <!-- Halaman analitik -->
+        <div id="analitik-page">
+          <p>ANALITIK</p>
         </div>
+        <!-- Ending ANALITIK -->
+        
+        <!-- Halaman appointment -->
+        <div id="appointment-page">
+          <p>appointment</p>
+        </div>
+        <!-- Ending appointment -->
 
-        <!-- CONVERSATION TABLE -->
-        <div>
-          <div class="sec-head">
-            <div class="sec-title">Percakapan Terbaru</div>
-            <div class="sec-action">Lihat semua <i class="ti ti-chevron-right" style="font-size:11px"></i></div>
-          </div>
-          <div class="conv-table">
-            <div class="ct-header"><span>Kontak</span><span>Pesan Terakhir</span><span>Channel</span><span>Ditangani</span><span>Status</span></div>
-            <div class="ct-row">
-              <div class="ct-contact"><div class="ct-av">BW</div><div><div class="ct-nm">Budi Wicaksono</div><div class="ct-ch"><i class="ti ti-brand-whatsapp"></i> WhatsApp</div></div></div>
-              <div class="ct-msg">Oke mas, saya mau order 2 box...</div>
-              <div><span class="badge badge-ai"><i class="ti ti-brand-whatsapp" style="font-size:9px;margin-right:2px"></i>WA</span></div>
-              <div><span class="badge badge-ai">AI Agent</span></div>
-              <div style="display:flex;align-items:center;gap:5px"><span class="status-dot s-bot"></span><span style="font-size:11px;color:var(--gray-600)">Bot</span></div>
-            </div>
-            <div class="ct-row">
-              <div class="ct-contact"><div class="ct-av">RS</div><div><div class="ct-nm">Rina Sari</div><div class="ct-ch"><i class="ti ti-brand-instagram"></i> Instagram</div></div></div>
-              <div class="ct-msg">Harga untuk 50 pcs berapa ya?</div>
-              <div><span class="badge badge-ai" style="background:#FFF0F5;color:#C2185B"><i class="ti ti-brand-instagram" style="font-size:9px;margin-right:2px"></i>IG</span></div>
-              <div><span class="badge badge-ai">AI Agent</span></div>
-              <div style="display:flex;align-items:center;gap:5px"><span class="status-dot s-open"></span><span style="font-size:11px;color:var(--gray-600)">Open</span></div>
-            </div>
-            <div class="ct-row">
-              <div class="ct-contact"><div class="ct-av">AN</div><div><div class="ct-nm">Andi Nugroho</div><div class="ct-ch"><i class="ti ti-world"></i> Website</div></div></div>
-              <div class="ct-msg">Saya ingin komplain soal pengiriman</div>
-              <div><span class="badge" style="background:#F0F4FF;color:#3B5BDB">Web</span></div>
-              <div><span class="badge badge-human">Agen Manusia</span></div>
-              <div style="display:flex;align-items:center;gap:5px"><span class="status-dot s-wait"></span><span style="font-size:11px;color:var(--gray-600)">Menunggu</span></div>
-            </div>
-            <div class="ct-row">
-              <div class="ct-contact"><div class="ct-av">SK</div><div><div class="ct-nm">Siti Komala</div><div class="ct-ch"><i class="ti ti-brand-whatsapp"></i> WhatsApp</div></div></div>
-              <div class="ct-msg">Terima kasih, sudah selesai!</div>
-              <div><span class="badge badge-ai"><i class="ti ti-brand-whatsapp" style="font-size:9px;margin-right:2px"></i>WA</span></div>
-              <div><span class="badge badge-ai">AI Agent</span></div>
-              <div style="display:flex;align-items:center;gap:5px"><span class="status-dot s-closed"></span><span style="font-size:11px;color:var(--gray-600)">Selesai</span></div>
-            </div>
-          </div>
-        </div>
 
       </div>
 
