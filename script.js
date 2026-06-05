@@ -1,0 +1,5 @@
+const red='#C8102E', redFade='rgba(200,16,46,0.08)', gray='#E2E2E2', green='#1A7A4A', greenFade='rgba(26,122,74,0.08)';
+const labels=['Sen','Sel','Rab','Kam','Jum','Sab','Min'];
+const sharedOpts={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{enabled:true,backgroundColor:'#fff',titleColor:'#222',bodyColor:'#555',borderColor:gray,borderWidth:1,padding:8,titleFont:{size:11},bodyFont:{size:11}}},scales:{x:{grid:{display:false},ticks:{font:{size:10},color:'#9A9A9A'}},y:{grid:{color:gray},ticks:{font:{size:10},color:'#9A9A9A'},border:{display:false}}}};
+new Chart(document.getElementById('convChart'),{type:'bar',data:{labels,datasets:[{data:[142,187,165,210,198,94,88],backgroundColor:red,borderRadius:4,barPercentage:.6}]},options:sharedOpts});
+new Chart(document.getElementById('convRate'),{type:'line',data:{labels,datasets:[{data:[42,47,44,51,58,55,61],borderColor:red,backgroundColor:redFade,tension:.4,fill:true,pointRadius:3,pointBackgroundColor:red}]},options:{...sharedOpts,scales:{...sharedOpts.scales,y:{...sharedOpts.scales.y,ticks:{...sharedOpts.scales.y.ticks,callback:v=>v+'%'}}}}});
