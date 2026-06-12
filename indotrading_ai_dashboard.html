@@ -4,7 +4,11 @@
 
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="core.css">
+
   <link rel="stylesheet" href="/page.css/percakapan.css">
+  <link rel="stylesheet" href="/page.css/ai_agent.css">
+  <link rel="stylesheet" href="/page.css/leads-page.css">
+  
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
   
 </head>
@@ -203,358 +207,922 @@
         </div>
         <!-- Akhir overview-page -->
         
-<!-- Halaman Percakapan -->
-<div id="percakapan-page" class="percakapan-page">
+        <!-- Halaman Percakapan -->
+        <div id="percakapan-page" class="percakapan-page">
 
-  <!-- TOOLBAR FILTER -->
-  <div class="pc-toolbar">
-    <div class="pc-filters">
-      <button class="pc-filter-btn active" data-filter="all">Semua <span class="pc-count">24</span></button>
-      <button class="pc-filter-btn" data-filter="ai">AI Agent <span class="pc-count">18</span></button>
-      <button class="pc-filter-btn" data-filter="human">Agen Manusia <span class="pc-count">4</span></button>
-      <button class="pc-filter-btn" data-filter="pending">Menunggu <span class="pc-count">2</span></button>
-    </div>
-    <div class="pc-toolbar-right">
-      <div class="pc-search-wrap">
-        <i class="ti ti-search" aria-hidden="true"></i>
-        <input type="text" placeholder="Cari percakapan..." id="pc-search-input" />
-      </div>
-      <div class="pc-channel-filter">
-        <select id="pc-channel-select">
-          <option value="all">Semua Channel</option>
-          <option value="wa">WhatsApp</option>
-          <option value="ig">Instagram</option>
-          <option value="shopee">Shopee</option>
-        </select>
-      </div>
-    </div>
-  </div>
-
-  <!-- CHANNEL BADGES ROW -->
-  <div class="pc-channel-row">
-    <div class="pc-channel-badge wa">
-      <i class="ti ti-brand-whatsapp" aria-hidden="true"></i>
-      <span>WhatsApp</span>
-      <strong>14</strong>
-    </div>
-    <div class="pc-channel-badge ig">
-      <i class="ti ti-brand-instagram" aria-hidden="true"></i>
-      <span>Instagram DM</span>
-      <strong>7</strong>
-    </div>
-    <div class="pc-channel-badge shopee">
-      <i class="ti ti-shopping-bag" aria-hidden="true"></i>
-      <span>Shopee Chat</span>
-      <strong>3</strong>
-    </div>
-    <div class="pc-channel-badge web">
-      <i class="ti ti-world" aria-hidden="true"></i>
-      <span>Website</span>
-      <strong>0</strong>
-    </div>
-  </div>
-
-  <!-- MAIN SPLIT: LIST + DETAIL -->
-  <div class="pc-split">
-
-    <!-- KIRI: LIST PERCAKAPAN -->
-    <div class="pc-list" id="pc-list">
-
-      <!-- Item percakapan -->
-      <div class="pc-item active" data-id="1" data-filter="ai" data-channel="wa" onclick="selectConv(this, 1)">
-        <div class="pc-item-av wa-av">BW</div>
-        <div class="pc-item-body">
-          <div class="pc-item-top">
-            <span class="pc-item-name">Budi Wicaksono</span>
-            <span class="pc-item-time">10:29</span>
-          </div>
-          <div class="pc-item-preview">Oke mas, saya mau order 2 box dulu untuk sample...</div>
-          <div class="pc-item-tags">
-            <span class="pc-tag wa-tag"><i class="ti ti-brand-whatsapp"></i> WA</span>
-            <span class="pc-tag ai-tag"><i class="ti ti-robot"></i> AI</span>
-          </div>
-        </div>
-        <div class="pc-item-unread">2</div>
-      </div>
-
-      <div class="pc-item" data-id="2" data-filter="ai" data-channel="ig" onclick="selectConv(this, 2)">
-        <div class="pc-item-av ig-av">RS</div>
-        <div class="pc-item-body">
-          <div class="pc-item-top">
-            <span class="pc-item-name">Rina Sari</span>
-            <span class="pc-item-time">10:15</span>
-          </div>
-          <div class="pc-item-preview">Harga untuk 50 pcs berapa ya kak?</div>
-          <div class="pc-item-tags">
-            <span class="pc-tag ig-tag"><i class="ti ti-brand-instagram"></i> IG</span>
-            <span class="pc-tag ai-tag"><i class="ti ti-robot"></i> AI</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="pc-item" data-id="3" data-filter="human" data-channel="wa" onclick="selectConv(this, 3)">
-        <div class="pc-item-av" style="background:#eef2ff;color:#4b5eaa">AN</div>
-        <div class="pc-item-body">
-          <div class="pc-item-top">
-            <span class="pc-item-name">Andi Nugroho</span>
-            <span class="pc-item-time">09:58</span>
-          </div>
-          <div class="pc-item-preview">Saya ingin komplain soal pengiriman yang telat</div>
-          <div class="pc-item-tags">
-            <span class="pc-tag wa-tag"><i class="ti ti-brand-whatsapp"></i> WA</span>
-            <span class="pc-tag human-tag"><i class="ti ti-user"></i> Agen</span>
-            <span class="pc-tag ticket-tag"><i class="ti ti-ticket"></i> Tiket</span>
-          </div>
-        </div>
-        <div class="pc-item-unread" style="background:var(--amber)">1</div>
-      </div>
-
-      <div class="pc-item" data-id="4" data-filter="ai" data-channel="shopee" onclick="selectConv(this, 4)">
-        <div class="pc-item-av shopee-av">DH</div>
-        <div class="pc-item-body">
-          <div class="pc-item-top">
-            <span class="pc-item-name">Dewi Hartanti</span>
-            <span class="pc-item-time">09:44</span>
-          </div>
-          <div class="pc-item-preview">Produknya ready stock gak? Mau beli 10 pcs nih</div>
-          <div class="pc-item-tags">
-            <span class="pc-tag shopee-tag"><i class="ti ti-shopping-bag"></i> Shopee</span>
-            <span class="pc-tag ai-tag"><i class="ti ti-robot"></i> AI</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="pc-item" data-id="5" data-filter="pending" data-channel="ig" onclick="selectConv(this, 5)">
-        <div class="pc-item-av ig-av">MF</div>
-        <div class="pc-item-body">
-          <div class="pc-item-top">
-            <span class="pc-item-name">M. Fauzi</span>
-            <span class="pc-item-time">09:30</span>
-          </div>
-          <div class="pc-item-preview">Bisa dikirim ke luar kota? Ke Surabaya?</div>
-          <div class="pc-item-tags">
-            <span class="pc-tag ig-tag"><i class="ti ti-brand-instagram"></i> IG</span>
-            <span class="pc-tag pending-tag"><i class="ti ti-clock"></i> Pending</span>
-          </div>
-        </div>
-        <div class="pc-item-unread" style="background:#d97706">!</div>
-      </div>
-
-      <div class="pc-item" data-id="6" data-filter="ai" data-channel="wa" onclick="selectConv(this, 6)">
-        <div class="pc-item-av wa-av">SK</div>
-        <div class="pc-item-body">
-          <div class="pc-item-top">
-            <span class="pc-item-name">Siti Komala</span>
-            <span class="pc-item-time">09:10</span>
-          </div>
-          <div class="pc-item-preview">Terima kasih, sudah selesai! Nanti order lagi ya</div>
-          <div class="pc-item-tags">
-            <span class="pc-tag wa-tag"><i class="ti ti-brand-whatsapp"></i> WA</span>
-            <span class="pc-tag closed-tag"><i class="ti ti-circle-check"></i> Selesai</span>
-          </div>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- KANAN: DETAIL CHAT -->
-    <div class="pc-detail" id="pc-detail">
-
-      <!-- CHAT HEADER -->
-      <div class="pc-detail-header">
-        <div class="pc-detail-contact">
-          <div class="pc-detail-av wa-av">BW</div>
-          <div>
-            <div class="pc-detail-name">Budi Wicaksono</div>
-            <div class="pc-detail-meta">
-              <span class="pc-tag wa-tag" style="font-size:10px"><i class="ti ti-brand-whatsapp"></i> WhatsApp</span>
-              <span style="color:var(--gray-400);font-size:10px">· +62 812-3456-7890</span>
+          <!-- TOOLBAR FILTER -->
+          <div class="pc-toolbar">
+            <div class="pc-filters">
+              <button class="pc-filter-btn active" data-filter="all">Semua <span class="pc-count">24</span></button>
+              <button class="pc-filter-btn" data-filter="ai">AI Agent <span class="pc-count">18</span></button>
+              <button class="pc-filter-btn" data-filter="human">Agen Manusia <span class="pc-count">4</span></button>
+              <button class="pc-filter-btn" data-filter="pending">Menunggu <span class="pc-count">2</span></button>
+            </div>
+            <div class="pc-toolbar-right">
+              <div class="pc-search-wrap">
+                <i class="ti ti-search" aria-hidden="true"></i>
+                <input type="text" placeholder="Cari percakapan..." id="pc-search-input" />
+              </div>
+              <div class="pc-channel-filter">
+                <select id="pc-channel-select">
+                  <option value="all">Semua Channel</option>
+                  <option value="wa">WhatsApp</option>
+                  <option value="ig">Instagram</option>
+                  <option value="shopee">Shopee</option>
+                </select>
+              </div>
             </div>
           </div>
-        </div>
-        <div class="pc-detail-actions">
-          <!-- TAKEOVER BUTTON -->
-          <button class="pc-btn-takeover" id="btn-takeover" onclick="toggleTakeover()">
-            <i class="ti ti-transfer"></i> Ambil Alih
-          </button>
-          <!-- TIKET BUTTON -->
-          <button class="pc-btn-ticket" onclick="createTicket()">
-            <i class="ti ti-ticket"></i> Buat Tiket
-          </button>
-          <!-- INVOICE BUTTON -->
-          <button class="pc-btn-invoice" onclick="sendInvoice()">
-            <i class="ti ti-receipt"></i> Kirim Invoice
-          </button>
-          <button class="pc-act-icon" title="Follow-up otomatis" onclick="sendFollowup()">
-            <i class="ti ti-bell-ringing"></i>
-          </button>
-          <button class="pc-act-icon" title="Opsi lain">
-            <i class="ti ti-dots-vertical"></i>
-          </button>
-        </div>
-      </div>
 
-      <!-- STATUS BAR -->
-      <div class="pc-status-bar" id="pc-status-bar">
-        <div class="pc-status-info">
-          <span class="pc-tag ai-tag"><i class="ti ti-robot"></i> Ditangani AI — Agent Sales</span>
-          <span style="font-size:10px;color:var(--gray-400)">Aktif sejak 10:24 · 5 pesan</span>
-        </div>
-        <div id="takeover-indicator" style="display:none" class="pc-takeover-active">
-          <i class="ti ti-user-check"></i> Anda sedang menangani percakapan ini
-        </div>
-      </div>
-
-      <!-- TOAST NOTIFICATION AREA -->
-      <div id="pc-toast" class="pc-toast" style="display:none"></div>
-
-      <!-- CHAT MESSAGES -->
-      <div class="pc-chat-body" id="pc-chat-body">
-        <div class="pc-date-divider"><span>Hari ini — Rabu, 3 Juni 2025</span></div>
-
-        <div class="msg user">
-          <div class="msg-bubble">Halo, saya mau tanya soal produk kalian</div>
-          <div class="msg-meta">10:24</div>
-        </div>
-        <div class="msg bot">
-          <div class="msg-bubble">Halo Pak Budi! Senang bisa membantu. Produk apa yang ingin Bapak ketahui? Kami memiliki berbagai kategori industri.</div>
-          <div class="msg-meta"><span class="ai-label">AI</span> 10:24</div>
-        </div>
-        <div class="msg user">
-          <div class="msg-bubble">Saya cari spare part mesin packing, butuh 50 pcs</div>
-          <div class="msg-meta">10:26</div>
-        </div>
-        <div class="msg bot">
-          <div class="msg-bubble">Baik Pak! Untuk spare part mesin packing 50 pcs, kami punya stok tersedia. Boleh tahu tipe mesinnya apa? Saya bisa langsung cekkan harga dan estimasi pengiriman.</div>
-          <div class="msg-meta"><span class="ai-label">AI</span> 10:26</div>
-        </div>
-        <div class="msg user">
-          <div class="msg-bubble">Oke mas, saya mau order 2 box dulu untuk sample. Bisa COD?</div>
-          <div class="msg-meta">10:29</div>
-        </div>
-        <div class="msg bot">
-          <div class="msg-bubble">Bisa Pak! Untuk sample 2 box, kami siapkan dengan pengiriman COD. Total Rp 1.240.000 termasuk ongkir Jakarta. Saya buatkan invoice sekarang ya?</div>
-          <div class="msg-meta"><span class="ai-label">AI</span> 10:29</div>
-        </div>
-      </div>
-
-      <!-- QUICK ACTIONS BAR -->
-      <div class="pc-quick-actions">
-        <button class="pc-quick-btn" onclick="sendInvoice()"><i class="ti ti-receipt"></i> Invoice</button>
-        <button class="pc-quick-btn" onclick="sendFollowup()"><i class="ti ti-bell-ringing"></i> Follow-up</button>
-        <button class="pc-quick-btn" onclick="createTicket()"><i class="ti ti-ticket"></i> Tiket</button>
-        <button class="pc-quick-btn" onclick="checkStock()"><i class="ti ti-package"></i> Cek Stok</button>
-      </div>
-
-      <!-- INPUT AREA -->
-      <div class="pc-input-wrap">
-        <div class="pc-input-label-row">
-          <span id="pc-input-label" class="pc-input-label ai-mode">
-            <i class="ti ti-robot"></i> AI aktif — ketik untuk override manual
-          </span>
-          <span class="pc-ai-toggle" id="pc-ai-toggle" onclick="toggleAI()">
-            <i class="ti ti-robot"></i> <span id="ai-toggle-text">Nonaktifkan AI</span>
-          </span>
-        </div>
-        <div class="chat-input-row">
-          <i class="ti ti-paperclip" aria-label="Lampirkan file" style="cursor:pointer"></i>
-          <input type="text" id="pc-msg-input" placeholder="Ketik pesan..." />
-          <i class="ti ti-send" aria-label="Kirim" style="cursor:pointer;color:var(--red)" onclick="sendMsg()"></i>
-        </div>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- MODAL: BUAT TIKET -->
-  <div class="pc-modal-overlay" id="modal-ticket" style="display:none" onclick="closeModal('modal-ticket')">
-    <div class="pc-modal" onclick="event.stopPropagation()">
-      <div class="pc-modal-header">
-        <div class="pc-modal-title"><i class="ti ti-ticket"></i> Buat Tiket Support</div>
-        <button class="pc-modal-close" onclick="closeModal('modal-ticket')"><i class="ti ti-x"></i></button>
-      </div>
-      <div class="pc-modal-body">
-        <label class="pc-field-label">Judul Tiket</label>
-        <input class="pc-field-input" value="Komplain pengiriman — Budi Wicaksono" />
-        <label class="pc-field-label">Prioritas</label>
-        <select class="pc-field-input">
-          <option>Medium</option>
-          <option>High</option>
-          <option>Low</option>
-        </select>
-        <label class="pc-field-label">Assignee</label>
-        <select class="pc-field-input">
-          <option>Agen Support — Ahmad R.</option>
-          <option>Agen Support — Sari D.</option>
-          <option>Belum ditentukan</option>
-        </select>
-        <label class="pc-field-label">Catatan</label>
-        <textarea class="pc-field-input" rows="3" placeholder="Deskripsi singkat masalah...">Customer mengeluhkan keterlambatan pengiriman order #12984.</textarea>
-      </div>
-      <div class="pc-modal-footer">
-        <button class="pc-btn-ghost" onclick="closeModal('modal-ticket')">Batal</button>
-        <button class="pc-btn-primary" onclick="submitTicket()"><i class="ti ti-check"></i> Buat Tiket</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL: KIRIM INVOICE -->
-  <div class="pc-modal-overlay" id="modal-invoice" style="display:none" onclick="closeModal('modal-invoice')">
-    <div class="pc-modal" onclick="event.stopPropagation()">
-      <div class="pc-modal-header">
-        <div class="pc-modal-title"><i class="ti ti-receipt"></i> Kirim Invoice</div>
-        <button class="pc-modal-close" onclick="closeModal('modal-invoice')"><i class="ti ti-x"></i></button>
-      </div>
-      <div class="pc-modal-body">
-        <div class="pc-invoice-preview">
-          <div class="pc-inv-row">
-            <span>Invoice #</span><strong>INV-20250603-084</strong>
+          <!-- CHANNEL BADGES ROW -->
+          <div class="pc-channel-row">
+            <div class="pc-channel-badge wa">
+              <i class="ti ti-brand-whatsapp" aria-hidden="true"></i>
+              <span>WhatsApp</span>
+              <strong>14</strong>
+            </div>
+            <div class="pc-channel-badge ig">
+              <i class="ti ti-brand-instagram" aria-hidden="true"></i>
+              <span>Instagram DM</span>
+              <strong>7</strong>
+            </div>
+            <div class="pc-channel-badge shopee">
+              <i class="ti ti-shopping-bag" aria-hidden="true"></i>
+              <span>Shopee Chat</span>
+              <strong>3</strong>
+            </div>
+            <div class="pc-channel-badge web">
+              <i class="ti ti-world" aria-hidden="true"></i>
+              <span>Website</span>
+              <strong>0</strong>
+            </div>
           </div>
-          <div class="pc-inv-row">
-            <span>Kepada</span><strong>Budi Wicaksono</strong>
-          </div>
-          <div class="pc-inv-row">
-            <span>Produk</span><strong>Spare part mesin packing × 2 box</strong>
-          </div>
-          <div class="pc-inv-row">
-            <span>Subtotal</span><strong>Rp 1.100.000</strong>
-          </div>
-          <div class="pc-inv-row">
-            <span>Ongkir (Jakarta)</span><strong>Rp 140.000</strong>
-          </div>
-          <div class="pc-inv-row total">
-            <span>Total</span><strong>Rp 1.240.000</strong>
-          </div>
-        </div>
-        <label class="pc-field-label" style="margin-top:12px">Kirim via</label>
-        <select class="pc-field-input">
-          <option>WhatsApp (Budi Wicaksono)</option>
-          <option>Email</option>
-        </select>
-      </div>
-      <div class="pc-modal-footer">
-        <button class="pc-btn-ghost" onclick="closeModal('modal-invoice')">Batal</button>
-        <button class="pc-btn-primary" onclick="submitInvoice()"><i class="ti ti-send"></i> Kirim Invoice</button>
-      </div>
-    </div>
-  </div>
 
-</div>
-<!-- Ending Percakapan Page -->
-        
+          <!-- MAIN SPLIT: LIST + DETAIL -->
+          <div class="pc-split">
+
+            <!-- KIRI: LIST PERCAKAPAN -->
+            <div class="pc-list" id="pc-list">
+
+              <!-- Item percakapan -->
+              <div class="pc-item active" data-id="1" data-filter="ai" data-channel="wa" onclick="selectConv(this, 1)">
+                <div class="pc-item-av wa-av">BW</div>
+                <div class="pc-item-body">
+                  <div class="pc-item-top">
+                    <span class="pc-item-name">Budi Wicaksono</span>
+                    <span class="pc-item-time">10:29</span>
+                  </div>
+                  <div class="pc-item-preview">Oke mas, saya mau order 2 box dulu untuk sample...</div>
+                  <div class="pc-item-tags">
+                    <span class="pc-tag wa-tag"><i class="ti ti-brand-whatsapp"></i> WA</span>
+                    <span class="pc-tag ai-tag"><i class="ti ti-robot"></i> AI</span>
+                  </div>
+                </div>
+                <div class="pc-item-unread">2</div>
+              </div>
+
+              <div class="pc-item" data-id="2" data-filter="ai" data-channel="ig" onclick="selectConv(this, 2)">
+                <div class="pc-item-av ig-av">RS</div>
+                <div class="pc-item-body">
+                  <div class="pc-item-top">
+                    <span class="pc-item-name">Rina Sari</span>
+                    <span class="pc-item-time">10:15</span>
+                  </div>
+                  <div class="pc-item-preview">Harga untuk 50 pcs berapa ya kak?</div>
+                  <div class="pc-item-tags">
+                    <span class="pc-tag ig-tag"><i class="ti ti-brand-instagram"></i> IG</span>
+                    <span class="pc-tag ai-tag"><i class="ti ti-robot"></i> AI</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="pc-item" data-id="3" data-filter="human" data-channel="wa" onclick="selectConv(this, 3)">
+                <div class="pc-item-av" style="background:#eef2ff;color:#4b5eaa">AN</div>
+                <div class="pc-item-body">
+                  <div class="pc-item-top">
+                    <span class="pc-item-name">Andi Nugroho</span>
+                    <span class="pc-item-time">09:58</span>
+                  </div>
+                  <div class="pc-item-preview">Saya ingin komplain soal pengiriman yang telat</div>
+                  <div class="pc-item-tags">
+                    <span class="pc-tag wa-tag"><i class="ti ti-brand-whatsapp"></i> WA</span>
+                    <span class="pc-tag human-tag"><i class="ti ti-user"></i> Agen</span>
+                    <span class="pc-tag ticket-tag"><i class="ti ti-ticket"></i> Tiket</span>
+                  </div>
+                </div>
+                <div class="pc-item-unread" style="background:var(--amber)">1</div>
+              </div>
+
+              <div class="pc-item" data-id="4" data-filter="ai" data-channel="shopee" onclick="selectConv(this, 4)">
+                <div class="pc-item-av shopee-av">DH</div>
+                <div class="pc-item-body">
+                  <div class="pc-item-top">
+                    <span class="pc-item-name">Dewi Hartanti</span>
+                    <span class="pc-item-time">09:44</span>
+                  </div>
+                  <div class="pc-item-preview">Produknya ready stock gak? Mau beli 10 pcs nih</div>
+                  <div class="pc-item-tags">
+                    <span class="pc-tag shopee-tag"><i class="ti ti-shopping-bag"></i> Shopee</span>
+                    <span class="pc-tag ai-tag"><i class="ti ti-robot"></i> AI</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="pc-item" data-id="5" data-filter="pending" data-channel="ig" onclick="selectConv(this, 5)">
+                <div class="pc-item-av ig-av">MF</div>
+                <div class="pc-item-body">
+                  <div class="pc-item-top">
+                    <span class="pc-item-name">M. Fauzi</span>
+                    <span class="pc-item-time">09:30</span>
+                  </div>
+                  <div class="pc-item-preview">Bisa dikirim ke luar kota? Ke Surabaya?</div>
+                  <div class="pc-item-tags">
+                    <span class="pc-tag ig-tag"><i class="ti ti-brand-instagram"></i> IG</span>
+                    <span class="pc-tag pending-tag"><i class="ti ti-clock"></i> Pending</span>
+                  </div>
+                </div>
+                <div class="pc-item-unread" style="background:#d97706">!</div>
+              </div>
+
+              <div class="pc-item" data-id="6" data-filter="ai" data-channel="wa" onclick="selectConv(this, 6)">
+                <div class="pc-item-av wa-av">SK</div>
+                <div class="pc-item-body">
+                  <div class="pc-item-top">
+                    <span class="pc-item-name">Siti Komala</span>
+                    <span class="pc-item-time">09:10</span>
+                  </div>
+                  <div class="pc-item-preview">Terima kasih, sudah selesai! Nanti order lagi ya</div>
+                  <div class="pc-item-tags">
+                    <span class="pc-tag wa-tag"><i class="ti ti-brand-whatsapp"></i> WA</span>
+                    <span class="pc-tag closed-tag"><i class="ti ti-circle-check"></i> Selesai</span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- KANAN: DETAIL CHAT -->
+            <div class="pc-detail" id="pc-detail">
+
+              <!-- CHAT HEADER -->
+              <div class="pc-detail-header">
+                <div class="pc-detail-contact">
+                  <div class="pc-detail-av wa-av">BW</div>
+                  <div>
+                    <div class="pc-detail-name">Budi Wicaksono</div>
+                    <div class="pc-detail-meta">
+                      <span class="pc-tag wa-tag" style="font-size:10px"><i class="ti ti-brand-whatsapp"></i> WhatsApp</span>
+                      <span style="color:var(--gray-400);font-size:10px">· +62 812-3456-7890</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="pc-detail-actions">
+                  <!-- TAKEOVER BUTTON -->
+                  <button class="pc-btn-takeover" id="btn-takeover" onclick="toggleTakeover()">
+                    <i class="ti ti-transfer"></i> Ambil Alih
+                  </button>
+                  <!-- TIKET BUTTON -->
+                  <button class="pc-btn-ticket" onclick="createTicket()">
+                    <i class="ti ti-ticket"></i> Buat Tiket
+                  </button>
+                  <!-- INVOICE BUTTON -->
+                  <button class="pc-btn-invoice" onclick="sendInvoice()">
+                    <i class="ti ti-receipt"></i> Kirim Invoice
+                  </button>
+                  <button class="pc-act-icon" title="Follow-up otomatis" onclick="sendFollowup()">
+                    <i class="ti ti-bell-ringing"></i>
+                  </button>
+                  <button class="pc-act-icon" title="Opsi lain">
+                    <i class="ti ti-dots-vertical"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- STATUS BAR -->
+              <div class="pc-status-bar" id="pc-status-bar">
+                <div class="pc-status-info">
+                  <span class="pc-tag ai-tag"><i class="ti ti-robot"></i> Ditangani AI — Agent Sales</span>
+                  <span style="font-size:10px;color:var(--gray-400)">Aktif sejak 10:24 · 5 pesan</span>
+                </div>
+                <div id="takeover-indicator" style="display:none" class="pc-takeover-active">
+                  <i class="ti ti-user-check"></i> Anda sedang menangani percakapan ini
+                </div>
+              </div>
+
+              <!-- TOAST NOTIFICATION AREA -->
+              <div id="pc-toast" class="pc-toast" style="display:none"></div>
+
+              <!-- CHAT MESSAGES -->
+              <div class="pc-chat-body" id="pc-chat-body">
+                <div class="pc-date-divider"><span>Hari ini — Rabu, 3 Juni 2025</span></div>
+
+                <div class="msg user">
+                  <div class="msg-bubble">Halo, saya mau tanya soal produk kalian</div>
+                  <div class="msg-meta">10:24</div>
+                </div>
+                <div class="msg bot">
+                  <div class="msg-bubble">Halo Pak Budi! Senang bisa membantu. Produk apa yang ingin Bapak ketahui? Kami memiliki berbagai kategori industri.</div>
+                  <div class="msg-meta"><span class="ai-label">AI</span> 10:24</div>
+                </div>
+                <div class="msg user">
+                  <div class="msg-bubble">Saya cari spare part mesin packing, butuh 50 pcs</div>
+                  <div class="msg-meta">10:26</div>
+                </div>
+                <div class="msg bot">
+                  <div class="msg-bubble">Baik Pak! Untuk spare part mesin packing 50 pcs, kami punya stok tersedia. Boleh tahu tipe mesinnya apa? Saya bisa langsung cekkan harga dan estimasi pengiriman.</div>
+                  <div class="msg-meta"><span class="ai-label">AI</span> 10:26</div>
+                </div>
+                <div class="msg user">
+                  <div class="msg-bubble">Oke mas, saya mau order 2 box dulu untuk sample. Bisa COD?</div>
+                  <div class="msg-meta">10:29</div>
+                </div>
+                <div class="msg bot">
+                  <div class="msg-bubble">Bisa Pak! Untuk sample 2 box, kami siapkan dengan pengiriman COD. Total Rp 1.240.000 termasuk ongkir Jakarta. Saya buatkan invoice sekarang ya?</div>
+                  <div class="msg-meta"><span class="ai-label">AI</span> 10:29</div>
+                </div>
+              </div>
+
+              <!-- QUICK ACTIONS BAR -->
+              <div class="pc-quick-actions">
+                <button class="pc-quick-btn" onclick="sendInvoice()"><i class="ti ti-receipt"></i> Invoice</button>
+                <button class="pc-quick-btn" onclick="sendFollowup()"><i class="ti ti-bell-ringing"></i> Follow-up</button>
+                <button class="pc-quick-btn" onclick="createTicket()"><i class="ti ti-ticket"></i> Tiket</button>
+                <button class="pc-quick-btn" onclick="checkStock()"><i class="ti ti-package"></i> Cek Stok</button>
+              </div>
+
+              <!-- INPUT AREA -->
+              <div class="pc-input-wrap">
+                <div class="pc-input-label-row">
+                  <span id="pc-input-label" class="pc-input-label ai-mode">
+                    <i class="ti ti-robot"></i> AI aktif — ketik untuk override manual
+                  </span>
+                  <span class="pc-ai-toggle" id="pc-ai-toggle" onclick="toggleAI()">
+                    <i class="ti ti-robot"></i> <span id="ai-toggle-text">Nonaktifkan AI</span>
+                  </span>
+                </div>
+                <div class="chat-input-row">
+                  <i class="ti ti-paperclip" aria-label="Lampirkan file" style="cursor:pointer"></i>
+                  <input type="text" id="pc-msg-input" placeholder="Ketik pesan..." />
+                  <i class="ti ti-send" aria-label="Kirim" style="cursor:pointer;color:var(--red)" onclick="sendMsg()"></i>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- MODAL: BUAT TIKET -->
+          <div class="pc-modal-overlay" id="modal-ticket" style="display:none" onclick="closeModal('modal-ticket')">
+            <div class="pc-modal" onclick="event.stopPropagation()">
+              <div class="pc-modal-header">
+                <div class="pc-modal-title"><i class="ti ti-ticket"></i> Buat Tiket Support</div>
+                <button class="pc-modal-close" onclick="closeModal('modal-ticket')"><i class="ti ti-x"></i></button>
+              </div>
+              <div class="pc-modal-body">
+                <label class="pc-field-label">Judul Tiket</label>
+                <input class="pc-field-input" value="Komplain pengiriman — Budi Wicaksono" />
+                <label class="pc-field-label">Prioritas</label>
+                <select class="pc-field-input">
+                  <option>Medium</option>
+                  <option>High</option>
+                  <option>Low</option>
+                </select>
+                <label class="pc-field-label">Assignee</label>
+                <select class="pc-field-input">
+                  <option>Agen Support — Ahmad R.</option>
+                  <option>Agen Support — Sari D.</option>
+                  <option>Belum ditentukan</option>
+                </select>
+                <label class="pc-field-label">Catatan</label>
+                <textarea class="pc-field-input" rows="3" placeholder="Deskripsi singkat masalah...">Customer mengeluhkan keterlambatan pengiriman order #12984.</textarea>
+              </div>
+              <div class="pc-modal-footer">
+                <button class="pc-btn-ghost" onclick="closeModal('modal-ticket')">Batal</button>
+                <button class="pc-btn-primary" onclick="submitTicket()"><i class="ti ti-check"></i> Buat Tiket</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- MODAL: KIRIM INVOICE -->
+          <div class="pc-modal-overlay" id="modal-invoice" style="display:none" onclick="closeModal('modal-invoice')">
+            <div class="pc-modal" onclick="event.stopPropagation()">
+              <div class="pc-modal-header">
+                <div class="pc-modal-title"><i class="ti ti-receipt"></i> Kirim Invoice</div>
+                <button class="pc-modal-close" onclick="closeModal('modal-invoice')"><i class="ti ti-x"></i></button>
+              </div>
+              <div class="pc-modal-body">
+                <div class="pc-invoice-preview">
+                  <div class="pc-inv-row">
+                    <span>Invoice #</span><strong>INV-20250603-084</strong>
+                  </div>
+                  <div class="pc-inv-row">
+                    <span>Kepada</span><strong>Budi Wicaksono</strong>
+                  </div>
+                  <div class="pc-inv-row">
+                    <span>Produk</span><strong>Spare part mesin packing × 2 box</strong>
+                  </div>
+                  <div class="pc-inv-row">
+                    <span>Subtotal</span><strong>Rp 1.100.000</strong>
+                  </div>
+                  <div class="pc-inv-row">
+                    <span>Ongkir (Jakarta)</span><strong>Rp 140.000</strong>
+                  </div>
+                  <div class="pc-inv-row total">
+                    <span>Total</span><strong>Rp 1.240.000</strong>
+                  </div>
+                </div>
+                <label class="pc-field-label" style="margin-top:12px">Kirim via</label>
+                <select class="pc-field-input">
+                  <option>WhatsApp (Budi Wicaksono)</option>
+                  <option>Email</option>
+                </select>
+              </div>
+              <div class="pc-modal-footer">
+                <button class="pc-btn-ghost" onclick="closeModal('modal-invoice')">Batal</button>
+                <button class="pc-btn-primary" onclick="submitInvoice()"><i class="ti ti-send"></i> Kirim Invoice</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+        <!-- Ending Percakapan Page -->
+                
         <!-- Halaman AI AGENT -->
-        <div id="ai-agent-page">
-          <p>AI AGENT</p>
+        <div id="ai-agent-page" class="ai-agent-page">
+
+          <!-- HEADER ROW -->
+          <div class="aa-header">
+            <div>
+              <div class="aa-title">AI Agent</div>
+              <div class="aa-subtitle">Kelola dan pantau semua agent yang aktif di bisnis Anda</div>
+            </div>
+            <button class="aa-btn-new" onclick="openNewAgent()">
+              <i class="ti ti-plus"></i> Buat Agent Baru
+            </button>
+          </div>
+
+          <!-- STAT SUMMARY -->
+          <div class="aa-stats">
+            <div class="aa-stat-card accent">
+              <div class="aa-stat-label"><i class="ti ti-robot"></i> Total Agent</div>
+              <div class="aa-stat-val">4</div>
+              <div class="aa-stat-sub">3 aktif · 1 draft</div>
+            </div>
+            <div class="aa-stat-card">
+              <div class="aa-stat-label"><i class="ti ti-messages"></i> Chat Ditangani Hari Ini</div>
+              <div class="aa-stat-val">1.172</div>
+              <div class="aa-stat-sub up"><i class="ti ti-trending-up"></i> +14% vs kemarin</div>
+            </div>
+            <div class="aa-stat-card">
+              <div class="aa-stat-label"><i class="ti ti-target"></i> Avg. Closing Rate</div>
+              <div class="aa-stat-val">58%</div>
+              <div class="aa-stat-sub up"><i class="ti ti-trending-up"></i> +6% vs minggu lalu</div>
+            </div>
+            <div class="aa-stat-card">
+              <div class="aa-stat-label"><i class="ti ti-clock"></i> Avg. Respons</div>
+              <div class="aa-stat-val">2.4<span class="aa-unit">dtk</span></div>
+              <div class="aa-stat-sub up"><i class="ti ti-trending-down"></i> -0.8 dtk lebih cepat</div>
+            </div>
+          </div>
+
+          <!-- AGENT CARDS GRID -->
+          <div class="aa-grid">
+
+            <!-- AGENT 1: SALES -->
+            <div class="aa-card" onclick="openAgentDetail('sales')">
+              <div class="aa-card-head">
+                <div class="aa-card-icon sales-icon"><i class="ti ti-briefcase"></i></div>
+                <div class="aa-card-title-wrap">
+                  <div class="aa-card-name">Agent Sales</div>
+                  <div class="aa-card-type">Penjualan & Closing</div>
+                </div>
+                <div class="aa-status-pill active"><span class="aa-dot"></span> Aktif</div>
+              </div>
+              <div class="aa-card-channels">
+                <span class="aa-ch-tag wa"><i class="ti ti-brand-whatsapp"></i> WA</span>
+                <span class="aa-ch-tag ig"><i class="ti ti-brand-instagram"></i> IG</span>
+                <span class="aa-ch-tag shopee"><i class="ti ti-shopping-bag"></i> Shopee</span>
+              </div>
+              <div class="aa-card-metrics">
+                <div class="aa-metric-row"><span>Chat aktif</span><div class="aa-bar-track"><div class="aa-bar-fill red" style="width:72%"></div></div><span class="aa-metric-val">72%</span></div>
+                <div class="aa-metric-row"><span>Closing rate</span><div class="aa-bar-track"><div class="aa-bar-fill green" style="width:58%"></div></div><span class="aa-metric-val">58%</span></div>
+                <div class="aa-metric-row"><span>Eskalasi</span><div class="aa-bar-track"><div class="aa-bar-fill amber" style="width:9%"></div></div><span class="aa-metric-val">9%</span></div>
+              </div>
+              <div class="aa-skill-list">
+                <span class="aa-skill"><i class="ti ti-message-circle"></i> Obrolan Natural</span>
+                <span class="aa-skill"><i class="ti ti-receipt"></i> Kirim Invoice</span>
+                <span class="aa-skill"><i class="ti ti-package"></i> Cek Stok</span>
+                <span class="aa-skill"><i class="ti ti-credit-card"></i> Terima Bayar</span>
+              </div>
+              <div class="aa-card-footer">
+                <span class="aa-chat-count"><i class="ti ti-messages"></i> 487 chat hari ini</span>
+                <div class="aa-card-actions" onclick="event.stopPropagation()">
+                  <button class="aa-icon-btn" onclick="openAgentDetail('sales')"><i class="ti ti-edit"></i></button>
+                  <button class="aa-icon-btn aa-pause-btn" data-agent="sales"><i class="ti ti-player-pause"></i></button>
+                  <button class="aa-icon-btn"><i class="ti ti-dots-vertical"></i></button>
+                </div>
+              </div>
+            </div>
+
+            <!-- AGENT 2: SUPPORT -->
+            <div class="aa-card" onclick="openAgentDetail('support')">
+              <div class="aa-card-head">
+                <div class="aa-card-icon support-icon"><i class="ti ti-headset"></i></div>
+                <div class="aa-card-title-wrap">
+                  <div class="aa-card-name">Agent Support</div>
+                  <div class="aa-card-type">Customer Service & Tiket</div>
+                </div>
+                <div class="aa-status-pill active"><span class="aa-dot"></span> Aktif</div>
+              </div>
+              <div class="aa-card-channels">
+                <span class="aa-ch-tag wa"><i class="ti ti-brand-whatsapp"></i> WA</span>
+                <span class="aa-ch-tag web"><i class="ti ti-world"></i> Web</span>
+              </div>
+              <div class="aa-card-metrics">
+                <div class="aa-metric-row"><span>Chat aktif</span><div class="aa-bar-track"><div class="aa-bar-fill red" style="width:54%"></div></div><span class="aa-metric-val">54%</span></div>
+                <div class="aa-metric-row"><span>Resolved</span><div class="aa-bar-track"><div class="aa-bar-fill green" style="width:83%"></div></div><span class="aa-metric-val">83%</span></div>
+                <div class="aa-metric-row"><span>Eskalasi</span><div class="aa-bar-track"><div class="aa-bar-fill amber" style="width:17%"></div></div><span class="aa-metric-val">17%</span></div>
+              </div>
+              <div class="aa-skill-list">
+                <span class="aa-skill"><i class="ti ti-shield-check"></i> Self-Check</span>
+                <span class="aa-skill"><i class="ti ti-ticket"></i> Buat Tiket</span>
+                <span class="aa-skill"><i class="ti ti-transfer"></i> Eskalasi Agen</span>
+                <span class="aa-skill"><i class="ti ti-bell"></i> Follow-up</span>
+              </div>
+              <div class="aa-card-footer">
+                <span class="aa-chat-count"><i class="ti ti-messages"></i> 391 chat hari ini</span>
+                <div class="aa-card-actions" onclick="event.stopPropagation()">
+                  <button class="aa-icon-btn" onclick="openAgentDetail('support')"><i class="ti ti-edit"></i></button>
+                  <button class="aa-icon-btn aa-pause-btn" data-agent="support"><i class="ti ti-player-pause"></i></button>
+                  <button class="aa-icon-btn"><i class="ti ti-dots-vertical"></i></button>
+                </div>
+              </div>
+            </div>
+
+            <!-- AGENT 3: BOOKING -->
+            <div class="aa-card" onclick="openAgentDetail('booking')">
+              <div class="aa-card-head">
+                <div class="aa-card-icon booking-icon"><i class="ti ti-calendar-check"></i></div>
+                <div class="aa-card-title-wrap">
+                  <div class="aa-card-name">Agent Booking</div>
+                  <div class="aa-card-type">Appointment & Jadwal</div>
+                </div>
+                <div class="aa-status-pill active"><span class="aa-dot"></span> Aktif</div>
+              </div>
+              <div class="aa-card-channels">
+                <span class="aa-ch-tag wa"><i class="ti ti-brand-whatsapp"></i> WA</span>
+                <span class="aa-ch-tag ig"><i class="ti ti-brand-instagram"></i> IG</span>
+              </div>
+              <div class="aa-card-metrics">
+                <div class="aa-metric-row"><span>Chat aktif</span><div class="aa-bar-track"><div class="aa-bar-fill red" style="width:38%"></div></div><span class="aa-metric-val">38%</span></div>
+                <div class="aa-metric-row"><span>Booking sukses</span><div class="aa-bar-track"><div class="aa-bar-fill green" style="width:76%"></div></div><span class="aa-metric-val">76%</span></div>
+                <div class="aa-metric-row"><span>Pembatalan</span><div class="aa-bar-track"><div class="aa-bar-fill amber" style="width:12%"></div></div><span class="aa-metric-val">12%</span></div>
+              </div>
+              <div class="aa-skill-list">
+                <span class="aa-skill"><i class="ti ti-calendar-plus"></i> Smart Booking</span>
+                <span class="aa-skill"><i class="ti ti-bell-ringing"></i> Reminder Otomatis</span>
+                <span class="aa-skill"><i class="ti ti-arrows-exchange"></i> Reschedule</span>
+              </div>
+              <div class="aa-card-footer">
+                <span class="aa-chat-count"><i class="ti ti-messages"></i> 215 chat hari ini</span>
+                <div class="aa-card-actions" onclick="event.stopPropagation()">
+                  <button class="aa-icon-btn" onclick="openAgentDetail('booking')"><i class="ti ti-edit"></i></button>
+                  <button class="aa-icon-btn aa-pause-btn" data-agent="booking"><i class="ti ti-player-pause"></i></button>
+                  <button class="aa-icon-btn"><i class="ti ti-dots-vertical"></i></button>
+                </div>
+              </div>
+            </div>
+
+            <!-- AGENT 4: DRAFT -->
+            <div class="aa-card draft-card" onclick="openNewAgent()">
+              <div class="aa-card-head">
+                <div class="aa-card-icon draft-icon"><i class="ti ti-sparkles"></i></div>
+                <div class="aa-card-title-wrap">
+                  <div class="aa-card-name">Agent Lead Qualifier</div>
+                  <div class="aa-card-type">Kualifikasi Prospek</div>
+                </div>
+                <div class="aa-status-pill draft"><span class="aa-dot draft-dot"></span> Draft</div>
+              </div>
+              <div class="aa-draft-body">
+                <div class="aa-draft-text">Agent ini belum dikonfigurasi. Lanjutkan setup untuk mengaktifkan.</div>
+                <button class="aa-btn-continue"><i class="ti ti-settings"></i> Lanjutkan Setup</button>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- DETAIL PANEL (slide in dari kanan) -->
+          <div class="aa-detail-overlay" id="aa-detail-overlay" onclick="closeAgentDetail()" style="display:none">
+            <div class="aa-detail-panel" id="aa-detail-panel" onclick="event.stopPropagation()">
+
+              <div class="aa-dp-header">
+                <div class="aa-dp-title" id="aa-dp-title">Agent Sales</div>
+                <div style="display:flex;gap:6px;align-items:center">
+                  <button class="aa-btn-save" onclick="saveAgent()"><i class="ti ti-check"></i> Simpan</button>
+                  <button class="aa-icon-btn" onclick="closeAgentDetail()"><i class="ti ti-x"></i></button>
+                </div>
+              </div>
+
+              <div class="aa-dp-body">
+
+                <div class="aa-dp-section">
+                  <div class="aa-dp-sec-label">Identitas Agent</div>
+                  <label class="aa-field-label">Nama Agent</label>
+                  <input class="aa-field-input" id="dp-name" value="Agent Sales" />
+                  <label class="aa-field-label">Deskripsi / Peran</label>
+                  <textarea class="aa-field-input" rows="2">Membantu proses penjualan, merespons pertanyaan produk, dan menutup transaksi secara otomatis.</textarea>
+                </div>
+
+                <div class="aa-dp-section">
+                  <div class="aa-dp-sec-label">Persona & Bahasa</div>
+                  <label class="aa-field-label">Gaya Bahasa</label>
+                  <select class="aa-field-input">
+                    <option selected>Ramah & Semi-formal</option>
+                    <option>Formal</option>
+                    <option>Santai / Casual</option>
+                    <option>Profesional Korporat</option>
+                  </select>
+                  <label class="aa-field-label">Nama Panggilan AI</label>
+                  <input class="aa-field-input" value="Kak Rina" />
+                </div>
+
+                <div class="aa-dp-section">
+                  <div class="aa-dp-sec-label">Channel Aktif</div>
+                  <div class="aa-toggle-list">
+                    <div class="aa-toggle-row">
+                      <span class="aa-ch-tag wa"><i class="ti ti-brand-whatsapp"></i> WhatsApp</span>
+                      <label class="aa-switch"><input type="checkbox" checked><span class="aa-slider"></span></label>
+                    </div>
+                    <div class="aa-toggle-row">
+                      <span class="aa-ch-tag ig"><i class="ti ti-brand-instagram"></i> Instagram DM</span>
+                      <label class="aa-switch"><input type="checkbox" checked><span class="aa-slider"></span></label>
+                    </div>
+                    <div class="aa-toggle-row">
+                      <span class="aa-ch-tag shopee"><i class="ti ti-shopping-bag"></i> Shopee Chat</span>
+                      <label class="aa-switch"><input type="checkbox"><span class="aa-slider"></span></label>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="aa-dp-section">
+                  <div class="aa-dp-sec-label">Skill Agent</div>
+                  <div class="aa-toggle-list">
+                    <div class="aa-toggle-row">
+                      <span><i class="ti ti-message-circle" style="font-size:13px;color:var(--red);margin-right:5px"></i>Obrolan Natural</span>
+                      <label class="aa-switch"><input type="checkbox" checked><span class="aa-slider"></span></label>
+                    </div>
+                    <div class="aa-toggle-row">
+                      <span><i class="ti ti-shield-check" style="font-size:13px;color:var(--red);margin-right:5px"></i>Self-Check & Guardrails</span>
+                      <label class="aa-switch"><input type="checkbox" checked><span class="aa-slider"></span></label>
+                    </div>
+                    <div class="aa-toggle-row">
+                      <span><i class="ti ti-receipt" style="font-size:13px;color:var(--red);margin-right:5px"></i>Kirim Invoice Otomatis</span>
+                      <label class="aa-switch"><input type="checkbox" checked><span class="aa-slider"></span></label>
+                    </div>
+                    <div class="aa-toggle-row">
+                      <span><i class="ti ti-package" style="font-size:13px;color:var(--red);margin-right:5px"></i>Cek Stok Real-time</span>
+                      <label class="aa-switch"><input type="checkbox" checked><span class="aa-slider"></span></label>
+                    </div>
+                    <div class="aa-toggle-row">
+                      <span><i class="ti ti-transfer" style="font-size:13px;color:var(--red);margin-right:5px"></i>Eskalasi ke Agen Manusia</span>
+                      <label class="aa-switch"><input type="checkbox" checked><span class="aa-slider"></span></label>
+                    </div>
+                    <div class="aa-toggle-row">
+                      <span><i class="ti ti-bell" style="font-size:13px;color:var(--red);margin-right:5px"></i>Follow-up Otomatis</span>
+                      <label class="aa-switch"><input type="checkbox"><span class="aa-slider"></span></label>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="aa-dp-section">
+                  <div class="aa-dp-sec-label">Knowledge Base Terhubung</div>
+                  <div class="aa-kb-item">
+                    <i class="ti ti-file-description" style="color:var(--red);font-size:15px"></i>
+                    <span>SOP Penjualan 2025.pdf</span>
+                    <span class="aa-kb-size">240 KB</span>
+                  </div>
+                  <div class="aa-kb-item">
+                    <i class="ti ti-world" style="color:var(--red);font-size:15px"></i>
+                    <span>indotrading.com/produk</span>
+                    <span class="aa-kb-size">Website</span>
+                  </div>
+                  <button class="aa-btn-add-kb"><i class="ti ti-plus"></i> Tambah Sumber</button>
+                </div>
+
+              </div>
+            </div>
+          </div>
+
+          <!-- MODAL BUAT AGENT BARU -->
+          <div class="pc-modal-overlay" id="modal-new-agent" style="display:none" onclick="closeModal('modal-new-agent')">
+            <div class="pc-modal" onclick="event.stopPropagation()">
+              <div class="pc-modal-header">
+                <div class="pc-modal-title"><i class="ti ti-robot"></i> Buat Agent Baru</div>
+                <button class="pc-modal-close" onclick="closeModal('modal-new-agent')"><i class="ti ti-x"></i></button>
+              </div>
+              <div class="pc-modal-body">
+                <label class="pc-field-label">Nama Agent</label>
+                <input class="pc-field-input" placeholder="Contoh: Agent Upselling" />
+                <label class="pc-field-label">Tipe / Peran</label>
+                <select class="pc-field-input">
+                  <option>Penjualan & Closing</option>
+                  <option>Customer Support</option>
+                  <option>Appointment & Booking</option>
+                  <option>Lead Qualification</option>
+                  <option>Custom</option>
+                </select>
+                <label class="pc-field-label">Channel Utama</label>
+                <select class="pc-field-input">
+                  <option>WhatsApp</option>
+                  <option>Instagram DM</option>
+                  <option>Shopee Chat</option>
+                  <option>Semua Channel</option>
+                </select>
+              </div>
+              <div class="pc-modal-footer">
+                <button class="pc-btn-ghost" onclick="closeModal('modal-new-agent')">Batal</button>
+                <button class="pc-btn-primary" onclick="submitNewAgent()"><i class="ti ti-sparkles"></i> Buat & Konfigurasi</button>
+              </div>
+            </div>
+          </div>
+
         </div>
         <!-- Ending AI AGENT -->
         
-        <!-- Halaman KONTAK / LEADS -->
-        <div id="contact-page">
-          <p>KONTAK LEADS</p>
-        </div>
-        <!-- Ending KONTAK LEADS -->
+        <div class="leads-page" id="leads-page">
+          <div class="lp-header">
+<div>
+    <div class="lp-title">Kontak / Leads</div>
+    <div class="lp-subtitle">Kelola dan tindak lanjuti semua prospek yang masuk ke bisnis Anda</div>
+  </div>
+  <div class="lp-header-right">
+    <div class="lp-token-box">
+      <i class="ti ti-coin"></i>
+      <div>
+        <div class="lp-token-label">SALDO TOKEN</div>
+        <div class="lp-token-val"><span class="lp-token-free">30 gratis</span> <span class="lp-token-paid">· 3 berbayar</span></div>
+      </div>
+      <button class="lp-btn-token"><i class="ti ti-plus"></i> Beli Token</button>
+    </div>
+  </div>
+</div>
+ 
+<!-- SELLER INFO BAR -->
+<div class="lp-info-bar">
+  <div class="lp-info-left">
+    <span class="lp-badge-diamond"><i class="ti ti-diamond"></i> Diamond Member</span>
+    <span class="lp-info-sep"></span>
+    <span class="lp-responsiveness">
+      <i class="ti ti-activity-heartbeat" style="color:#22c55e"></i> Responsiveness:
+      <div class="lp-resp-bar"><div class="lp-resp-fill" style="width:100%"></div></div>
+      <strong style="color:#22c55e">100%</strong>
+    </span>
+    <span class="lp-info-sep"></span>
+    <span class="lp-website"><i class="ti ti-world" style="color:#3b82f6"></i> Website: <a href="#" class="lp-web-link">alumexperkasajaya.co.id</a></span>
+  </div>
+</div>
+ 
+<!-- KATEGORI LEADS -->
+<div class="lp-section">
+  <div class="lp-sec-head">
+    <div class="lp-sec-title"><i class="ti ti-tags" style="color:var(--red)"></i> Kategori Leads</div>
+  </div>
+  <div class="lp-kategori-row" id="lp-kategori-row">
+    <button class="lp-kat-btn active" data-kat="semua" onclick="filterLeadKat(this,'semua')">
+      <div class="lp-kat-icon red"><i class="ti ti-users"></i></div>
+      <div class="lp-kat-body">
+        <div class="lp-kat-num">429</div>
+        <div class="lp-kat-label">Semua</div>
+      </div>
+    </button>
+    <button class="lp-kat-btn" data-kat="real" onclick="filterLeadKat(this,'real')">
+      <div class="lp-kat-icon green"><i class="ti ti-circle-check"></i></div>
+      <div class="lp-kat-body">
+        <div class="lp-kat-num">187</div>
+        <div class="lp-kat-label">Real Lead</div>
+      </div>
+    </button>
+    <button class="lp-kat-btn" data-kat="potensi" onclick="filterLeadKat(this,'potensi')">
+      <div class="lp-kat-icon amber"><i class="ti ti-star"></i></div>
+      <div class="lp-kat-body">
+        <div class="lp-kat-num">142</div>
+        <div class="lp-kat-label">Potensi</div>
+      </div>
+    </button>
+    <button class="lp-kat-btn" data-kat="belum" onclick="filterLeadKat(this,'belum')">
+      <div class="lp-kat-icon gray"><i class="ti ti-minus-circle"></i></div>
+      <div class="lp-kat-body">
+        <div class="lp-kat-num">100</div>
+        <div class="lp-kat-label">Belum Dikualifikasi</div>
+      </div>
+    </button>
+  </div>
+</div>
+ 
+<!-- SUMBER LEADS -->
+<div class="lp-section">
+  <div class="lp-sec-head">
+    <div class="lp-sec-title">
+      <i class="ti ti-antenna" style="color:var(--red)"></i> Sumber Leads
+      <span class="lp-aktif-tag"><span class="lp-dot-green"></span> Aktif: Klik Telepon &amp; WA</span>
+    </div>
+    <button class="lp-btn-filter-src"><i class="ti ti-filter"></i> Klik untuk filter</button>
+  </div>
+  <div class="lp-sumber-grid">
+    <div class="lp-sumber-card active-src" data-src="wa" onclick="filterLeadSrc(this,'wa')">
+      <div class="lp-src-top">
+        <div class="lp-src-icon wa-src"><i class="ti ti-brand-whatsapp"></i></div>
+        <div class="lp-src-dot-active"></div>
+      </div>
+      <div class="lp-src-num">429</div>
+      <div class="lp-src-name">Klik Telepon &amp; WA</div>
+      <div class="lp-src-desc">Pembeli yang menekan tombol WA atau telepon di profil Anda</div>
+      <button class="lp-src-link"><i class="ti ti-arrow-right"></i> Lihat leads ini</button>
+    </div>
+    <div class="lp-sumber-card" data-src="msg" onclick="filterLeadSrc(this,'msg')">
+      <div class="lp-src-top">
+        <div class="lp-src-icon msg-src"><i class="ti ti-message-2"></i></div>
+      </div>
+      <div class="lp-src-num">60</div>
+      <div class="lp-src-name">Kirim Pesan</div>
+      <div class="lp-src-desc">Pembeli yang mengirim chat langsung melalui platform Indotrading</div>
+      <button class="lp-src-link"><i class="ti ti-arrow-right"></i> Lihat leads ini</button>
+    </div>
+    <div class="lp-sumber-card" data-src="rfq" onclick="filterLeadSrc(this,'rfq')">
+      <div class="lp-src-top">
+        <div class="lp-src-icon rfq-src"><i class="ti ti-file-invoice"></i></div>
+      </div>
+      <div class="lp-src-num">43</div>
+      <div class="lp-src-name">RFQ</div>
+      <div class="lp-src-desc">Pembeli yang mengirim permintaan harga resmi untuk produk Anda</div>
+      <button class="lp-src-link"><i class="ti ti-arrow-right"></i> Lihat leads ini</button>
+    </div>
+    <div class="lp-sumber-card" data-src="profil" onclick="filterLeadSrc(this,'profil')">
+      <div class="lp-src-top">
+        <div class="lp-src-icon profil-src"><i class="ti ti-eye"></i></div>
+      </div>
+      <div class="lp-src-num">986</div>
+      <div class="lp-src-name">Kunjungi Profil</div>
+      <div class="lp-src-desc">Pembeli yang membuka halaman profil atau produk toko Anda</div>
+      <button class="lp-src-link"><i class="ti ti-arrow-right"></i> Lihat leads ini</button>
+    </div>
+  </div>
+</div>
+ 
+<!-- BUY LEADS BANNER -->
+<div class="lp-buy-banner">
+  <div class="lp-buy-left">
+    <div class="lp-buy-badge"><i class="ti ti-bolt"></i> BUY LEADS</div>
+    <div class="lp-buy-icon"><i class="ti ti-bolt"></i></div>
+    <div class="lp-buy-text">
+      <div class="lp-buy-title">Akses Ribuan Leads Aktif di Indotrading — Pilih, Beli, Hubungi</div>
+      <div class="lp-buy-desc">Ada banyak pembeli aktif di Indotrading yang belum tentu mampir ke toko Anda. Melalui Buy Leads, Anda bisa browsing daftar leads yang tersedia, pilih yang relevan dengan bisnis Anda, dan beli kontaknya langsung pakai token. 1 leads = 1 token.</div>
+    </div>
+  </div>
+  <div class="lp-buy-right">
+    <button class="lp-btn-buy-primary"><i class="ti ti-search"></i> Browse &amp; Beli Leads</button>
+    <button class="lp-btn-buy-ghost"><i class="ti ti-help-circle"></i> Cara Kerja Buy Leads</button>
+  </div>
+</div>
+ 
+<!-- TOOLBAR LEADS TABLE -->
+<div class="lp-table-toolbar">
+  <div class="lp-search-wrap">
+    <i class="ti ti-search"></i>
+    <input type="text" id="lp-search" placeholder="Cari Perusahaan, nama, email, handphone, atau nama produk" oninput="filterLeadsTable()" />
+  </div>
+  <div class="lp-toolbar-right">
+    <select class="lp-date-select" id="lp-date-filter" onchange="filterLeadsTable()">
+      <option value="semua">Semua Tanggal</option>
+      <option value="hari-ini">Hari Ini</option>
+      <option value="7-hari">7 Hari Terakhir</option>
+      <option value="30-hari">30 Hari Terakhir</option>
+    </select>
+    <button class="lp-btn-filter" onclick="toggleLeadFilter()"><i class="ti ti-adjustments-horizontal"></i> Filter &amp; Urutkan</button>
+  </div>
+</div>
+ 
+<!-- FILTER DRAWER (tersembunyi default) -->
+<div class="lp-filter-drawer" id="lp-filter-drawer" style="display:none">
+  <div class="lp-fd-row">
+    <div class="lp-fd-group">
+      <label class="lp-fd-label">Status Follow-up</label>
+      <div class="lp-fd-checks">
+        <label><input type="checkbox" checked> Belum dihubungi</label>
+        <label><input type="checkbox" checked> Sudah dihubungi</label>
+        <label><input type="checkbox"> Follow-up lanjutan</label>
+        <label><input type="checkbox"> Closed</label>
+      </div>
+    </div>
+    <div class="lp-fd-group">
+      <label class="lp-fd-label">Sumber Leads</label>
+      <div class="lp-fd-checks">
+        <label><input type="checkbox" checked> Klik WA &amp; Telepon</label>
+        <label><input type="checkbox" checked> Kirim Pesan</label>
+        <label><input type="checkbox" checked> RFQ</label>
+        <label><input type="checkbox" checked> Kunjungi Profil</label>
+      </div>
+    </div>
+    <div class="lp-fd-group">
+      <label class="lp-fd-label">Urutkan</label>
+      <select class="lp-fd-select">
+        <option>Terbaru</option>
+        <option>Terlama</option>
+        <option>Nama A-Z</option>
+        <option>Nama Z-A</option>
+      </select>
+    </div>
+    <div class="lp-fd-group lp-fd-actions">
+      <button class="lp-btn-ghost" onclick="toggleLeadFilter()">Tutup</button>
+      <button class="lp-btn-primary-sm">Terapkan Filter</button>
+    </div>
+  </div>
+</div>
+ 
+<!-- LEADS TABLE -->
+<div class="lp-table-wrap">
+  <div class="lp-table">
+    <!-- HEADER -->
+    <div class="lp-th-row">
+      <div class="lp-th-check"><input type="checkbox" id="lp-check-all" onchange="toggleAllLeads(this)"></div>
+      <div class="lp-th">Nama &amp; Perusahaan</div>
+      <div class="lp-th">Kontak</div>
+      <div class="lp-th">Aktivitas Terakhir</div>
+      <div class="lp-th">Status Follow-up</div>
+      <div class="lp-th">Aksi</div>
+    </div>
+ 
+    <!-- LEADS ROWS (akan dirender oleh JS) -->
+    <div id="lp-table-body"></div>
+ 
+    <!-- EMPTY STATE -->
+    <div class="lp-empty" id="lp-empty" style="display:none">
+      <i class="ti ti-inbox-off"></i>
+      <div>Tidak ada leads ditemukan</div>
+      <span>Coba ubah filter atau kata kunci pencarian</span>
+    </div>
+ 
+  </div>
+</div>
+ 
+<!-- PAGINATION -->
+<div class="lp-pagination" id="lp-pagination">
+  <span class="lp-page-info" id="lp-page-info">Menampilkan 1–10 dari 429 leads</span>
+  <div class="lp-page-btns">
+    <button class="lp-page-btn" id="lp-prev" onclick="changePage(-1)" disabled><i class="ti ti-chevron-left"></i></button>
+    <div class="lp-page-nums" id="lp-page-nums"></div>
+    <button class="lp-page-btn" id="lp-next" onclick="changePage(1)"><i class="ti ti-chevron-right"></i></button>
+  </div>
+</div>
+ 
+<!-- MODAL: DETAIL LEAD -->
+<div class="lp-modal-overlay" id="lp-modal-lead" style="display:none" onclick="closeLeadModal()">
+  <div class="lp-modal" onclick="event.stopPropagation()">
+    <div class="lp-modal-header">
+      <div class="lp-modal-title" id="lp-modal-title"><i class="ti ti-user-circle"></i> Detail Lead</div>
+      <button class="lp-modal-close" onclick="closeLeadModal()"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="lp-modal-body" id="lp-modal-body">
+      <!-- diisi dinamis oleh JS -->
+    </div>
+    <div class="lp-modal-footer">
+      <button class="lp-btn-ghost" onclick="closeLeadModal()">Tutup</button>
+      <button class="lp-btn-primary-sm" id="lp-modal-wa-btn"><i class="ti ti-brand-whatsapp"></i> Hubungi via WA</button>
+    </div>
+  </div>
+</div>
+ 
+<!-- MODAL: UPDATE STATUS -->
+<div class="lp-modal-overlay" id="lp-modal-status" style="display:none" onclick="closeStatusModal()">
+  <div class="lp-modal lp-modal-sm" onclick="event.stopPropagation()">
+    <div class="lp-modal-header">
+      <div class="lp-modal-title"><i class="ti ti-flag"></i> Update Status Follow-up</div>
+      <button class="lp-modal-close" onclick="closeStatusModal()"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="lp-modal-body">
+      <label class="lp-fd-label">Status</label>
+      <select class="lp-fd-select" id="lp-status-select" style="width:100%;margin-bottom:12px">
+        <option value="belum">Belum dihubungi</option>
+        <option value="dihubungi">Sudah dihubungi</option>
+        <option value="followup">Follow-up lanjutan</option>
+        <option value="closed">Closed / Deal</option>
+      </select>
+      <label class="lp-fd-label">Catatan</label>
+      <textarea class="lp-fd-textarea" id="lp-status-note" rows="3" placeholder="Tambahkan catatan opsional..."></textarea>
+    </div>
+    <div class="lp-modal-footer">
+      <button class="lp-btn-ghost" onclick="closeStatusModal()">Batal</button>
+      <button class="lp-btn-primary-sm" onclick="submitStatus()"><i class="ti ti-check"></i> Simpan Status</button>
+    </div>
+  </div>
+</div>
+ 
+<!-- TOAST -->
+<div class="lp-toast" id="lp-toast" style="display:none"></div>
 
-        <!-- Halaman analitik -->
+        </div>
+  
+        
+          <!-- Halaman analitik -->
         <div id="analitik-page">
           <p>ANALITIK</p>
         </div>
@@ -642,6 +1210,8 @@
 
 <script src="script.js"></script>
 <script src="/script_page/percapakan.js"></script>
+<script src="/script_page/ai_agent.js"></script>
+<script src="/script_page/leads-page.js"></script>
 
 </body>
 </html>

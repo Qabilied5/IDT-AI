@@ -82,7 +82,7 @@ const pages = {
   'Overview': 'overview-page',
   'Percakapan': 'percakapan-page',
   'Analitik': 'analitik-page',
-  'Kontak / Leads': 'contact-page',
+  'Kontak / Leads': 'leads-page',
   'AI Agent': 'ai-agent-page',
   'Appointment': 'appointment-page',
 };
