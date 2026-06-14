@@ -316,3 +316,254 @@ function showLpToast(msg, type = '') {
 //     const leadsNav = document.querySelector('[data-page="leads"]');
 //     if (leadsNav) leadsNav.addEventListener('click', () => initLeadsPage());
 //   });
+
+/* ============================================================
+   leads-page-ai.js — Indotrading AI
+   Logika 7 AI Feature Areas untuk halaman Leads
+   Harus di-load SETELAH leads-page.js
+   ============================================================ */
+
+// ── AI Score data per lead ────────────────────────────────────
+// Dalam implementasi nyata ini berasal dari model scoring backend.
+const AI_SCORES = {
+  1:  { score:'HOT',  reason:'Klik WA 1 jam lalu — respons terbaik sekarang' },
+  2:  { score:'HOT',  reason:'Real Lead, Jakarta, buka profil 3x hari ini' },
+  3:  { score:'WARM', reason:'Sudah dihubungi, tapi belum reply 2 hari' },
+  4:  { score:'HOT',  reason:'RFQ dikirim — intent beli sangat tinggi' },
+  5:  { score:'WARM', reason:'Kunjungi profil aluminium 2x, belum hubungi' },
+  6:  { score:'COLD', reason:'Hanya lihat profil, tidak ada aksi lanjut' },
+  7:  { score:'HOT',  reason:'Klik WA 30 menit lalu — sudah dihubungi ✓' },
+  8:  { score:'WARM', reason:'Pesan terkirim, masih menunggu balasan' },
+  9:  { score:'COLD', reason:'RFQ lama, belum ada aktivitas 5+ hari' },
+  10: { score:'WARM', reason:'Repeat WA, follow-up sedang berjalan' },
+  11: { score:'HOT',  reason:'Pesan baru hari ini, belum dibalas' },
+  12: { score:'WARM', reason:'Kunjungi profil, Bandung, potensi order' },
+  13: { score:'COLD', reason:'WA klik tapi tidak ada kontak lanjutan' },
+  14: { score:'HOT',  reason:'RFQ closed — kandidat repeat order' },
+  15: { score:'WARM', reason:'Pesan terkirim, belum ada respons 1 hari' },
+};
+
+// ── AI Urgency data per lead ──────────────────────────────────
+const AI_URGENCY = {
+  1:  { cls:'hot-time',     text:'1 jam lalu — waktu terbaik!' },
+  2:  { cls:'hot-time',     text:'2 jam lalu — segera hubungi' },
+  3:  { cls:'warn-time',    text:'2 hari belum dibalas' },
+  4:  { cls:'hot-time',     text:'RFQ baru — follow-up sekarang' },
+  5:  { cls:'warn-time',    text:'3 hari belum dihubungi' },
+  6:  { cls:'neutral-time', text:'5 hari tidak ada aktivitas' },
+  7:  { cls:'ok-time',      text:'Sudah dihubungi ✓' },
+  8:  { cls:'warn-time',    text:'Menunggu balas 1 hari' },
+  9:  { cls:'neutral-time', text:'Tidak aktif 6 hari' },
+  10: { cls:'ok-time',      text:'Follow-up sedang berjalan' },
+  11: { cls:'hot-time',     text:'Pesan baru — belum dibalas!' },
+  12: { cls:'warn-time',    text:'2 hari sejak kunjungan' },
+  13: { cls:'neutral-time', text:'4 hari tidak ada kontak' },
+  14: { cls:'ok-time',      text:'Deal closed ✓' },
+  15: { cls:'warn-time',    text:'1 hari belum ada respons' },
+};
+
+// ── AI-generated follow-up messages ─────────────────────────
+// Dalam implementasi nyata ini dipanggil ke Anthropic API
+// dengan konteks: nama, perusahaan, produk, AI score, aktivitas terakhir.
+function generateAiMessage(lead) {
+  const templates = {
+    wa: `Halo ${lead.nama} dari ${lead.perusahaan}! 👋\n\nSaya dari Alumex Perkasa Jaya. Kami lihat Anda tadi mengklik nomor WA kami — apakah ada produk aluminium yang sedang Anda cari?\n\nKami siap bantu dengan penawaran terbaik dan ready stok. Boleh share kebutuhannya? 🙏`,
+    msg: `Halo ${lead.nama}! 😊\n\nTerima kasih sudah mengirim pesan ke toko kami di Indotrading. Kami mau pastikan pertanyaan Anda sudah terjawab dengan baik.\n\nAda yang bisa kami bantu lebih lanjut terkait produk aluminium untuk ${lead.perusahaan}? Kami ada promo khusus minggu ini!`,
+    rfq: `Yth. Bapak/Ibu ${lead.nama},\n\nKami dari Alumex Perkasa Jaya — merespons RFQ yang sudah Anda kirimkan. Terima kasih atas kepercayaan Anda!\n\nBerikut kami siapkan penawaran harga kompetitif sesuai spesifikasi yang diminta. Bisa kami diskusikan lebih lanjut via WA ini? 📋`,
+    profil: `Halo ${lead.nama} dari ${lead.perusahaan}! 👋\n\nKami perhatikan Anda baru saja mengunjungi halaman produk kami. Apakah ada item yang menarik minat Anda?\n\nKami dengan senang hati membantu dan bisa berikan sample atau penawaran khusus untuk pembelian pertama. 🏭`,
+  };
+  return templates[lead.sumber] || templates.wa;
+}
+
+// ── Override renderLeadRow untuk tambah kolom AI ─────────────
+const _origRenderLeadRow = window.renderLeadRow;
+window.renderLeadRow = function(lead) {
+  const catLabel    = { real:'Real Lead', potensi:'Potensi', belum:'Belum Dikualifikasi' };
+  const srcLabel    = { wa:'Indotrading – WA', msg:'Indotrading – Pesan', rfq:'Indotrading – RFQ', profil:'Indotrading – Profil' };
+  const srcClass    = { wa:'src-wa', msg:'src-msg', rfq:'src-rfq', profil:'src-profil' };
+  const aktClass    = { wa:'wa', msg:'msg', rfq:'rfq', profil:'profil' };
+  const aktIcon     = { wa:'ti-brand-whatsapp', msg:'ti-message-2', rfq:'ti-file-invoice', profil:'ti-eye' };
+  const statusLabel = { belum:'Belum dihubungi', dihubungi:'Sudah dihubungi', followup:'Follow-up lanjutan', closed:'Closed / Deal' };
+  const statusClass = { belum:'', dihubungi:'dihubungi', followup:'followup', closed:'closed' };
+  const statusIcon  = { belum:'ti-circle', dihubungi:'ti-circle-check', followup:'ti-refresh', closed:'ti-check-circle-2' };
+  const scoreIcon   = { HOT:'🔥', WARM:'🌤', COLD:'🧊' };
+  const scoreCls    = { HOT:'hot', WARM:'warm', COLD:'cold' };
+
+  const emailDisplay = lead.email.length > 22 ? lead.email.slice(0, 22) + '…' : lead.email;
+
+  // Area 5
+  const aiScore   = AI_SCORES[lead.id]  || { score:'WARM', reason:'Sedang dianalisa' };
+  // Area 6
+  const aiUrgency = AI_URGENCY[lead.id] || { cls:'neutral-time', text:'—' };
+
+  return `
+  <div class="lp-row" data-id="${lead.id}">
+
+    <!-- Checkbox -->
+    <div><input type="checkbox" class="lp-row-check"></div>
+
+    <!-- Nama & Perusahaan -->
+    <div>
+      <div class="lp-row-name">${lead.nama}</div>
+      <div class="lp-row-company"><i class="ti ti-building-store" style="font-size:10px"></i>${lead.perusahaan}</div>
+      <div class="lp-row-date"><i class="ti ti-clock" style="font-size:10px"></i>${lead.tanggal}</div>
+      <div class="lp-row-tags">
+        <span class="lp-tag ${lead.kategori}">
+          <i class="ti ${lead.kategori==='real'?'ti-circle-check':lead.kategori==='potensi'?'ti-star':'ti-minus-circle'}" style="font-size:9px"></i>
+          ${catLabel[lead.kategori]}
+        </span>
+        <span class="lp-tag ${srcClass[lead.sumber]}">
+          <i class="ti ${aktIcon[lead.sumber]}" style="font-size:9px"></i>
+          ${srcLabel[lead.sumber]}
+        </span>
+      </div>
+    </div>
+
+    <!-- Kontak -->
+    <div>
+      <div class="lp-contact-email"><i class="ti ti-mail" style="font-size:10px;opacity:.6"></i>${emailDisplay}</div>
+      <div class="lp-contact-phone"><i class="ti ti-phone" style="font-size:10px;opacity:.6"></i>${lead.phone}</div>
+      <div class="lp-contact-city"><i class="ti ti-map-pin" style="font-size:10px;opacity:.6"></i>${lead.kota}</div>
+    </div>
+
+    <!-- Aktivitas Terakhir (+ Area 6 urgency) -->
+    <div>
+      <span class="lp-aktivitas-badge ${aktClass[lead.sumber]}">
+        <i class="ti ${aktIcon[lead.sumber]}" style="font-size:11px"></i>${lead.aktivitas}
+      </span>
+      <div style="margin-top:5px">
+        <span class="lp-urgency-tag ${aiUrgency.cls}">
+          <i class="ti ${aiUrgency.cls==='hot-time'?'ti-flame':aiUrgency.cls==='warn-time'?'ti-alert-triangle':aiUrgency.cls==='ok-time'?'ti-circle-check':'ti-clock'}" style="font-size:9px"></i>
+          ${aiUrgency.text}
+        </span>
+      </div>
+    </div>
+
+    <!-- Area 5: AI Score -->
+    <div class="lp-ai-score-cell">
+      <span class="lp-score-badge ${scoreCls[aiScore.score]}">
+        ${scoreIcon[aiScore.score]} ${aiScore.score}
+      </span>
+      <div class="lp-score-reason">${aiScore.reason}</div>
+    </div>
+
+    <!-- Status Follow-up -->
+    <div>
+      <button class="lp-status-followup ${statusClass[lead.status]}" onclick="openStatusModal(${lead.id})">
+        <i class="ti ${statusIcon[lead.status]}"></i>${statusLabel[lead.status]}
+      </button>
+    </div>
+
+    <!-- Aksi (WA + Area 7: AI Follow-up) -->
+    <div class="lp-aksi-wrap">
+      <div class="lp-aksi-row">
+        <button class="lp-btn-wa" onclick="hubungiWA(${lead.id})">
+          <i class="ti ti-brand-whatsapp"></i> Hubungi WA
+        </button>
+        <button class="lp-btn-more" onclick="openLeadModal(${lead.id})">
+          <i class="ti ti-dots-vertical"></i>
+        </button>
+      </div>
+      <!-- Area 7 -->
+      <button class="lp-btn-ai-followup" onclick="openAiFollowup(${lead.id})">
+        <i class="ti ti-brain"></i> Follow-up AI
+      </button>
+    </div>
+
+  </div>`;
+};
+
+// ── AREA 4: Natural Language Pill handler ────────────────────
+function applyNlPill(btn, query) {
+  // Toggle active state
+  document.querySelectorAll('.lp-nl-pill').forEach(p => p.classList.remove('active'));
+  const searchEl = document.getElementById('lp-search');
+  if (searchEl.value === query) {
+    // Second click: clear
+    searchEl.value = '';
+    lpState.query  = '';
+  } else {
+    btn.classList.add('active');
+    searchEl.value = query;
+    lpState.query  = query.toLowerCase();
+  }
+  lpState.page = 1;
+  renderLeadsTable();
+}
+
+// ── AREA 7: AI Follow-up Modal ───────────────────────────────
+let _aiFollowupLeadId = null;
+let _aiFollowupTimer  = null;
+
+function openAiFollowup(id) {
+  const lead = LEADS_DATA.find(l => l.id === id);
+  if (!lead) return;
+  _aiFollowupLeadId = id;
+
+  // Reset modal
+  document.getElementById('lp-aifollowup-name').textContent = lead.nama;
+  document.getElementById('lp-aifollowup-loading').style.display = 'flex';
+  document.getElementById('lp-aifollowup-result').style.display  = 'none';
+  document.getElementById('lp-aifollowup-send-btn').style.display = 'none';
+
+  // Context pills
+  const aiScore = AI_SCORES[id] || { score:'WARM', reason:'—' };
+  const scoreIcon = { HOT:'🔥', WARM:'🌤', COLD:'🧊' };
+  document.getElementById('lp-aifollowup-context').innerHTML = `
+    <span class="lp-aifollowup-context-pill"><i class="ti ti-user"></i> ${lead.nama}</span>
+    <span class="lp-aifollowup-context-pill"><i class="ti ti-building-store"></i> ${lead.perusahaan}</span>
+    <span class="lp-aifollowup-context-pill"><i class="ti ti-map-pin"></i> ${lead.kota}</span>
+    <span class="lp-aifollowup-context-pill">${scoreIcon[aiScore.score]} AI Score: ${aiScore.score}</span>
+    <span class="lp-aifollowup-context-pill"><i class="ti ti-brand-whatsapp" style="color:#16a34a"></i> ${lead.sumber.toUpperCase()}</span>
+  `;
+
+  document.getElementById('lp-modal-ai-followup').style.display = 'flex';
+
+  // Simulate AI writing (1.5s delay)
+  clearTimeout(_aiFollowupTimer);
+  _aiFollowupTimer = setTimeout(() => {
+    const msg = generateAiMessage(lead);
+    document.getElementById('lp-aifollowup-msg').value = msg;
+    document.getElementById('lp-aifollowup-loading').style.display = 'none';
+    document.getElementById('lp-aifollowup-result').style.display  = 'block';
+    document.getElementById('lp-aifollowup-send-btn').style.display = 'flex';
+  }, 1500);
+}
+
+function closeAiFollowup() {
+  clearTimeout(_aiFollowupTimer);
+  document.getElementById('lp-modal-ai-followup').style.display = 'none';
+  _aiFollowupLeadId = null;
+}
+
+function sendAiFollowupWA() {
+  const lead = LEADS_DATA.find(l => l.id === _aiFollowupLeadId);
+  if (!lead) return;
+  const msg = document.getElementById('lp-aifollowup-msg').value;
+
+  // Auto-update status to dihubungi
+  if (lead.status === 'belum') {
+    lead.status = 'dihubungi';
+    renderLeadsTable();
+  }
+
+  // Build WhatsApp URL
+  const waMsg = encodeURIComponent(msg);
+  // window.open(`https://wa.me/62${lead.phone}?text=${waMsg}`, '_blank');
+
+  closeAiFollowup();
+  showLpToast(`Pesan AI untuk ${lead.nama} siap dikirim via WhatsApp ✓`, 'success');
+}
+
+// ── Re-init: override initLeadsPage to also re-render with AI ─
+const _origInitLeadsPage = window.initLeadsPage;
+window.initLeadsPage = function() {
+  renderLeadsTable();
+  updateKatCounts();
+};
+
+// Auto-init if page already active
+if (document.getElementById('leads-page') &&
+    document.getElementById('leads-page').classList.contains('active-page')) {
+  initLeadsPage();
+}

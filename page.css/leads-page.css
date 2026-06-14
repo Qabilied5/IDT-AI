@@ -3,6 +3,386 @@
    Kontak / Leads Page Styles
    =================================== */
 
+/* ============================================================
+   leads-page-ai.css — Indotrading AI
+   CSS tambahan untuk 7 AI Feature Areas di halaman Leads
+   Import SETELAH leads-page.css
+   ============================================================ */
+
+/* ── AI Section Tag ─────────────────────────────────────────── */
+.lp-ai-section-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: linear-gradient(135deg, #fef2f2, #fff1f0);
+  border: 1px solid #fecaca;
+  color: var(--red, #c8102e);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .3px;
+  border-radius: 20px;
+  padding: 2px 8px;
+  margin-left: 8px;
+  text-transform: none;
+}
+.lp-ai-section-tag i { font-size: 10px; }
+
+/* ── AI Pulse badge (info bar) ──────────────────────────────── */
+.lp-ai-pulse-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--red, #c8102e);
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 20px;
+  padding: 4px 12px;
+}
+.lp-pulse-dot {
+  width: 7px;
+  height: 7px;
+  background: var(--red, #c8102e);
+  border-radius: 50%;
+  animation: lpPulse 1.6s ease-in-out infinite;
+  flex-shrink: 0;
+}
+@keyframes lpPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(200,16,46,.5); }
+  50%       { box-shadow: 0 0 0 5px rgba(200,16,46,0); }
+}
+
+/* ── AREA 1: AI Auto-Qualify badges ─────────────────────────── */
+.lp-ai-qualify-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 9.5px;
+  font-weight: 600;
+  border-radius: 5px;
+  padding: 2px 6px;
+  margin-top: 4px;
+  white-space: nowrap;
+}
+.lp-ai-qualify-badge.green {
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+.lp-ai-qualify-badge.amber {
+  background: #fffbeb;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+.lp-ai-qualify-badge.gray {
+  background: #f9fafb;
+  color: #6b7280;
+  border: 1px solid #e5e7eb;
+}
+/* Spinner animation for "sedang dievaluasi" */
+.lp-spin { animation: lpSpinAnim .9s linear infinite; display: inline-block; }
+@keyframes lpSpinAnim { to { transform: rotate(360deg); } }
+
+/* ── AREA 2: AI Source Insight ──────────────────────────────── */
+.lp-src-ai-insight {
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+  background: #f8faff;
+  border: 1px solid #e0e7ff;
+  border-radius: 7px;
+  padding: 6px 8px;
+  font-size: 10.5px;
+  color: #374151;
+  line-height: 1.5;
+  margin-top: 4px;
+}
+.lp-src-ai-insight.warning {
+  background: #fffbeb;
+  border-color: #fde68a;
+}
+.lp-src-ai-insight.success {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+.lp-ai-icon-sm {
+  font-size: 12px;
+  color: var(--red, #c8102e);
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* ── AREA 3: AI Banner ──────────────────────────────────────── */
+.lp-ai-banner {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 60%, #0f3460 100%) !important;
+  border: 1px solid rgba(200,16,46,.35);
+  position: relative;
+  overflow: hidden;
+}
+.lp-ai-banner::before {
+  content: '';
+  position: absolute;
+  top: -40px; right: -40px;
+  width: 200px; height: 200px;
+  background: radial-gradient(circle, rgba(200,16,46,.15) 0%, transparent 70%);
+  pointer-events: none;
+}
+.lp-ai-highlight {
+  background: linear-gradient(90deg, #ff6b6b, #ffd166);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 800;
+}
+.lp-ai-refresh-info {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 8px;
+  font-size: 10px;
+  color: #64748b;
+}
+
+/* ── AREA 4: Natural Language Pills ─────────────────────────── */
+.lp-nl-pills-wrap {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+  padding: 8px 14px 0;
+}
+.lp-nl-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--red, #c8102e);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.lp-nl-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 20px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  transition: all .15s;
+  font-family: inherit;
+}
+.lp-nl-pill:hover {
+  border-color: var(--red, #c8102e);
+  color: var(--red, #c8102e);
+  background: #fef2f2;
+}
+.lp-nl-pill.active {
+  background: var(--red, #c8102e);
+  border-color: var(--red, #c8102e);
+  color: #fff;
+}
+.lp-nl-pill i { font-size: 11px; }
+
+/* ── AREA 5: AI Score Column ────────────────────────────────── */
+/* Update the table grid to add AI Score column (7 cols now) */
+.lp-th-row,
+.lp-row {
+  grid-template-columns: 36px 2fr 1.4fr 1.1fr 1fr 1.1fr 1fr !important;
+}
+
+.lp-ai-score-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.lp-score-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 6px;
+  padding: 3px 8px;
+  white-space: nowrap;
+  width: fit-content;
+}
+.lp-score-badge.hot {
+  background: linear-gradient(135deg, #fef2f2, #fee2e2);
+  color: #b91c1c;
+  border: 1px solid #fca5a5;
+}
+.lp-score-badge.warm {
+  background: linear-gradient(135deg, #fffbeb, #fef3c7);
+  color: #92400e;
+  border: 1px solid #fcd34d;
+}
+.lp-score-badge.cold {
+  background: linear-gradient(135deg, #eff6ff, #dbeafe);
+  color: #1e40af;
+  border: 1px solid #93c5fd;
+}
+.lp-score-reason {
+  font-size: 9.5px;
+  color: #6b7280;
+  line-height: 1.4;
+  max-width: 120px;
+}
+
+/* ── AREA 6: AI Urgency Tag ─────────────────────────────────── */
+.lp-urgency-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 9.5px;
+  font-weight: 600;
+  border-radius: 5px;
+  padding: 2px 7px;
+  margin-top: 4px;
+  white-space: nowrap;
+}
+.lp-urgency-tag.hot-time {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fca5a5;
+}
+.lp-urgency-tag.warn-time {
+  background: #fffbeb;
+  color: #92400e;
+  border: 1px solid #fcd34d;
+}
+.lp-urgency-tag.ok-time {
+  background: #f0fdf4;
+  color: #166534;
+  border: 1px solid #86efac;
+}
+.lp-urgency-tag.neutral-time {
+  background: #f9fafb;
+  color: #6b7280;
+  border: 1px solid #e5e7eb;
+}
+
+/* ── AREA 7: AI Follow-up button ────────────────────────────── */
+.lp-btn-ai-followup {
+  background: #1d4ed8;
+  color: #fff;
+  border: none;
+  border-radius: 7px;
+  padding: 6px 10px;
+  font-size: 10.5px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  transition: opacity .15s;
+  font-family: inherit;
+  margin-right: auto;
+}
+.lp-btn-ai-followup:hover { opacity: .9; }
+
+/* Aksi cell: stack WA + AI Follow-up */
+.lp-aksi-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  align-items: flex-start;
+}
+.lp-aksi-row {
+  display: flex;
+  align-items: center;
+  margin-right: auto;
+  gap: 5px;
+}
+
+/* ── AI Follow-up Modal internals ───────────────────────────── */
+.lp-aifollowup-context {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.lp-aifollowup-context-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 20px;
+  padding: 3px 10px;
+  font-size: 11px;
+  color: #374151;
+}
+.lp-aifollowup-loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px;
+  font-size: 12px;
+  color: #6b7280;
+  background: #f9fafb;
+  border-radius: 10px;
+}
+.lp-ai-spinner {
+  width: 18px; height: 18px;
+  border: 2px solid #e5e7eb;
+  border-top-color: var(--red, #c8102e);
+  border-radius: 50%;
+  animation: lpSpinAnim .7s linear infinite;
+  flex-shrink: 0;
+}
+.lp-aifollowup-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #374151;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.lp-aifollowup-textarea {
+  font-size: 12.5px;
+  line-height: 1.7;
+  border-radius: 10px;
+  background: #fafafa;
+}
+.lp-aifollowup-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+  font-size: 10.5px;
+  color: #9ca3af;
+  margin-top: 8px;
+  line-height: 1.5;
+}
+.lp-btn-ai-send {
+  background: #16a34a;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: opacity .15s;
+  font-family: inherit;
+}
+.lp-btn-ai-send:hover { opacity: .9; }
+
+
+
+
+
+
 /* ── Page wrapper ── */
 #leads-page {
   display: none; /* ditampilkan oleh JS navigasi */
@@ -930,3 +1310,4 @@
   from { transform: translateY(12px); opacity: 0; }
   to   { transform: translateY(0);    opacity: 1; }
 }
+
