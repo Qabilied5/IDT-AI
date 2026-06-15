@@ -85,6 +85,9 @@ const pages = {
   'Kontak / Leads': 'leads-page',
   'AI Agent': 'ai-agent-page',
   'Appointment': 'appointment-page',
+  'Integrasi': 'integrasi-page',
+  'Pengaturan Agent': 'pengaturan-agent-page',
+  'Knowledge Base': 'knowledge-base-page',
 };
 
 function showPage(pageId) {

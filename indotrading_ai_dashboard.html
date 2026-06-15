@@ -10,6 +10,8 @@
   <link rel="stylesheet" href="/page.css/leads-page.css">
   <link rel="stylesheet" href="/page.css/appointment.css">
   <link rel="stylesheet" href="/page.css/analitik.css">
+  <link rel="stylesheet" href="/page.css/integrasi.css">
+  <link rel="stylesheet" href="/page.css/pengaturan-agent.css">
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
   
@@ -2041,6 +2043,1157 @@
 <!-- Ending appointment -->
 
 
+<div id="integrasi-page" style="display: none;">
+ 
+  <!-- ── Inner layout: full col-left style (no right panel) ── -->
+  <div class="ig-page">
+ 
+    <!-- ── HEADER BANNER ────────────────────────────────────── -->
+    <div class="ig-banner">
+      <div class="ig-banner-inner">
+        <div class="ig-banner-icon"><i class="ti ti-plug-connected"></i></div>
+        <div>
+          <div class="ig-banner-title">Integrasi Channel & Platform</div>
+          <div class="ig-banner-sub">Hubungkan Indotrading AI ke saluran komunikasi, CRM, dan platform bisnis Anda — semua terpusat dalam satu dashboard.</div>
+        </div>
+      </div>
+      <div class="ig-banner-stats">
+        <div class="ig-stat-pill ig-stat-green">
+          <i class="ti ti-circle-check"></i>
+          <span id="ig-count-connected">3</span> Terhubung
+        </div>
+        <div class="ig-stat-pill ig-stat-amber">
+          <i class="ti ti-clock"></i>
+          <span id="ig-count-pending">1</span> Menunggu
+        </div>
+        <div class="ig-stat-pill ig-stat-gray">
+          <i class="ti ti-plug-x"></i>
+          <span id="ig-count-disconnected">8</span> Belum Terhubung
+        </div>
+      </div>
+    </div>
+ 
+    <!-- ── FILTER BAR ────────────────────────────────────────── -->
+    <div class="ig-filter-bar">
+      <div class="ig-filter-tabs">
+        <button class="ig-ftab active" onclick="igFilterCategory(this,'semua')">Semua</button>
+        <button class="ig-ftab" onclick="igFilterCategory(this,'messaging')"><i class="ti ti-message-2"></i> Pesan</button>
+        <button class="ig-ftab" onclick="igFilterCategory(this,'crm')"><i class="ti ti-users"></i> CRM</button>
+        <button class="ig-ftab" onclick="igFilterCategory(this,'ecommerce')"><i class="ti ti-shopping-cart"></i> E-Commerce</button>
+        <button class="ig-ftab" onclick="igFilterCategory(this,'payment')"><i class="ti ti-credit-card"></i> Pembayaran</button>
+        <button class="ig-ftab" onclick="igFilterCategory(this,'tools')"><i class="ti ti-tool"></i> Tools</button>
+      </div>
+      <div class="ig-filter-right">
+        <div class="ig-search-wrap">
+          <i class="ti ti-search"></i>
+          <input id="ig-search" type="text" placeholder="Cari integrasi…" oninput="igRender()" />
+        </div>
+      </div>
+    </div>
+ 
+    <!-- ── ACTIVE INTEGRATIONS ───────────────────────────────── -->
+    <div id="ig-section-active" class="ig-section">
+      <div class="ig-section-head">
+        <div class="ig-section-title"><i class="ti ti-circle-check" style="color:var(--green)"></i> Integrasi Aktif</div>
+        <div class="ig-section-sub" id="ig-active-count">3 terhubung</div>
+      </div>
+      <div class="ig-grid" id="ig-grid-active"></div>
+    </div>
+ 
+    <!-- ── ALL INTEGRATIONS ──────────────────────────────────── -->
+    <div id="ig-section-all" class="ig-section">
+      <div class="ig-section-head">
+        <div class="ig-section-title"><i class="ti ti-layout-grid"></i> Semua Integrasi</div>
+        <div class="ig-section-sub" id="ig-all-count">8 tersedia</div>
+      </div>
+      <div class="ig-grid" id="ig-grid-all"></div>
+    </div>
+ 
+    <!-- ── EMPTY STATE ───────────────────────────────────────── -->
+    <div id="ig-empty" style="display:none;" class="ig-empty">
+      <i class="ti ti-search-off"></i>
+      <div>Tidak ada integrasi ditemukan</div>
+      <span>Coba kata kunci lain atau ubah filter kategori</span>
+    </div>
+ 
+  </div><!-- /ig-page -->
+ 
+ 
+  <!-- ══════════════════════════════════════════════════════════
+       MODAL: Detail / Config Integrasi
+       ══════════════════════════════════════════════════════════ -->
+  <div id="ig-modal" class="ig-modal-overlay" style="display:none;" onclick="if(event.target===this)igCloseModal()">
+    <div class="ig-modal">
+      <div class="ig-modal-header">
+        <div class="ig-modal-title">
+          <span id="ig-modal-emoji" class="ig-modal-logo"></span>
+          <div>
+            <div id="ig-modal-name" style="font-size:15px;font-weight:700;color:var(--gray-800)"></div>
+            <div id="ig-modal-cat-label" style="font-size:11px;color:var(--gray-400);margin-top:1px"></div>
+          </div>
+        </div>
+        <button class="ig-modal-close" onclick="igCloseModal()"><i class="ti ti-x"></i></button>
+      </div>
+      <div class="ig-modal-body">
+ 
+        <!-- Status row -->
+        <div class="ig-mrow">
+          <div class="ig-mlabel">Status</div>
+          <div id="ig-modal-status-badge"></div>
+        </div>
+ 
+        <!-- Description -->
+        <div class="ig-mrow">
+          <div class="ig-mlabel">Tentang</div>
+          <div id="ig-modal-desc" class="ig-mval"></div>
+        </div>
+ 
+        <!-- Config fields (conditional) -->
+        <div id="ig-modal-config" class="ig-config-wrap" style="display:none;">
+          <div class="ig-config-title"><i class="ti ti-settings"></i> Konfigurasi</div>
+          <div id="ig-modal-fields"></div>
+        </div>
+ 
+        <!-- Connected info (conditional) -->
+        <div id="ig-modal-connected-info" style="display:none;">
+          <div class="ig-connected-info-card">
+            <div class="ig-ci-row"><span class="ig-ci-label">Akun</span><span id="ig-ci-account" class="ig-ci-val"></span></div>
+            <div class="ig-ci-row"><span class="ig-ci-label">Terhubung sejak</span><span id="ig-ci-since" class="ig-ci-val"></span></div>
+            <div class="ig-ci-row"><span class="ig-ci-label">Pesan terproses</span><span id="ig-ci-msgs" class="ig-ci-val"></span></div>
+            <div class="ig-ci-row"><span class="ig-ci-label">Status terakhir</span><span id="ig-ci-last" class="ig-ci-val"></span></div>
+          </div>
+        </div>
+ 
+        <!-- Features list -->
+        <div class="ig-mrow">
+          <div class="ig-mlabel">Fitur</div>
+          <div id="ig-modal-features" class="ig-features-wrap"></div>
+        </div>
+ 
+      </div>
+      <div class="ig-modal-footer">
+        <button class="ig-btn-ghost" onclick="igCloseModal()">Tutup</button>
+        <button id="ig-modal-cta" class="ig-btn-primary" onclick="igModalAction()"></button>
+      </div>
+    </div>
+  </div>
+ 
+  <!-- ══════════════════════════════════════════════════════════
+       MODAL: Konfirmasi Putuskan Koneksi
+       ══════════════════════════════════════════════════════════ -->
+  <div id="ig-modal-disconnect" class="ig-modal-overlay" style="display:none;" onclick="if(event.target===this)igCloseDisconnect()">
+    <div class="ig-modal ig-modal-sm">
+      <div class="ig-modal-header">
+        <div class="ig-modal-title" style="color:#dc2626;">
+          <i class="ti ti-plug-x"></i> Putuskan Koneksi
+        </div>
+        <button class="ig-modal-close" onclick="igCloseDisconnect()"><i class="ti ti-x"></i></button>
+      </div>
+      <div class="ig-modal-body">
+        <p style="font-size:13px;color:#374151;line-height:1.7">
+          Apakah Anda yakin ingin memutuskan koneksi <strong id="ig-dc-name"></strong>?
+          AI Agent tidak akan bisa menerima atau mengirim pesan melalui channel ini.
+        </p>
+        <div class="ig-warning-box">
+          <i class="ti ti-alert-triangle" style="color:#d97706;font-size:14px;flex-shrink:0"></i>
+          <span>Semua konfigurasi akan dihapus dan harus diatur ulang jika ingin terhubung kembali.</span>
+        </div>
+      </div>
+      <div class="ig-modal-footer">
+        <button class="ig-btn-ghost" onclick="igCloseDisconnect()">Batal</button>
+        <button class="ig-btn-danger" onclick="igConfirmDisconnect()"><i class="ti ti-plug-x"></i> Ya, Putuskan</button>
+      </div>
+    </div>
+  </div>
+ 
+  <!-- Toast -->
+  <div id="ig-toast" class="ig-toast" style="display:none;"></div>
+ 
+</div>
+<!-- /integrasi-page -->
+
+
+<!-- PENGATURAN AGENT PAGE -->
+<div id="pengaturan-agent-page" style="display: none;">
+ 
+  <div class="pa-shell">
+ 
+    <!-- ── Sidebar nav ─────────────────────────────────────── -->
+    <nav class="pa-sidenav" aria-label="Navigasi Pengaturan Agent">
+      
+      <!-- 1 -->
+      <div class="pa-nav-section">Persona & Gaya</div>
+      <div class="pa-nav-item active" data-section="persona">
+        <i class="ti ti-mood-smile" aria-hidden="true"></i> Gaya Bahasa & Persona
+      </div>
+      <div class="pa-nav-item" data-section="greeting">
+        <i class="ti ti-message-circle" aria-hidden="true"></i> Pesan Pembuka
+      </div>
+ 
+      <!-- 2 -->
+      <div class="pa-nav-section">Manajemen Agent</div>
+      <div class="pa-nav-item" data-section="human-agent">
+        <i class="ti ti-users" aria-hidden="true"></i> Human Agent
+      </div>
+      <div class="pa-nav-item" data-section="takeover">
+        <i class="ti ti-transfer" aria-hidden="true"></i> Aturan Takeover
+        <span class="pa-nav-dot"></span>
+      </div>
+      <div class="pa-nav-item" data-section="jadwal">
+        <i class="ti ti-clock" aria-hidden="true"></i> Jam Kerja & Jadwal
+      </div>
+ 
+      <!-- 3 -->
+      <div class="pa-nav-section">Multi-Brand</div>
+      <div class="pa-nav-item" data-section="multi-brand">
+        <i class="ti ti-building-store" aria-hidden="true"></i> Konfigurasi Brand
+      </div>
+ 
+      <!-- 4 -->
+      <div class="pa-nav-section">Keamanan</div>
+      <div class="pa-nav-item" data-section="akses">
+        <i class="ti ti-shield-lock" aria-hidden="true"></i> Kontrol Akses & Peran
+      </div>
+      <div class="pa-nav-item" data-section="audit">
+        <i class="ti ti-history" aria-hidden="true"></i> Log Audit
+      </div>
+ 
+    </nav>
+ 
+    <!-- ── Konten Utama ─────────────────────────────────────── -->
+    <div class="pa-content">
+ 
+      <!-- SECTION 1 — Gaya Bahasa & Persona -->
+      <div id="pa-sec-persona" class="pa-section active">
+ 
+        <div class="pa-page-header">
+          <div>
+            <div class="pa-page-title">Gaya Bahasa & Persona</div>
+            <div class="pa-page-desc">Tentukan karakter dan tone komunikasi AI Agent agar sesuai dengan brand kamu.</div>
+          </div>
+          <div class="pa-page-actions">
+            <button class="pa-btn pa-btn-ghost" onclick="paDiscardChanges()"><i class="ti ti-x"></i> Batal</button>
+            <button class="pa-btn pa-btn-primary" id="pa-save-btn" onclick="paSaveSettings()"><i class="ti ti-device-floppy"></i> Simpan Perubahan</button>
+          </div>
+        </div>
+ 
+        <!-- Identitas Agent -->
+        <div class="pa-card">
+          <div class="pa-card-header">
+            <div class="pa-card-title"><i class="ti ti-robot"></i> Identitas Agent <span class="pa-card-subtitle">— tampil di semua percakapan</span></div>
+          </div>
+          <div class="pa-card-body">
+            <div class="pa-form-2col">
+              <div class="pa-field">
+                <label class="pa-label" for="pa-agent-name">Nama Agent <span class="pa-label-hint">(wajib)</span></label>
+                <div class="pa-input-prefix">
+                  <span class="pa-input-prefix-label"><i class="ti ti-robot" style="font-size:13px"></i></span>
+                  <input id="pa-agent-name" type="text" value="Halo AI" placeholder="Mis. Halo AI, Sari, Andi..." aria-label="Nama Agent">
+                </div>
+                <div class="pa-helper">Nama ini muncul di header chat dan notifikasi pelanggan.</div>
+              </div>
+              <div class="pa-field">
+                <label class="pa-label" for="pa-agent-role-title">Jabatan / Role</label>
+                <input id="pa-agent-role-title" class="pa-input" type="text" value="Sales Assistant" placeholder="Mis. Sales Assistant, CS Agent...">
+                <div class="pa-helper">Opsional. Muncul di bawah nama agent.</div>
+              </div>
+            </div>
+            <div class="pa-field">
+              <label class="pa-label" for="pa-agent-tagline">Tagline / Deskripsi Singkat</label>
+              <input id="pa-agent-tagline" class="pa-input" type="text" value="Siap membantu kebutuhan bisnis Anda 24/7" placeholder="Satu kalimat yang merepresentasikan agent...">
+            </div>
+          </div>
+        </div>
+ 
+        <!-- Tone/Gaya -->
+        <div class="pa-card">
+          <div class="pa-card-header">
+            <div class="pa-card-title"><i class="ti ti-typography"></i> Tone Komunikasi</div>
+          </div>
+          <div class="pa-card-body">
+            <div class="pa-field">
+              <label class="pa-label">Pilih gaya bahasa utama</label>
+              <div class="pa-tone-grid">
+                <div class="pa-tone-pill" onclick="selectTone(this, 'formal')">
+                  <div class="pa-tone-icon"><i class="ti ti-briefcase"></i></div>
+                  <div class="pa-tone-name">Formal</div>
+                  <div class="pa-tone-desc">Profesional & sopan</div>
+                </div>
+                <div class="pa-tone-pill selected" onclick="selectTone(this, 'santai')">
+                  <div class="pa-tone-icon"><i class="ti ti-mood-happy"></i></div>
+                  <div class="pa-tone-name">Santai</div>
+                  <div class="pa-tone-desc">Hangat & mudah akrab</div>
+                </div>
+                <div class="pa-tone-pill" onclick="selectTone(this, 'industri')">
+                  <div class="pa-tone-icon"><i class="ti ti-settings-cog"></i></div>
+                  <div class="pa-tone-name">Industri</div>
+                  <div class="pa-tone-desc">Teknikal & to the point</div>
+                </div>
+                <div class="pa-tone-pill" onclick="selectTone(this, 'custom')">
+                  <div class="pa-tone-icon"><i class="ti ti-writing"></i></div>
+                  <div class="pa-tone-name">Custom</div>
+                  <div class="pa-tone-desc">Tulis instruksi sendiri</div>
+                </div>
+              </div>
+            </div>
+ 
+            <!-- Preview bubble -->
+            <div class="pa-preview-box">
+              <div class="pa-preview-label">
+                <i class="ti ti-eye" style="font-size:13px"></i> Preview — balasan AI sebagai
+                <strong id="pa-agent-name-val" style="color:var(--gray-800)">Halo AI</strong>
+              </div>
+              <div class="pa-preview-bubble">
+                <span id="pa-preview-text">Halo! Makasih udah hubungi Indotrading 😊 Ada yang bisa kami bantu hari ini?</span>
+              </div>
+            </div>
+ 
+            <div class="pa-divider" style="margin-top:14px"></div>
+ 
+            <!-- Toggle-toggle pengaturan bahasa -->
+            <div class="pa-toggle-row">
+              <div class="pa-toggle-info">
+                <div class="pa-toggle-label">Gunakan Bahasa Indonesia</div>
+                <div class="pa-toggle-desc">AI selalu merespons dalam Bahasa Indonesia meskipun user menulis dalam bahasa lain.</div>
+              </div>
+              <label class="pa-switch">
+                <input type="checkbox" id="pa-lang-id" checked>
+                <span class="pa-switch-track"></span>
+                <span class="pa-switch-thumb"></span>
+              </label>
+            </div>
+            <div class="pa-toggle-row">
+              <div class="pa-toggle-info">
+                <div class="pa-toggle-label">Auto-detect bahasa pelanggan</div>
+                <div class="pa-toggle-desc">AI menyesuaikan bahasa dengan bahasa yang digunakan pelanggan (Inggris, Mandarin, dll).</div>
+              </div>
+              <label class="pa-switch">
+                <input type="checkbox" id="pa-lang-auto">
+                <span class="pa-switch-track"></span>
+                <span class="pa-switch-thumb"></span>
+              </label>
+            </div>
+            <div class="pa-toggle-row">
+              <div class="pa-toggle-info">
+                <div class="pa-toggle-label">Gunakan sapaan nama pelanggan</div>
+                <div class="pa-toggle-desc">AI menyebut nama pelanggan jika tersedia di profil (mis. "Pak Andi, ...").</div>
+              </div>
+              <label class="pa-switch">
+                <input type="checkbox" id="pa-greet-name" checked>
+                <span class="pa-switch-track"></span>
+                <span class="pa-switch-thumb"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+ 
+        <!-- Instruksi SOP Khusus -->
+        <div class="pa-card">
+          <div class="pa-card-header">
+            <div class="pa-card-title"><i class="ti ti-clipboard-text"></i> Instruksi SOP Khusus</div>
+            <span style="font-size:11px;color:var(--gray-400)">Opsional</span>
+          </div>
+          <div class="pa-card-body">
+            <div class="pa-alert pa-alert-info" style="margin-bottom:14px">
+              <i class="ti ti-bulb"></i>
+              <span>Tulis instruksi khusus yang harus selalu diikuti AI — seperti cara menangani keluhan, larangan topik tertentu, atau alur penjualan kamu. <a>Lihat contoh →</a></span>
+            </div>
+            <div class="pa-field">
+              <label class="pa-label" for="pa-sop-text">Instruksi tambahan untuk AI</label>
+              <textarea id="pa-sop-text" class="pa-textarea" style="min-height:110px" placeholder="Contoh:
+- Jangan menyebut nama kompetitor
+- Selalu tawarkan demo produk jika user bertanya tentang harga
+- Jika user komplain, langsung minta maaf dan eskalasi ke human agent
+- Gunakan satuan 'pcs' bukan 'buah' untuk produk industri"></textarea>
+              <div class="pa-char-row"><span id="pa-sop-count">0/1000</span></div>
+            </div>
+            <div class="pa-field">
+              <label class="pa-label">Kata kunci yang memicu eskalasi ke manusia</label>
+              <div class="pa-tags-wrap" id="pa-kw-tags" role="group" aria-label="Kata kunci eskalasi">
+                <!-- dirender oleh JS -->
+              </div>
+              <div class="pa-helper">Tekan Enter atau koma untuk menambah kata kunci.</div>
+            </div>
+          </div>
+        </div>
+ 
+      </div><!-- /pa-sec-persona -->
+ 
+ 
+      <!-- SECTION 2 — Pesan Pembuka -->
+      <div id="pa-sec-greeting" class="pa-section">
+ 
+        <div class="pa-page-header">
+          <div>
+            <div class="pa-page-title">Pesan Pembuka</div>
+            <div class="pa-page-desc">Pesan pertama yang dikirim AI saat percakapan dimulai.</div>
+          </div>
+          <div class="pa-page-actions">
+            <button class="pa-btn pa-btn-primary" onclick="paSaveSettings()"><i class="ti ti-device-floppy"></i> Simpan</button>
+          </div>
+        </div>
+ 
+        <div class="pa-card">
+          <div class="pa-card-header">
+            <div class="pa-card-title"><i class="ti ti-message-bolt"></i> Greeting Utama</div>
+          </div>
+          <div class="pa-card-body">
+            <div class="pa-field">
+              <label class="pa-label" for="pa-greeting">Pesan pembuka default</label>
+              <textarea id="pa-greeting" class="pa-textarea" style="min-height:90px">Halo! Selamat datang di Indotrading 👋 Saya Halo AI, siap membantu kebutuhan bisnis Anda hari ini. Ada yang bisa saya bantu?</textarea>
+              <div class="pa-char-row"><span id="pa-greeting-count">0/300</span></div>
+            </div>
+            <div class="pa-toggle-row">
+              <div class="pa-toggle-info">
+                <div class="pa-toggle-label">Kirim otomatis saat chat dibuka</div>
+                <div class="pa-toggle-desc">AI langsung mengirim pesan pembuka tanpa menunggu user menulis lebih dulu.</div>
+              </div>
+              <label class="pa-switch">
+                <input type="checkbox" id="pa-greeting-auto" checked>
+                <span class="pa-switch-track"></span>
+                <span class="pa-switch-thumb"></span>
+              </label>
+            </div>
+            <div class="pa-toggle-row">
+              <div class="pa-toggle-info">
+                <div class="pa-toggle-label">Quick reply otomatis</div>
+                <div class="pa-toggle-desc">Tampilkan pilihan cepat di bawah pesan pembuka (mis. "Tanya produk", "Cek harga", "Hubungi tim").</div>
+              </div>
+              <label class="pa-switch">
+                <input type="checkbox" id="pa-quick-reply" checked>
+                <span class="pa-switch-track"></span>
+                <span class="pa-switch-thumb"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+ 
+        <div class="pa-card">
+          <div class="pa-card-header">
+            <div class="pa-card-title"><i class="ti ti-moon" style="color:var(--amber)"></i> Pesan di Luar Jam Kerja</div>
+          </div>
+          <div class="pa-card-body">
+            <div class="pa-alert pa-alert-warn" style="margin-bottom:14px">
+              <i class="ti ti-clock"></i>
+              <span>Pesan ini dikirim ketika pengguna menghubungi di luar jam kerja yang kamu atur di menu <strong>Jam Kerja & Jadwal</strong>.</span>
+            </div>
+            <div class="pa-field">
+              <label class="pa-label" for="pa-offtime-msg">Pesan di luar jam aktif</label>
+              <textarea id="pa-offtime-msg" class="pa-textarea">Halo! Terima kasih sudah menghubungi Indotrading. Saat ini tim kami sedang tidak aktif (di luar jam kerja). Pesan kamu sudah kami catat dan akan direspons segera saat kami kembali online. 🙏</textarea>
+            </div>
+          </div>
+        </div>
+ 
+      </div><!-- /pa-sec-greeting -->
+ 
+ 
+      <!-- SECTION 3 — Human Agent -->
+      <div id="pa-sec-human-agent" class="pa-section">
+ 
+        <div class="pa-page-header">
+          <div>
+            <div class="pa-page-title">Manajemen Human Agent</div>
+            <div class="pa-page-desc">Atur siapa saja yang dapat menerima takeover percakapan dari AI.</div>
+          </div>
+          <div class="pa-page-actions">
+            <button class="pa-btn pa-btn-primary" onclick="openAddAgentModal()"><i class="ti ti-user-plus"></i> Undang Agent</button>
+          </div>
+        </div>
+ 
+        <div class="pa-alert pa-alert-success">
+          <i class="ti ti-users"></i>
+          <span><strong>5 agent terdaftar</strong> — 3 online, 1 sedang aktif handle percakapan, 1 offline.</span>
+        </div>
+ 
+        <div class="pa-card">
+          <div class="pa-card-header">
+            <div class="pa-card-title"><i class="ti ti-users"></i> Daftar Agent <span class="pa-card-subtitle">— aktif untuk menerima percakapan</span></div>
+            <input class="pa-input" style="width:200px" type="text" placeholder="Cari nama atau email..." aria-label="Cari agent">
+          </div>
+          <div style="overflow-x:auto">
+            <table class="pa-agent-table">
+              <thead>
+                <tr>
+                  <th>Agent</th>
+                  <th>Peran</th>
+                  <th>Status</th>
+                  <th>Percakapan Aktif</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="pa-agent-tbody">
+                <!-- dirender oleh JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+ 
+        <div class="pa-card">
+          <div class="pa-card-header">
+            <div class="pa-card-title"><i class="ti ti-arrows-right-left"></i> Distribusi Percakapan</div>
+          </div>
+          <div class="pa-card-body">
+            <div class="pa-field">
+              <label class="pa-label" for="pa-dist-mode">Mode distribusi ke human agent</label>
+              <select id="pa-dist-mode" class="pa-select">
+                <option value="round-robin">Round Robin — bergilir rata ke semua agent online</option>
+                <option value="least-busy">Least Busy — ke agent dengan percakapan paling sedikit</option>
+                <option value="manual">Manual — admin pilih agent secara manual</option>
+                <option value="skill">Skill-based — cocokkan berdasarkan keahlian agent</option>
+              </select>
+            </div>
+            <div class="pa-toggle-row">
+              <div class="pa-toggle-info">
+                <div class="pa-toggle-label">Batas percakapan per agent</div>
+                <div class="pa-toggle-desc">Batasi jumlah percakapan aktif maksimum per human agent agar tidak overload.</div>
+              </div>
+              <label class="pa-switch">
+                <input type="checkbox" id="pa-cap-toggle" checked>
+                <span class="pa-switch-track"></span>
+                <span class="pa-switch-thumb"></span>
+              </label>
+            </div>
+            <div class="pa-field" style="margin-top:8px">
+              <label class="pa-label" for="pa-cap-num">Maks. percakapan per agent</label>
+              <input id="pa-cap-num" class="pa-input" type="number" value="10" min="1" max="50" style="max-width:120px">
+            </div>
+          </div>
+        </div>
+ 
+      </div><!-- /pa-sec-human-agent -->
+ 
+ 
+      <!-- 
+           SECTION 4 — Aturan Takeover -->
+      <div id="pa-sec-takeover" class="pa-section">
+ 
+        <div class="pa-page-header">
+          <div>
+            <div class="pa-page-title">Aturan Takeover</div>
+            <div class="pa-page-desc">Kapan dan bagaimana AI menyerahkan kendali percakapan ke manusia.</div>
+          </div>
+          <div class="pa-page-actions">
+            <button class="pa-btn pa-btn-primary" onclick="paSaveSettings()"><i class="ti ti-device-floppy"></i> Simpan</button>
+          </div>
+        </div>
+ 
+        <!-- Alur eskalasi -->
+        <div class="pa-card">
+          <div class="pa-card-header">
+            <div class="pa-card-title"><i class="ti ti-git-branch"></i> Alur Eskalasi</div>
+          </div>
+          <div class="pa-card-body">
+            <div class="pa-flow">
+              <div class="pa-flow-step">
+                <div class="pa-flow-box highlight">
+                  <i class="ti ti-robot"></i>AI Agent
+                </div>
+                <div class="pa-flow-label">Menangani otomatis</div>
+              </div>
+              <div class="pa-flow-arrow"><i class="ti ti-arrow-right"></i></div>
+              <div class="pa-flow-step">
+                <div class="pa-flow-box">
+                  <i class="ti ti-alert-triangle" style="color:var(--amber)"></i>Trigger
+                </div>
+                <div class="pa-flow-label">Kondisi takeover</div>
+              </div>
+              <div class="pa-flow-arrow"><i class="ti ti-arrow-right"></i></div>
+              <div class="pa-flow-step">
+                <div class="pa-flow-box">
+                  <i class="ti ti-user" style="color:var(--green)"></i>Human Agent
+                </div>
+                <div class="pa-flow-label">Mengambil alih chat</div>
+              </div>
+              <div class="pa-flow-arrow"><i class="ti ti-arrow-right"></i></div>
+              <div class="pa-flow-step">
+                <div class="pa-flow-box">
+                  <i class="ti ti-check" style="color:var(--green)"></i>Resolved
+                </div>
+                <div class="pa-flow-label">Percakapan selesai</div>
+              </div>
+            </div>
+          </div>
+        </div>
+ 
+        <!-- Trigger rules -->
+        <div class="pa-card">
+          <div class="pa-card-header">
+            <div class="pa-card-title"><i class="ti ti-list-check"></i> Kondisi Pemicu Takeover</div>
+            <button class="pa-btn pa-btn-ghost pa-btn-sm"><i class="ti ti-plus"></i> Tambah Rule</button>
+          </div>
+          <div class="pa-card-body">
+            <div class="pa-rule-list" id="pa-rule-list">
+ 
+              <div class="pa-rule-item active-rule">
+                <i class="ti ti-drag-drop pa-rule-drag"></i>
+                <div class="pa-rule-icon"><i class="ti ti-vocabulary"></i></div>
+                <div class="pa-rule-text">
+                  <div class="pa-rule-title">Kata kunci sensitif terdeteksi</div>
+                  <div class="pa-rule-subtitle">komplain, refund, rusak, tidak terima — 5 kata kunci aktif</div>
+                </div>
+                <label class="pa-switch pa-rule-toggle">
+                  <input type="checkbox" checked>
+                  <span class="pa-switch-track"></span>
+                  <span class="pa-switch-thumb"></span>
+                </label>
+              </div>
+ 
+              <div class="pa-rule-item">
+                <i class="ti ti-drag-drop pa-rule-drag"></i>
+                <div class="pa-rule-icon"><i class="ti ti-repeat"></i></div>
+                <div class="pa-rule-text">
+                  <div class="pa-rule-title">Pertanyaan diulang lebih dari 2x</div>
+                  <div class="pa-rule-subtitle">AI tidak berhasil menjawab dengan memuaskan</div>
+                </div>
+                <label class="pa-switch pa-rule-toggle">
+                  <input type="checkbox" checked>
+                  <span class="pa-switch-track"></span>
+                  <span class="pa-switch-thumb"></span>
+                </label>
+              </div>
+ 
+              <div class="pa-rule-item">
+                <i class="ti ti-drag-drop pa-rule-drag"></i>
+                <div class="pa-rule-icon"><i class="ti ti-currency-rupee"></i></div>
+                <div class="pa-rule-text">
+                  <div class="pa-rule-title">Negosiasi harga atau diskon</div>
+                  <div class="pa-rule-subtitle">User meminta harga khusus di atas limit yang diizinkan</div>
+                </div>
+                <label class="pa-switch pa-rule-toggle">
+                  <input type="checkbox" checked>
+                  <span class="pa-switch-track"></span>
+                  <span class="pa-switch-thumb"></span>
+                </label>
+              </div>
+ 
+              <div class="pa-rule-item">
+                <i class="ti ti-drag-drop pa-rule-drag"></i>
+                <div class="pa-rule-icon"><i class="ti ti-user-check"></i></div>
+                <div class="pa-rule-text">
+                  <div class="pa-rule-title">User minta bicara dengan manusia</div>
+                  <div class="pa-rule-subtitle">"Admin", "manusia", "cs", "agen" terdeteksi</div>
+                </div>
+                <label class="pa-switch pa-rule-toggle">
+                  <input type="checkbox" checked>
+                  <span class="pa-switch-track"></span>
+                  <span class="pa-switch-thumb"></span>
+                </label>
+              </div>
+ 
+              <div class="pa-rule-item">
+                <i class="ti ti-drag-drop pa-rule-drag"></i>
+                <div class="pa-rule-icon"><i class="ti ti-clock-exclamation" style="color:var(--amber)"></i></div>
+                <div class="pa-rule-text">
+                  <div class="pa-rule-title">Tidak ada respons &gt; 5 menit</div>
+                  <div class="pa-rule-subtitle">Percakapan dianggap stall, dialihkan ke antrian</div>
+                </div>
+                <label class="pa-switch pa-rule-toggle">
+                  <input type="checkbox">
+                  <span class="pa-switch-track"></span>
+                  <span class="pa-switch-thumb"></span>
+                </label>
+              </div>
+ 
+            </div>
+          </div>
+        </div>
+ 
+        <div class="pa-card">
+          <div class="pa-card-header">
+            <div class="pa-card-title"><i class="ti ti-settings"></i> Pengaturan Handoff</div>
+          </div>
+          <div class="pa-card-body">
+            <div class="pa-toggle-row">
+              <div class="pa-toggle-info">
+                <div class="pa-toggle-label">Kirim ringkasan AI ke human agent</div>
+                <div class="pa-toggle-desc">Saat takeover, agent menerima ringkasan otomatis konteks dan intent percakapan.</div>
+              </div>
+              <label class="pa-switch">
+                <input type="checkbox" checked>
+                <span class="pa-switch-track"></span>
+                <span class="pa-switch-thumb"></span>
+              </label>
+            </div>
+            <div class="pa-toggle-row">
+              <div class="pa-toggle-info">
+                <div class="pa-toggle-label">Beri tahu pelanggan saat takeover</div>
+                <div class="pa-toggle-desc">AI mengirim pesan transisi seperti "Menghubungkan ke tim kami...".</div>
+              </div>
+              <label class="pa-switch">
+                <input type="checkbox" checked>
+                <span class="pa-switch-track"></span>
+                <span class="pa-switch-thumb"></span>
+              </label>
+            </div>
+            <div class="pa-toggle-row">
+              <div class="pa-toggle-info">
+                <div class="pa-toggle-label">AI kembali aktif setelah human agent selesai</div>
+                <div class="pa-toggle-desc">Setelah percakapan diselesaikan oleh human, AI siap menangani percakapan berikutnya dari kontak yang sama.</div>
+              </div>
+              <label class="pa-switch">
+                <input type="checkbox" checked>
+                <span class="pa-switch-track"></span>
+                <span class="pa-switch-thumb"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+ 
+      </div><!-- /pa-sec-takeover -->
+ 
+ 
+      <!-- SECTION 5 — Jam Kerja & Jadwal -->
+      <div id="pa-sec-jadwal" class="pa-section">
+ 
+        <div class="pa-page-header">
+          <div>
+            <div class="pa-page-title">Jam Kerja & Jadwal</div>
+            <div class="pa-page-desc">Kapan AI aktif full, kapan beralih ke mode offline atau jadwal khusus.</div>
+          </div>
+          <div class="pa-page-actions">
+            <button class="pa-btn pa-btn-primary" onclick="paSaveSettings()"><i class="ti ti-device-floppy"></i> Simpan</button>
+          </div>
+        </div>
+ 
+        <div class="pa-card">
+          <div class="pa-card-header">
+            <div class="pa-card-title"><i class="ti ti-clock"></i> Jam Operasional</div>
+          </div>
+          <div class="pa-card-body">
+            <div class="pa-toggle-row">
+              <div class="pa-toggle-info">
+                <div class="pa-toggle-label">Aktif 24 jam / 7 hari</div>
+                <div class="pa-toggle-desc">AI selalu online tanpa batasan jam — cocok untuk bisnis B2B lintas zona waktu.</div>
+              </div>
+              <label class="pa-switch">
+                <input type="checkbox" id="pa-24x7" checked>
+                <span class="pa-switch-track"></span>
+                <span class="pa-switch-thumb"></span>
+              </label>
+            </div>
+ 
+            <div class="pa-divider"></div>
+ 
+            <!-- Tabel jadwal hari -->
+            <div style="margin-top:12px;display:flex;flex-direction:column;gap:8px">
+              <div style="display:grid;grid-template-columns:130px 1fr 1fr 40px;gap:8px;align-items:center;font-size:10px;font-weight:600;color:var(--gray-400);letter-spacing:.5px;text-transform:uppercase;padding:0 2px">
+                <span>Hari</span><span>Jam Mulai</span><span>Jam Selesai</span><span></span>
+              </div>
+              <!-- Baris hari -->
+              <div style="display:grid;grid-template-columns:130px 1fr 1fr 40px;gap:8px;align-items:center">
+                <span style="font-size:12.5px;font-weight:600">Senin – Jumat</span>
+                <input class="pa-input" type="time" value="08:00" style="padding:6px 10px">
+                <input class="pa-input" type="time" value="17:00" style="padding:6px 10px">
+                <label class="pa-switch"><input type="checkbox" checked><span class="pa-switch-track"></span><span class="pa-switch-thumb"></span></label>
+              </div>
+              <div style="display:grid;grid-template-columns:130px 1fr 1fr 40px;gap:8px;align-items:center">
+                <span style="font-size:12.5px;font-weight:600">Sabtu</span>
+                <input class="pa-input" type="time" value="09:00" style="padding:6px 10px">
+                <input class="pa-input" type="time" value="14:00" style="padding:6px 10px">
+                <label class="pa-switch"><input type="checkbox" checked><span class="pa-switch-track"></span><span class="pa-switch-thumb"></span></label>
+              </div>
+              <div style="display:grid;grid-template-columns:130px 1fr 1fr 40px;gap:8px;align-items:center">
+                <span style="font-size:12.5px;font-weight:600;color:var(--gray-400)">Minggu</span>
+                <input class="pa-input" type="time" value="00:00" style="padding:6px 10px;opacity:.4" disabled>
+                <input class="pa-input" type="time" value="00:00" style="padding:6px 10px;opacity:.4" disabled>
+                <label class="pa-switch"><input type="checkbox"><span class="pa-switch-track"></span><span class="pa-switch-thumb"></span></label>
+              </div>
+            </div>
+ 
+            <div class="pa-field" style="margin-top:14px">
+              <label class="pa-label" for="pa-timezone">Zona waktu</label>
+              <select id="pa-timezone" class="pa-select">
+                <option value="WIB" selected>WIB — Asia/Jakarta (UTC+7)</option>
+                <option value="WITA">WITA — Asia/Makassar (UTC+8)</option>
+                <option value="WIT">WIT — Asia/Jayapura (UTC+9)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+ 
+        <div class="pa-card">
+          <div class="pa-card-header">
+            <div class="pa-card-title"><i class="ti ti-calendar-off" style="color:var(--amber)"></i> Hari Libur Nasional</div>
+          </div>
+          <div class="pa-card-body">
+            <div class="pa-toggle-row">
+              <div class="pa-toggle-info">
+                <div class="pa-toggle-label">Nonaktifkan human agent di hari libur nasional</div>
+                <div class="pa-toggle-desc">AI tetap aktif, tapi takeover ke human agent dinonaktifkan selama hari libur.</div>
+              </div>
+              <label class="pa-switch">
+                <input type="checkbox" checked>
+                <span class="pa-switch-track"></span>
+                <span class="pa-switch-thumb"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+ 
+      </div><!-- /pa-sec-jadwal -->
+ 
+ 
+      <!-- SECTION 6 — Konfigurasi Brand -->
+      <div id="pa-sec-multi-brand" class="pa-section">
+ 
+        <div class="pa-page-header">
+          <div>
+            <div class="pa-page-title">Konfigurasi Multi-Brand</div>
+            <div class="pa-page-desc">Satu AI, banyak brand — tiap brand punya persona, tone, dan agent sendiri.</div>
+          </div>
+          <div class="pa-page-actions">
+            <button class="pa-btn pa-btn-primary" onclick="openAddBrandModal()"><i class="ti ti-plus"></i> Tambah Brand</button>
+          </div>
+        </div>
+ 
+        <div class="pa-alert pa-alert-info">
+          <i class="ti ti-info-circle"></i>
+          <span>Brand yang <strong>aktif</strong> akan digunakan sebagai konfigurasi default AI Agent. Klik kartu brand untuk mengaktifkannya, atau klik <strong>⚙</strong> untuk edit konfigurasi spesifik.</span>
+        </div>
+ 
+        <div class="pa-brand-grid" id="pa-brand-grid">
+          <!-- dirender oleh JS -->
+        </div>
+ 
+        <!-- Pengaturan isolasi brand -->
+        <div class="pa-card">
+          <div class="pa-card-header">
+            <div class="pa-card-title"><i class="ti ti-lock"></i> Isolasi Percakapan Antar-Brand</div>
+          </div>
+          <div class="pa-card-body">
+            <div class="pa-toggle-row">
+              <div class="pa-toggle-info">
+                <div class="pa-toggle-label">Isolasi data per brand</div>
+                <div class="pa-toggle-desc">Percakapan dan lead dari brand berbeda tidak saling tercampur — agent brand A tidak bisa melihat percakapan brand B.</div>
+              </div>
+              <label class="pa-switch">
+                <input type="checkbox" checked>
+                <span class="pa-switch-track"></span>
+                <span class="pa-switch-thumb"></span>
+              </label>
+            </div>
+            <div class="pa-toggle-row">
+              <div class="pa-toggle-info">
+                <div class="pa-toggle-label">Shared Knowledge Base</div>
+                <div class="pa-toggle-desc">Semua brand menggunakan knowledge base yang sama. Matikan untuk knowledge base terpisah per brand.</div>
+              </div>
+              <label class="pa-switch">
+                <input type="checkbox" checked>
+                <span class="pa-switch-track"></span>
+                <span class="pa-switch-thumb"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+ 
+      </div><!-- /pa-sec-multi-brand -->
+ 
+ 
+      <!-- SECTION 7 — Kontrol Akses & Peran -->
+      <div id="pa-sec-akses" class="pa-section">
+ 
+        <div class="pa-page-header">
+          <div>
+            <div class="pa-page-title">Kontrol Akses & Peran</div>
+            <div class="pa-page-desc">Atur hak akses tiap peran dalam tim untuk menjaga keamanan data dan konfigurasi.</div>
+          </div>
+          <div class="pa-page-actions">
+            <button class="pa-btn pa-btn-primary" onclick="paSaveSettings()"><i class="ti ti-device-floppy"></i> Simpan</button>
+          </div>
+        </div>
+ 
+        <div class="pa-card">
+          <div class="pa-card-header">
+            <div class="pa-card-title"><i class="ti ti-table"></i> Matriks Hak Akses</div>
+          </div>
+          <div style="overflow-x:auto">
+            <table class="pa-matrix">
+              <thead>
+                <tr>
+                  <th style="min-width:200px">Fitur / Aksi</th>
+                  <th>Super Admin</th>
+                  <th>Admin</th>
+                  <th>Agent</th>
+                  <th>Viewer</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Lihat percakapan</strong></td>
+                  <td><i class="ti ti-circle-check pa-check"></i></td>
+                  <td><i class="ti ti-circle-check pa-check"></i></td>
+                  <td><i class="ti ti-circle-check pa-check"></i></td>
+                  <td><i class="ti ti-circle-check pa-check"></i></td>
+                </tr>
+                <tr>
+                  <td><strong>Balas percakapan</strong></td>
+                  <td><i class="ti ti-circle-check pa-check"></i></td>
+                  <td><i class="ti ti-circle-check pa-check"></i></td>
+                  <td><i class="ti ti-circle-check pa-check"></i></td>
+                  <td><i class="ti ti-circle-x pa-cross"></i></td>
+                </tr>
+                <tr>
+                  <td><strong>Takeover dari AI</strong></td>
+                  <td><i class="ti ti-circle-check pa-check"></i></td>
+                  <td><i class="ti ti-circle-check pa-check"></i></td>
+                  <td><i class="ti ti-circle-check pa-check"></i></td>
+                  <td><i class="ti ti-circle-x pa-cross"></i></td>
+                </tr>
+                <tr>
+                  <td><strong>Kelola leads & kontak</strong></td>
+                  <td><i class="ti ti-circle-check pa-check"></i></td>
+                  <td><i class="ti ti-circle-check pa-check"></i></td>
+                  <td><span class="pa-partial" title="Hanya kontak yang ditugaskan">~</span></td>
+                  <td><i class="ti ti-circle-x pa-cross"></i></td>
+                </tr>
+                <tr>
+                  <td><strong>Lihat analitik</strong></td>
+                  <td><i class="ti ti-circle-check pa-check"></i></td>
+                  <td><i class="ti ti-circle-check pa-check"></i></td>
+                  <td><span class="pa-partial" title="Hanya data sendiri">~</span></td>
+                  <td><i class="ti ti-circle-check pa-check"></i></td>
+                </tr>
+                <tr>
+                  <td><strong>Edit Pengaturan Agent</strong></td>
+                  <td><i class="ti ti-circle-check pa-check"></i></td>
+                  <td><i class="ti ti-circle-check pa-check"></i></td>
+                  <td><i class="ti ti-circle-x pa-cross"></i></td>
+                  <td><i class="ti ti-circle-x pa-cross"></i></td>
+                </tr>
+                <tr>
+                  <td><strong>Kelola Knowledge Base</strong></td>
+                  <td><i class="ti ti-circle-check pa-check"></i></td>
+                  <td><i class="ti ti-circle-check pa-check"></i></td>
+                  <td><i class="ti ti-circle-x pa-cross"></i></td>
+                  <td><i class="ti ti-circle-x pa-cross"></i></td>
+                </tr>
+                <tr>
+                  <td><strong>Tambah / hapus user</strong></td>
+                  <td><i class="ti ti-circle-check pa-check"></i></td>
+                  <td><i class="ti ti-circle-x pa-cross"></i></td>
+                  <td><i class="ti ti-circle-x pa-cross"></i></td>
+                  <td><i class="ti ti-circle-x pa-cross"></i></td>
+                </tr>
+                <tr>
+                  <td><strong>Kelola integrasi & API</strong></td>
+                  <td><i class="ti ti-circle-check pa-check"></i></td>
+                  <td><span class="pa-partial" title="Hanya integrasi yang sudah ada">~</span></td>
+                  <td><i class="ti ti-circle-x pa-cross"></i></td>
+                  <td><i class="ti ti-circle-x pa-cross"></i></td>
+                </tr>
+                <tr>
+                  <td><strong>Hapus percakapan</strong></td>
+                  <td><i class="ti ti-circle-check pa-check"></i></td>
+                  <td><i class="ti ti-circle-x pa-cross"></i></td>
+                  <td><i class="ti ti-circle-x pa-cross"></i></td>
+                  <td><i class="ti ti-circle-x pa-cross"></i></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div style="padding:10px 14px;background:var(--gray-50);border-top:1px solid var(--gray-100);font-size:11px;color:var(--gray-400);display:flex;align-items:center;gap:12px">
+            <span><i class="ti ti-circle-check" style="color:var(--green)"></i> Akses penuh</span>
+            <span><span class="pa-partial">~</span> Akses terbatas</span>
+            <span><i class="ti ti-circle-x" style="color:var(--gray-200)"></i> Tidak ada akses</span>
+          </div>
+        </div>
+ 
+        <div class="pa-card">
+          <div class="pa-card-header">
+            <div class="pa-card-title"><i class="ti ti-shield"></i> Keamanan Akun</div>
+          </div>
+          <div class="pa-card-body">
+            <div class="pa-toggle-row">
+              <div class="pa-toggle-info">
+                <div class="pa-toggle-label">Wajib verifikasi 2 langkah (2FA)</div>
+                <div class="pa-toggle-desc">Semua user dengan peran Admin ke atas wajib mengaktifkan autentikasi dua faktor.</div>
+              </div>
+              <label class="pa-switch">
+                <input type="checkbox" checked>
+                <span class="pa-switch-track"></span>
+                <span class="pa-switch-thumb"></span>
+              </label>
+            </div>
+            <div class="pa-toggle-row">
+              <div class="pa-toggle-info">
+                <div class="pa-toggle-label">Batasi login per perangkat</div>
+                <div class="pa-toggle-desc">Tiap akun hanya bisa login dari satu perangkat aktif sekaligus.</div>
+              </div>
+              <label class="pa-switch">
+                <input type="checkbox">
+                <span class="pa-switch-track"></span>
+                <span class="pa-switch-thumb"></span>
+              </label>
+            </div>
+            <div class="pa-toggle-row">
+              <div class="pa-toggle-info">
+                <div class="pa-toggle-label">Auto logout sesi tidak aktif</div>
+                <div class="pa-toggle-desc">Sesi login otomatis berakhir setelah tidak aktif selama durasi yang ditentukan.</div>
+              </div>
+              <label class="pa-switch">
+                <input type="checkbox" checked>
+                <span class="pa-switch-track"></span>
+                <span class="pa-switch-thumb"></span>
+              </label>
+            </div>
+            <div class="pa-field" style="margin-top:6px">
+              <label class="pa-label" for="pa-session-timeout">Durasi auto logout</label>
+              <select id="pa-session-timeout" class="pa-select" style="max-width:220px">
+                <option>30 menit</option>
+                <option selected>1 jam</option>
+                <option>4 jam</option>
+                <option>8 jam</option>
+              </select>
+            </div>
+          </div>
+        </div>
+ 
+      </div><!-- /pa-sec-akses -->
+ 
+ 
+      <!-- SECTION 8 — Log Audit -->
+      <div id="pa-sec-audit" class="pa-section">
+ 
+        <div class="pa-page-header">
+          <div>
+            <div class="pa-page-title">Log Audit</div>
+            <div class="pa-page-desc">Rekam jejak semua perubahan konfigurasi dan aktivitas admin.</div>
+          </div>
+          <div class="pa-page-actions">
+            <button class="pa-btn pa-btn-ghost"><i class="ti ti-download"></i> Export CSV</button>
+          </div>
+        </div>
+ 
+        <div class="pa-card">
+          <div class="pa-card-header">
+            <div class="pa-card-title"><i class="ti ti-history"></i> Riwayat Aktivitas</div>
+            <div style="display:flex;gap:6px">
+              <select class="pa-select" style="width:140px;padding:5px 10px;font-size:11px">
+                <option>Semua tipe</option>
+                <option>Perubahan setting</option>
+                <option>Login / Logout</option>
+                <option>Takeover</option>
+                <option>Tambah/Hapus user</option>
+              </select>
+              <input class="pa-input" style="width:160px;padding:5px 10px;font-size:11px" type="date" value="2026-06-15">
+            </div>
+          </div>
+          <div>
+            <!-- Log rows -->
+            <div style="display:grid;grid-template-columns:130px 1fr 120px 100px;padding:8px 14px;background:var(--gray-50);border-bottom:1px solid var(--gray-200);font-size:10px;font-weight:600;color:var(--gray-400);letter-spacing:.5px;text-transform:uppercase">
+              <span>Waktu</span><span>Aksi</span><span>User</span><span>Peran</span>
+            </div>
+ 
+            <!-- Log item macro -->
+            <div style="display:grid;grid-template-columns:130px 1fr 120px 100px;padding:10px 14px;border-bottom:1px solid var(--gray-100);font-size:12px;align-items:center">
+              <span style="color:var(--gray-400);font-size:11px">15 Jun, 09:14</span>
+              <span>Mengubah tone agent dari <strong>Formal</strong> ke <strong>Santai</strong></span>
+              <span style="color:var(--gray-600)">Budi Wicaksono</span>
+              <span class="pa-role-badge pa-role-superadmin" style="font-size:10px">Super Admin</span>
+            </div>
+            <div style="display:grid;grid-template-columns:130px 1fr 120px 100px;padding:10px 14px;border-bottom:1px solid var(--gray-100);font-size:12px;align-items:center">
+              <span style="color:var(--gray-400);font-size:11px">15 Jun, 08:52</span>
+              <span>Menambah agent baru: <strong>Maya Lestari</strong> (Viewer)</span>
+              <span style="color:var(--gray-600)">Sari Dewi</span>
+              <span class="pa-role-badge pa-role-admin" style="font-size:10px">Admin</span>
+            </div>
+            <div style="display:grid;grid-template-columns:130px 1fr 120px 100px;padding:10px 14px;border-bottom:1px solid var(--gray-100);font-size:12px;align-items:center">
+              <span style="color:var(--gray-400);font-size:11px">14 Jun, 16:30</span>
+              <span>Takeover percakapan ID #4821 dari AI ke human</span>
+              <span style="color:var(--gray-600)">Andi Prasetyo</span>
+              <span class="pa-role-badge pa-role-agent" style="font-size:10px">Agent</span>
+            </div>
+            <div style="display:grid;grid-template-columns:130px 1fr 120px 100px;padding:10px 14px;border-bottom:1px solid var(--gray-100);font-size:12px;align-items:center">
+              <span style="color:var(--gray-400);font-size:11px">14 Jun, 14:05</span>
+              <span>Mengaktifkan rule takeover: <strong>User minta bicara dengan manusia</strong></span>
+              <span style="color:var(--gray-600)">Budi Wicaksono</span>
+              <span class="pa-role-badge pa-role-superadmin" style="font-size:10px">Super Admin</span>
+            </div>
+            <div style="display:grid;grid-template-columns:130px 1fr 120px 100px;padding:10px 14px;border-bottom:1px solid var(--gray-100);font-size:12px;align-items:center">
+              <span style="color:var(--gray-400);font-size:11px">13 Jun, 11:20</span>
+              <span>Menambah brand baru: <strong>Indotrading Kimia</strong></span>
+              <span style="color:var(--gray-600)">Budi Wicaksono</span>
+              <span class="pa-role-badge pa-role-superadmin" style="font-size:10px">Super Admin</span>
+            </div>
+            <div style="display:grid;grid-template-columns:130px 1fr 120px 100px;padding:10px 14px;font-size:12px;align-items:center">
+              <span style="color:var(--gray-400);font-size:11px">12 Jun, 08:00</span>
+              <span>Login dari perangkat baru (Chrome / Jakarta)</span>
+              <span style="color:var(--gray-600)">Rini Kusuma</span>
+              <span class="pa-role-badge pa-role-agent" style="font-size:10px">Agent</span>
+            </div>
+          </div>
+        </div>
+ 
+      </div><!-- /pa-sec-audit -->
+ 
+ 
+      <!-- ── Save bar ─────────────────────────────────────────── -->
+      <div id="pa-save-bar" class="pa-save-bar" style="display:none">
+        <div class="pa-save-info">
+          <i class="ti ti-edit" style="font-size:14px"></i>
+          Ada perubahan yang belum disimpan
+        </div>
+        <div style="display:flex;gap:6px">
+          <button class="pa-btn pa-btn-ghost" onclick="paDiscardChanges()">Batalkan</button>
+          <button class="pa-btn pa-btn-primary" id="pa-save-btn-bar" onclick="paSaveSettings()">
+            <i class="ti ti-device-floppy"></i> Simpan Perubahan
+          </button>
+        </div>
+      </div>
+ 
+    </div><!-- /pa-content -->
+  </div><!-- /pa-shell -->
+ 
+</div><!-- /pengaturan-agent-page -->
+ 
+ 
+<!-- ── Modal: Tambah / Edit Agent ─────────────────────────────── -->
+<div id="pa-modal-agent" class="pa-modal-overlay" style="display:none" role="dialog" aria-modal="true" aria-labelledby="pa-modal-agent-title">
+  <div class="pa-modal">
+    <div class="pa-modal-header">
+      <div class="pa-modal-title"><i class="ti ti-user-plus" style="color:var(--red)"></i> <span id="pa-modal-agent-title">Undang Agent Baru</span></div>
+      <button class="pa-modal-close" onclick="closeAgentModal()" aria-label="Tutup"><i class="ti ti-x"></i></button>
+    </div>
+    <form id="pa-modal-agent-form" onsubmit="return false">
+      <div class="pa-modal-body">
+        <div class="pa-field">
+          <label class="pa-label" for="pa-modal-agent-email">Alamat email</label>
+          <input id="pa-modal-agent-email" class="pa-input" type="email" placeholder="nama@perusahaan.com" required>
+        </div>
+        <div class="pa-field">
+          <label class="pa-label" for="pa-modal-agent-role">Peran dalam tim</label>
+          <select id="pa-modal-agent-role" class="pa-select">
+            <option value="agent">Agent — bisa menerima takeover percakapan</option>
+            <option value="admin">Admin — bisa edit pengaturan dan kelola agent</option>
+            <option value="viewer">Viewer — hanya bisa melihat laporan</option>
+          </select>
+        </div>
+        <div class="pa-field">
+          <label class="pa-label">Brand yang bisa diakses</label>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;cursor:pointer"><input type="checkbox" checked> Indotrading B2B</label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;cursor:pointer"><input type="checkbox"> Indotrading Mesin</label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;cursor:pointer"><input type="checkbox"> Indotrading Kimia</label>
+          </div>
+        </div>
+        <div class="pa-alert pa-alert-info">
+          <i class="ti ti-mail"></i>
+          <span>Email undangan akan dikirim ke alamat di atas. Agent perlu verifikasi sebelum bisa login.</span>
+        </div>
+      </div>
+      <div class="pa-modal-footer">
+        <button class="pa-btn pa-btn-ghost" onclick="closeAgentModal()">Batal</button>
+        <button class="pa-btn pa-btn-primary" onclick="saveAgentModal()"><i class="ti ti-send"></i> Kirim Undangan</button>
+      </div>
+    </form>
+  </div>
+</div>
+<!-- ENDING PENGATURAN AGENT PAGE -->
+
+<div id="knowledge-base-page" style="display: none;">
+  <p>Knowledge Base Content</p>
+</div>
+
 <!-- ════════════════════════════════════════════════════════════
      MODALS APPOINTMENT
 ════════════════════════════════════════════════════════════ -->
@@ -2294,6 +3447,8 @@
 <script src="/script_page/leads-page.js"></script>
 <script src="/script_page/appointment.js"></script>
 <script src="/script_page/analitik.js"></script>
+<script src="/script_page/integrasi.js"></script>
+<script src="/script_page/pengaturan-agent.js"></script>
 
 </body>
 </html>
