@@ -1969,7 +1969,7 @@
         <div>Customer</div>
         <div>Jadwal</div>
         <div>Jenis</div>
-        <div>Sales PIC</div>
+        <div>Penanggung Jawab</div>
         <div>Status</div>
         <div>Dibuat Oleh</div>
         <div>Aksi</div>
@@ -3821,6 +3821,7 @@
       <div class="ap-fd-row">
         <div class="ap-fd-group">
           <label class="ap-fd-label">Jenis Pertemuan <span class="ap-fd-req">*</span></label>
+          <!-- Opsi diisi secara dinamis dari SELLER_CONFIG.meetingTypes via apPopulateMeetingTypes() -->
           <select class="ap-fd-input" id="ap-fd-type">
             <option value="demo">Demo Produk</option>
             <option value="konsultasi">Konsultasi</option>
@@ -3830,9 +3831,10 @@
           </select>
         </div>
         <div class="ap-fd-group">
-          <label class="ap-fd-label">Sales PIC <span class="ap-fd-req">*</span></label>
+          <label class="ap-fd-label" id="ap-fd-sales-label">Penanggung Jawab</label>
+          <!-- Opsi diisi secara dinamis dari SELLER_CONFIG.staffList via apPopulateStaffDropdown() -->
           <select class="ap-fd-input" id="ap-fd-sales">
-            <option value="">— Pilih Sales —</option>
+            <option value="">— Pilih Penanggung Jawab —</option>
             <option value="Rina Kartika">Rina Kartika</option>
             <option value="Dimas Pratama">Dimas Pratama</option>
             <option value="Siti Rahayu">Siti Rahayu</option>
@@ -3844,7 +3846,7 @@
       <div class="ap-fd-row">
         <div class="ap-fd-group" style="flex:1">
           <label class="ap-fd-label">Link / Lokasi Meeting</label>
-          <input class="ap-fd-input" id="ap-fd-location" placeholder="cth. https://meet.google.com/xxx atau Kantor Indotrading Lt.3" />
+          <input class="ap-fd-input" id="ap-fd-location" placeholder="cth. Link meeting, alamat toko, atau lokasi kunjungan" />
         </div>
       </div>
 

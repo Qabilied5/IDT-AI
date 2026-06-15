@@ -1,7 +1,26 @@
-/* =============================================================
-   appointment.js — Indotrading AI
-   Halaman Appointment: data, render, filter, modal, detail panel
-   ============================================================= */
+const SELLER_CONFIG = {
+  staffLabel: 'Penanggung Jawab',   // Ganti jadi 'Sales PIC', 'Terapis', dll. sesuai bisnis
+  staffList: [
+    'Rina Kartika',
+    'Dimas Pratama',
+    'Siti Rahayu',
+    'Arif Budiman',
+  ],
+  meetingTypes: [
+    { value: 'demo',        label: 'Demo Produk',    colorClass: 'ap-type-demo' },
+    { value: 'konsultasi',  label: 'Konsultasi',     colorClass: 'ap-type-konsultasi' },
+    { value: 'negosiasi',   label: 'Negosiasi',      colorClass: 'ap-type-negosiasi' },
+    { value: 'onboarding',  label: 'Onboarding',     colorClass: 'ap-type-onboarding' },
+    { value: 'lainnya',     label: 'Lainnya',        colorClass: 'ap-type-lainnya' },
+    /* Contoh tipe lain yang bisa diaktifkan per seller:
+    { value: 'reservasi',   label: 'Reservasi',      colorClass: 'ap-type-reservasi' },
+    { value: 'treatment',   label: 'Treatment',      colorClass: 'ap-type-treatment' },
+    { value: 'servis',      label: 'Servis Kendaraan', colorClass: 'ap-type-servis' },
+    { value: 'survey',      label: 'Survey Lokasi',  colorClass: 'ap-type-survey' },
+    { value: 'kunjungan',   label: 'Kunjungan Rumah', colorClass: 'ap-type-kunjungan' },
+    */
+  ],
+};
 
 /* ── 1. DATA ──────────────────────────────────────────────────── */
 const AP_DATA = [
@@ -21,7 +40,7 @@ const AP_DATA = [
     createdBy: 'ai',
     location: 'https://meet.google.com/abc-defg-hij',
     notes: 'Lead dari website. Tertarik spare part mesin packing. Butuh 50 pcs.',
-    aiNote: 'AI mendeteksi lead berkualitas tinggi (skor 88/100). Customer sudah tanya harga dan kuantiti — indikasi intent beli kuat. Disarankan sales demo langsung ke produk unggulan kategori mesin industri.',
+    aiNote: 'AI mendeteksi minat kuat dari customer — sudah bertanya detail harga dan kuantitas. Disarankan siapkan penawaran spesifik dan contoh produk untuk sesi ini.',
     timeline: [
       { type: 'ai', event: 'AI menerima inquiry dari WhatsApp', sub: 'Customer bertanya ketersediaan spare part', time: '10:24' },
       { type: 'ai', event: 'AI menawarkan 3 slot jadwal', sub: 'Slot Rabu 09.00, 14.00, dan Kamis 10.00', time: '10:25' },
@@ -46,7 +65,7 @@ const AP_DATA = [
     createdBy: 'ai',
     location: 'Kantor Indotrading Lt. 3, Ruang Rapat A',
     notes: 'Deal potensial Rp 120 juta. Negosiasi harga dan skema pembayaran.',
-    aiNote: 'Skor lead 94/100 — sangat panas. Customer sudah 3x interaksi sebelumnya. Rekomendasikan bawa proposal lengkap dan opsi cicilan 3 bulan.',
+    aiNote: 'Customer menunjukkan keterlibatan tinggi — sudah 3x interaksi sebelumnya. Rekomendasikan bawa proposal lengkap dan opsi pembayaran yang fleksibel.',
     timeline: [
       { type: 'manual', event: 'Sales membuat appointment manual', sub: 'Dimas Pratama mengatur meeting setelah call awal', time: '08:30 kemarin' },
       { type: 'ai', event: 'AI mengirimkan reminder ke customer', sub: 'Reminder H-1 via WhatsApp terkirim', time: '09:00 kemarin' },
@@ -115,7 +134,7 @@ const AP_DATA = [
     createdBy: 'ai',
     location: 'https://meet.google.com/onboard-abc',
     notes: 'Customer baru. Sesi onboarding platform Indotrading B2B.',
-    aiNote: 'Customer menyelesaikan sign-up kemarin. AI mendeteksi profil buyer aktif. Onboarding penting untuk aktivasi akun penuh.',
+    aiNote: 'Customer baru menyelesaikan pendaftaran. AI mendeteksi profil aktif dengan potensi engagement tinggi. Sesi onboarding penting untuk aktivasi dan retensi awal.',
     timeline: [
       { type: 'ai', event: 'Trigger otomatis setelah sign-up customer', sub: 'AI menjadwalkan onboarding dalam 24 jam', time: '14:00 kemarin' },
       { type: 'success', event: 'Customer konfirmasi slot', sub: 'Memilih Kamis 14.00', time: '14:30 kemarin' },
@@ -206,14 +225,8 @@ function apStatusLabel(status) {
 }
 
 function apTypeClass(type) {
-  const map = {
-    demo:       'ap-type-demo',
-    konsultasi: 'ap-type-konsultasi',
-    negosiasi:  'ap-type-negosiasi',
-    onboarding: 'ap-type-onboarding',
-    lainnya:    'ap-type-lainnya',
-  };
-  return map[type] || 'ap-type-lainnya';
+  const found = SELLER_CONFIG.meetingTypes.find(t => t.value === type);
+  return found ? found.colorClass : 'ap-type-lainnya';
 }
 
 /* ── 4. FILTER ────────────────────────────────────────────────── */
@@ -290,7 +303,7 @@ function apRender() {
       <div>
         <span class="ap-type-badge ${apTypeClass(r.type)}">${r.typeLabel}</span>
       </div>
-      <!-- Sales PIC -->
+      <!-- Penanggung Jawab -->
       <div class="ap-row-sales">
         <div class="ap-sales-av">${apInitials(r.sales)}</div>
         <span>${r.sales}</span>
@@ -385,7 +398,7 @@ function apSelectRow(id) {
       ['Tanggal',   `${apFormatDate(r.date)}`],
       ['Waktu',     `${r.time} WIB (${r.duration} menit)`],
       ['Jenis',     `<span class="ap-type-badge ${apTypeClass(r.type)}">${r.typeLabel}</span>`],
-      ['Sales PIC', r.sales],
+      [SELLER_CONFIG.staffLabel, r.sales || '<span style="color:var(--gray-400)">—</span>'],
       ['Dibuat',    r.createdBy === 'ai'
         ? '<span class="ap-creator-badge ap-creator-ai"><i class="ti ti-sparkles"></i> AI Otomatis</span>'
         : '<span class="ap-creator-badge ap-creator-manual"><i class="ti ti-user"></i> Manual</span>'],
@@ -446,10 +459,40 @@ function apCloseDetail() {
 }
 
 /* ── 7. MODAL: CREATE / EDIT ──────────────────────────────────── */
+
+/* Populate dropdown Jenis Pertemuan dari SELLER_CONFIG (dipanggil setiap open modal) */
+function apPopulateMeetingTypes() {
+  const sel = document.getElementById('ap-fd-type');
+  if (!sel) return;
+  sel.innerHTML = SELLER_CONFIG.meetingTypes.map(t =>
+    `<option value="${t.value}">${t.label}</option>`
+  ).join('');
+}
+
+/* Populate dropdown Penanggung Jawab dari SELLER_CONFIG */
+function apPopulateStaffDropdown() {
+  const sel = document.getElementById('ap-fd-sales');
+  const lbl = document.getElementById('ap-fd-sales-label');
+  if (!sel) return;
+
+  // Perbarui label field jika ada elemen label
+  if (lbl) lbl.textContent = SELLER_CONFIG.staffLabel;
+
+  const placeholder = `— Pilih ${SELLER_CONFIG.staffLabel} —`;
+  const staffOpts = SELLER_CONFIG.staffList.length > 0
+    ? SELLER_CONFIG.staffList.map(s => `<option value="${s}">${s}</option>`).join('')
+    : '';
+  sel.innerHTML = `<option value="">${placeholder}</option>${staffOpts}`;
+}
+
+
 function apOpenCreate() {
   apEditingId = null;
   const title = document.getElementById('ap-create-title');
   if (title) title.textContent = 'Buat Appointment Baru';
+  // Populate dropdown dinamis dari SELLER_CONFIG
+  apPopulateMeetingTypes();
+  apPopulateStaffDropdown();
   // Clear fields
   ['ap-fd-nama','ap-fd-company','ap-fd-phone','ap-fd-email','ap-fd-datetime','ap-fd-location','ap-fd-notes'].forEach(id => {
     const el = document.getElementById(id);
@@ -471,6 +514,10 @@ function apOpenEdit() {
 
   const title = document.getElementById('ap-create-title');
   if (title) title.textContent = 'Edit Appointment';
+
+  // Populate dropdown dinamis dari SELLER_CONFIG
+  apPopulateMeetingTypes();
+  apPopulateStaffDropdown();
 
   document.getElementById('ap-fd-nama').value = r.nama;
   document.getElementById('ap-fd-company').value = r.company;
@@ -496,13 +543,15 @@ function apSaveAppointment() {
   const datetime = document.getElementById('ap-fd-datetime').value;
   const salesVal = document.getElementById('ap-fd-sales').value;
 
-  if (!nama || !phone || !datetime || !salesVal) {
+  if (!nama || !phone || !datetime) {
     apShowToast('error', '<i class="ti ti-alert-circle"></i> Mohon lengkapi field wajib diisi.');
     return;
   }
 
   const typeEl = document.getElementById('ap-fd-type');
-  const typeLabels = { demo: 'Demo Produk', konsultasi: 'Konsultasi', negosiasi: 'Negosiasi', onboarding: 'Onboarding', lainnya: 'Lainnya' };
+  // Resolve label dari SELLER_CONFIG (fallback ke value jika tidak ditemukan)
+  const typeObj = SELLER_CONFIG.meetingTypes.find(t => t.value === typeEl.value);
+  const typeLabel = typeObj ? typeObj.label : typeEl.value;
 
   const [dateStr, timeStr] = datetime.split('T');
 
@@ -514,7 +563,7 @@ function apSaveAppointment() {
         phone, email: document.getElementById('ap-fd-email').value.trim(),
         date: dateStr, time: timeStr.replace(':', '.'),
         duration: parseInt(document.getElementById('ap-fd-duration').value),
-        type: typeEl.value, typeLabel: typeLabels[typeEl.value],
+        type: typeEl.value, typeLabel: typeLabel,
         sales: salesVal,
         location: document.getElementById('ap-fd-location').value.trim(),
         notes: document.getElementById('ap-fd-notes').value.trim(),
@@ -529,7 +578,7 @@ function apSaveAppointment() {
       phone, email: document.getElementById('ap-fd-email').value.trim(),
       date: dateStr, time: timeStr.replace(':', '.'),
       duration: parseInt(document.getElementById('ap-fd-duration').value),
-      type: typeEl.value, typeLabel: typeLabels[typeEl.value],
+      type: typeEl.value, typeLabel: typeLabel,
       sales: salesVal, status: 'menunggu', createdBy: 'manual',
       location: document.getElementById('ap-fd-location').value.trim(),
       notes: document.getElementById('ap-fd-notes').value.trim(),

@@ -759,7 +759,14 @@
   display: flex;
   flex-direction: column;
   gap: 5px;
+  width: 100%;
+  /* margin-left: 8px; */
 }
+
+.kb-src-panel{
+    gap: 8px;
+}
+
 .kb-fd-label {
   font-size: 11.5px;
   font-weight: 600;
