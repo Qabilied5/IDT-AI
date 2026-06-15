@@ -13,12 +13,71 @@
   <link rel="stylesheet" href="page.css/integrasi.css">
   <link rel="stylesheet" href="page.css/pengaturan-agent.css">
   <link rel="stylesheet" href="page.css/knowledge-base.css">
+  <link rel="stylesheet" href="desktopOnly.css">
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
   
 </head>
 <body>
 
+  <!-- DESKTOP ONLY INFORMATION MODAL -->
+  <div id="desktop-only-overlay" role="dialog" aria-modal="true" aria-labelledby="do-title" aria-describedby="do-desc">
+ 
+  <!-- Kartu utama -->
+  <div class="do-card">
+ 
+    <!-- Ilustrasi -->
+    <div class="do-illustration">
+      <div class="do-monitor">
+        <div class="do-screen">
+          <div class="do-screen-bar"></div>
+          <div class="do-screen-bar do-bar-mid"></div>
+          <div class="do-screen-bar do-bar-short"></div>
+        </div>
+        <div class="do-stand"></div>
+        <div class="do-base"></div>
+      </div>
+      <div class="do-phone">
+        <div class="do-phone-screen">
+          <div class="do-phone-x">✕</div>
+        </div>
+      </div>
+    </div>
+ 
+    <!-- Logo -->
+    <div class="do-brand">
+      <div class="do-logo">I</div>
+      <span class="do-brand-name">Indotrading AI</span>
+    </div>
+ 
+    <!-- Teks utama -->
+    <h1 class="do-title" id="do-title">Gunakan Perangkat Desktop</h1>
+    <p class="do-desc" id="do-desc">
+      <Strong>Tampilan Mobile</Strong> belum tersedia untuk saat ini.<br>
+      Silahkan buka halaman ini melalui <strong>laptop</strong> atau <strong>komputer</strong> untuk tampilan terbaik.
+    </p>
+ 
+    <!-- Info teknis -->
+    <div class="do-info-box">
+      <div class="do-info-row">
+        <i class="ti ti-device-desktop-check"></i>
+        <span>Resolusi minimum yang disarankan: <strong>1024 px</strong></span>
+      </div>
+      <div class="do-info-row">
+        <i class="ti ti-browser"></i>
+        <span>Browser: Chrome, Firefox, Edge, atau Safari terbaru</span>
+      </div>
+    </div>
+ 
+    <!-- Footer -->
+    <p class="do-footer-note">
+      <i class="ti ti-lock"></i> Indotrading AI Admin Dashboard &copy; 2025
+    </p>
+ 
+  </div>
+</div>
+
+  
 <!-- <h2 class="sr-only">Dashboard AI Agent — ringkasan performa percakapan, metrik, dan status agen</h2> -->
 
 <div class="shell">
@@ -4016,6 +4075,7 @@
 <script src="script_page/integrasi.js"></script>
 <script src="script_page/pengaturan-agent.js"></script>
 <script src="script_page/knowledge-base.js"></script>
+<script src="desktopOnly.js"></script>
 
 </body>
 </html>
