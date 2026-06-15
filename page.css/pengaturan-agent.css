@@ -29,6 +29,7 @@
   flex-direction: column;
   gap: 2px;
   overflow-y: auto;
+  border-radius: 8px;
 }
 
 .pa-nav-section {
@@ -469,10 +470,10 @@
   font-size: 10.5px;
   font-weight: 600;
 }
-.pa-role-superadmin { background: #fef2f2; color: var(--red); border: 1px solid var(--red-mid); }
-.pa-role-admin      { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
-.pa-role-agent      { background: var(--green-bg); color: var(--green); border: 1px solid #a7f3d0; }
-.pa-role-viewer     { background: var(--gray-100); color: var(--gray-600); border: 1px solid var(--gray-200); }
+.pa-role-superadmin { background: #fef2f2; color: var(--red); border: 1px solid var(--red-mid); width: 100%; display: flex; align-items: center; justify-content: center; }
+.pa-role-admin      { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; width: 100%; display: flex; align-items: center; justify-content: center; }
+.pa-role-agent      { background: var(--green-bg); color: var(--green); border: 1px solid #a7f3d0; width: 100%; display: flex; align-items: center; justify-content: center; }
+.pa-role-viewer     { background: var(--gray-100); color: var(--gray-600); border: 1px solid var(--gray-200); width: 100%; display: flex; align-items: center; justify-content: center;   }
 
 .pa-status-pill {
   display: inline-flex;
@@ -942,5 +943,11 @@
 .pa-content::-webkit-scrollbar { width: 5px; }
 .pa-content::-webkit-scrollbar-track { background: transparent; }
 .pa-content::-webkit-scrollbar-thumb { background: var(--gray-200); border-radius: 10px; }
-.pa-sidenav::-webkit-scrollbar { width: 3px; }
-.pa-sidenav::-webkit-scrollbar-thumb { background: var(--gray-200); border-radius: 10px; }
+.pa-sidenav::-webkit-scrollbar { 
+  width: 3px; 
+}
+.pa-sidenav::-webkit-scrollbar-thumb 
+{
+   background: var(--gray-200); border-radius: 10px; 
+
+}

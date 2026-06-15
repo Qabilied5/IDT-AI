@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="/page.css/analitik.css">
   <link rel="stylesheet" href="/page.css/integrasi.css">
   <link rel="stylesheet" href="/page.css/pengaturan-agent.css">
+  <link rel="stylesheet" href="/page.css/knowledge-base.css">
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
   
@@ -73,6 +74,10 @@
         <!-- Halaman Overview -->
         <div id="overview-page" class="overview-page">
           <!-- METRICS -->
+          <div class="metric-card">
+            <h1>Armsfloor</h1>
+        </div>
+
           <div class="metrics">
             <div class="metric-card accent">
               <div class="metric-label"><i class="ti ti-messages" aria-hidden="true"></i> Total Percakapan</div>
@@ -3190,9 +3195,568 @@
 </div>
 <!-- ENDING PENGATURAN AGENT PAGE -->
 
+
+<!-- START KNOWLEDGE BASE PAGE -->
 <div id="knowledge-base-page" style="display: none;">
-  <p>Knowledge Base Content</p>
+
+  <div class="kb-toolbar">
+    <div class="kb-toolbar-left">
+      <div class="kb-search-wrap">
+        <i class="ti ti-search"></i>
+        <input type="text" id="kb-search-input" placeholder="Cari dokumen, FAQ, SOP…" />
+        <kbd class="kb-shortcut">⌘K</kbd>
+      </div>
+      <div class="kb-ai-pill">
+        <span class="kb-pulse-dot"></span>
+        <i class="ti ti-robot"></i>
+        AI siap menjawab dari <strong id="kb-doc-count">0</strong> dokumen
+      </div>
+    </div>
+    <div class="kb-toolbar-right">
+      <button class="kb-btn-ghost" onclick="kbOpenModal('train')">
+        <i class="ti ti-refresh"></i> Latih Ulang AI
+      </button>
+      <button class="kb-btn-primary" onclick="kbOpenModal('add')">
+        <i class="ti ti-plus"></i> Tambah Dokumen
+      </button>
+    </div>
+  </div>
+ 
+  <!-- ── STATS BAR ─────────────────────────────────────────────── -->
+  <div class="kb-stats-bar">
+    <div class="kb-stat-item">
+      <i class="ti ti-files"></i>
+      <span><strong id="kb-stat-total">24</strong> Dokumen</span>
+    </div>
+    <div class="kb-stat-sep"></div>
+    <div class="kb-stat-item">
+      <i class="ti ti-message-question"></i>
+      <span><strong>128</strong> FAQ</span>
+    </div>
+    <div class="kb-stat-sep"></div>
+    <div class="kb-stat-item">
+      <i class="ti ti-check-circle"></i>
+      <span>Terlatih <strong class="kb-text-green">3 jam lalu</strong></span>
+    </div>
+    <div class="kb-stat-sep"></div>
+    <div class="kb-stat-item">
+      <i class="ti ti-brain"></i>
+      <span>Akurasi AI <strong class="kb-text-green">94.2%</strong></span>
+    </div>
+    <div class="kb-stat-sep"></div>
+    <div class="kb-stat-item">
+      <i class="ti ti-database"></i>
+      <span><strong>3.4 MB</strong> / 100 MB digunakan</span>
+    </div>
+  </div>
+ 
+  <!-- ── MAIN BODY ──────────────────────────────────────────────── -->
+  <div class="kb-body">
+ 
+    <!-- SIDEBAR KATEGORI -->
+    <div class="kb-sidebar">
+      <div class="kb-cat-label">Kategori</div>
+ 
+      <div class="kb-cat-item active" data-cat="semua" onclick="kbFilterCat(this, 'semua')">
+        <i class="ti ti-layout-grid"></i>
+        <span>Semua Dokumen</span>
+        <span class="kb-cat-count">24</span>
+      </div>
+      <div class="kb-cat-item" data-cat="produk" onclick="kbFilterCat(this, 'produk')">
+        <i class="ti ti-box"></i>
+        <span>Produk & Layanan</span>
+        <span class="kb-cat-count">8</span>
+      </div>
+      <div class="kb-cat-item" data-cat="harga" onclick="kbFilterCat(this, 'harga')">
+        <i class="ti ti-tag"></i>
+        <span>Harga & Promo</span>
+        <span class="kb-cat-count">5</span>
+      </div>
+      <div class="kb-cat-item" data-cat="faq" onclick="kbFilterCat(this, 'faq')">
+        <i class="ti ti-message-question"></i>
+        <span>FAQ Pelanggan</span>
+        <span class="kb-cat-count">6</span>
+      </div>
+      <div class="kb-cat-item" data-cat="sop" onclick="kbFilterCat(this, 'sop')">
+        <i class="ti ti-checklist"></i>
+        <span>SOP & Prosedur</span>
+        <span class="kb-cat-count">3</span>
+      </div>
+      <div class="kb-cat-item" data-cat="pengiriman" onclick="kbFilterCat(this, 'pengiriman')">
+        <i class="ti ti-truck-delivery"></i>
+        <span>Pengiriman</span>
+        <span class="kb-cat-count">2</span>
+      </div>
+ 
+      <div class="kb-cat-label" style="margin-top:16px">Status</div>
+      <div class="kb-status-filter">
+        <label class="kb-radio-row">
+          <input type="radio" name="kb-status" value="semua" checked onchange="kbFilterStatus(this.value)"/>
+          <span>Semua Status</span>
+        </label>
+        <label class="kb-radio-row">
+          <input type="radio" name="kb-status" value="aktif" onchange="kbFilterStatus(this.value)"/>
+          <span class="kb-dot kb-dot-green"></span><span>Aktif</span>
+        </label>
+        <label class="kb-radio-row">
+          <input type="radio" name="kb-status" value="draft" onchange="kbFilterStatus(this.value)"/>
+          <span class="kb-dot kb-dot-amber"></span><span>Draft</span>
+        </label>
+        <label class="kb-radio-row">
+          <input type="radio" name="kb-status" value="nonaktif" onchange="kbFilterStatus(this.value)"/>
+          <span class="kb-dot kb-dot-gray"></span><span>Nonaktif</span>
+        </label>
+      </div>
+ 
+      <!-- AI Coverage widget -->
+      <div class="kb-coverage-card">
+        <div class="kb-coverage-title">
+          <i class="ti ti-brain"></i> Cakupan AI
+        </div>
+        <div class="kb-coverage-list">
+          <div class="kb-coverage-row">
+            <span>Produk</span>
+            <div class="kb-cov-track"><div class="kb-cov-fill" style="width:90%"></div></div>
+            <span class="kb-cov-pct">90%</span>
+          </div>
+          <div class="kb-coverage-row">
+            <span>Harga</span>
+            <div class="kb-cov-track"><div class="kb-cov-fill" style="width:76%"></div></div>
+            <span class="kb-cov-pct">76%</span>
+          </div>
+          <div class="kb-coverage-row">
+            <span>FAQ</span>
+            <div class="kb-cov-track"><div class="kb-cov-fill" style="width:95%"></div></div>
+            <span class="kb-cov-pct">95%</span>
+          </div>
+          <div class="kb-coverage-row">
+            <span>Pengiriman</span>
+            <div class="kb-cov-track"><div class="kb-cov-fill kb-cov-amber" style="width:52%"></div></div>
+            <span class="kb-cov-pct" style="color:var(--amber)">52%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+ 
+    <!-- KONTEN UTAMA -->
+    <div class="kb-main">
+ 
+      <!-- SUB-TOOLBAR -->
+      <div class="kb-list-head">
+        <div class="kb-list-title" id="kb-list-title">Semua Dokumen <span class="kb-count-badge">24</span></div>
+        <div class="kb-list-actions">
+          <div class="kb-view-toggle">
+            <button class="kb-view-btn active" id="btn-view-grid" onclick="kbSetView('grid')" title="Grid view">
+              <i class="ti ti-layout-grid"></i>
+            </button>
+            <button class="kb-view-btn" id="btn-view-list" onclick="kbSetView('list')" title="List view">
+              <i class="ti ti-list"></i>
+            </button>
+          </div>
+          <select class="kb-sort-select" onchange="kbSort(this.value)">
+            <option value="newest">Terbaru</option>
+            <option value="oldest">Terlama</option>
+            <option value="alpha">A–Z</option>
+            <option value="coverage">Cakupan AI</option>
+          </select>
+        </div>
+      </div>
+ 
+      <!-- GRID DOKUMEN -->
+      <div class="kb-grid" id="kb-grid">
+ 
+        <!-- Kartu 1 -->
+        <div class="kb-card" data-cat="produk" data-status="aktif">
+          <div class="kb-card-top">
+            <div class="kb-file-icon kb-icon-pdf"><i class="ti ti-file-type-pdf"></i></div>
+            <div class="kb-card-badges">
+              <span class="kb-badge kb-badge-aktif"><span class="kb-dot kb-dot-green"></span>Aktif</span>
+              <span class="kb-badge kb-badge-ai"><i class="ti ti-robot"></i>Terlatih</span>
+            </div>
+          </div>
+          <div class="kb-card-name">Katalog Produk Lengkap 2025</div>
+          <div class="kb-card-meta">
+            <span><i class="ti ti-box"></i> Produk & Layanan</span>
+            <span><i class="ti ti-file"></i> 2.1 MB</span>
+          </div>
+          <div class="kb-card-cov">
+            <span class="kb-cov-label">Cakupan AI</span>
+            <div class="kb-cov-track"><div class="kb-cov-fill" style="width:92%"></div></div>
+            <span class="kb-cov-pct">92%</span>
+          </div>
+          <div class="kb-card-footer">
+            <span class="kb-card-date"><i class="ti ti-calendar"></i> Diperbarui 2 hari lalu</span>
+            <div class="kb-card-actions">
+              <button class="kb-icon-btn" title="Pratinjau" onclick="kbPreview(1)"><i class="ti ti-eye"></i></button>
+              <button class="kb-icon-btn" title="Edit" onclick="kbEdit(1)"><i class="ti ti-pencil"></i></button>
+              <button class="kb-icon-btn kb-icon-danger" title="Hapus" onclick="kbDelete(1)"><i class="ti ti-trash"></i></button>
+            </div>
+          </div>
+        </div>
+ 
+        <!-- Kartu 2 -->
+        <div class="kb-card" data-cat="faq" data-status="aktif">
+          <div class="kb-card-top">
+            <div class="kb-file-icon kb-icon-doc"><i class="ti ti-file-description"></i></div>
+            <div class="kb-card-badges">
+              <span class="kb-badge kb-badge-aktif"><span class="kb-dot kb-dot-green"></span>Aktif</span>
+              <span class="kb-badge kb-badge-ai"><i class="ti ti-robot"></i>Terlatih</span>
+            </div>
+          </div>
+          <div class="kb-card-name">FAQ Pelanggan B2B — 128 Pertanyaan</div>
+          <div class="kb-card-meta">
+            <span><i class="ti ti-message-question"></i> FAQ Pelanggan</span>
+            <span><i class="ti ti-file"></i> 340 KB</span>
+          </div>
+          <div class="kb-card-cov">
+            <span class="kb-cov-label">Cakupan AI</span>
+            <div class="kb-cov-track"><div class="kb-cov-fill" style="width:97%"></div></div>
+            <span class="kb-cov-pct">97%</span>
+          </div>
+          <div class="kb-card-footer">
+            <span class="kb-card-date"><i class="ti ti-calendar"></i> Diperbarui hari ini</span>
+            <div class="kb-card-actions">
+              <button class="kb-icon-btn" title="Pratinjau" onclick="kbPreview(2)"><i class="ti ti-eye"></i></button>
+              <button class="kb-icon-btn" title="Edit" onclick="kbEdit(2)"><i class="ti ti-pencil"></i></button>
+              <button class="kb-icon-btn kb-icon-danger" title="Hapus" onclick="kbDelete(2)"><i class="ti ti-trash"></i></button>
+            </div>
+          </div>
+        </div>
+ 
+        <!-- Kartu 3 -->
+        <div class="kb-card" data-cat="harga" data-status="aktif">
+          <div class="kb-card-top">
+            <div class="kb-file-icon kb-icon-xlsx"><i class="ti ti-file-spreadsheet"></i></div>
+            <div class="kb-card-badges">
+              <span class="kb-badge kb-badge-aktif"><span class="kb-dot kb-dot-green"></span>Aktif</span>
+              <span class="kb-badge kb-badge-ai"><i class="ti ti-robot"></i>Terlatih</span>
+            </div>
+          </div>
+          <div class="kb-card-name">Daftar Harga Grosir & Retail Q2 2025</div>
+          <div class="kb-card-meta">
+            <span><i class="ti ti-tag"></i> Harga & Promo</span>
+            <span><i class="ti ti-file"></i> 210 KB</span>
+          </div>
+          <div class="kb-card-cov">
+            <span class="kb-cov-label">Cakupan AI</span>
+            <div class="kb-cov-track"><div class="kb-cov-fill" style="width:88%"></div></div>
+            <span class="kb-cov-pct">88%</span>
+          </div>
+          <div class="kb-card-footer">
+            <span class="kb-card-date"><i class="ti ti-calendar"></i> Diperbarui 5 hari lalu</span>
+            <div class="kb-card-actions">
+              <button class="kb-icon-btn" title="Pratinjau" onclick="kbPreview(3)"><i class="ti ti-eye"></i></button>
+              <button class="kb-icon-btn" title="Edit" onclick="kbEdit(3)"><i class="ti ti-pencil"></i></button>
+              <button class="kb-icon-btn kb-icon-danger" title="Hapus" onclick="kbDelete(3)"><i class="ti ti-trash"></i></button>
+            </div>
+          </div>
+        </div>
+ 
+        <!-- Kartu 4 -->
+        <div class="kb-card" data-cat="sop" data-status="aktif">
+          <div class="kb-card-top">
+            <div class="kb-file-icon kb-icon-doc"><i class="ti ti-file-description"></i></div>
+            <div class="kb-card-badges">
+              <span class="kb-badge kb-badge-aktif"><span class="kb-dot kb-dot-green"></span>Aktif</span>
+              <span class="kb-badge kb-badge-ai"><i class="ti ti-robot"></i>Terlatih</span>
+            </div>
+          </div>
+          <div class="kb-card-name">SOP Penanganan Komplain Pelanggan</div>
+          <div class="kb-card-meta">
+            <span><i class="ti ti-checklist"></i> SOP & Prosedur</span>
+            <span><i class="ti ti-file"></i> 180 KB</span>
+          </div>
+          <div class="kb-card-cov">
+            <span class="kb-cov-label">Cakupan AI</span>
+            <div class="kb-cov-track"><div class="kb-cov-fill" style="width:84%"></div></div>
+            <span class="kb-cov-pct">84%</span>
+          </div>
+          <div class="kb-card-footer">
+            <span class="kb-card-date"><i class="ti ti-calendar"></i> Diperbarui 1 minggu lalu</span>
+            <div class="kb-card-actions">
+              <button class="kb-icon-btn" title="Pratinjau" onclick="kbPreview(4)"><i class="ti ti-eye"></i></button>
+              <button class="kb-icon-btn" title="Edit" onclick="kbEdit(4)"><i class="ti ti-pencil"></i></button>
+              <button class="kb-icon-btn kb-icon-danger" title="Hapus" onclick="kbDelete(4)"><i class="ti ti-trash"></i></button>
+            </div>
+          </div>
+        </div>
+ 
+        <!-- Kartu 5 — draft -->
+        <div class="kb-card" data-cat="pengiriman" data-status="draft">
+          <div class="kb-card-top">
+            <div class="kb-file-icon kb-icon-doc"><i class="ti ti-file-description"></i></div>
+            <div class="kb-card-badges">
+              <span class="kb-badge kb-badge-draft"><span class="kb-dot kb-dot-amber"></span>Draft</span>
+              <span class="kb-badge kb-badge-pending"><i class="ti ti-clock"></i>Belum dilatih</span>
+            </div>
+          </div>
+          <div class="kb-card-name">Prosedur Pengiriman Luar Pulau Jawa</div>
+          <div class="kb-card-meta">
+            <span><i class="ti ti-truck-delivery"></i> Pengiriman</span>
+            <span><i class="ti ti-file"></i> 95 KB</span>
+          </div>
+          <div class="kb-card-cov kb-cov-muted">
+            <span class="kb-cov-label">Cakupan AI</span>
+            <div class="kb-cov-track"><div class="kb-cov-fill kb-cov-gray" style="width:0%"></div></div>
+            <span class="kb-cov-pct" style="color:var(--gray-400)">—</span>
+          </div>
+          <div class="kb-card-footer">
+            <span class="kb-card-date"><i class="ti ti-calendar"></i> Dibuat 2 hari lalu</span>
+            <div class="kb-card-actions">
+              <button class="kb-icon-btn" title="Pratinjau" onclick="kbPreview(5)"><i class="ti ti-eye"></i></button>
+              <button class="kb-icon-btn" title="Edit" onclick="kbEdit(5)"><i class="ti ti-pencil"></i></button>
+              <button class="kb-icon-btn kb-icon-danger" title="Hapus" onclick="kbDelete(5)"><i class="ti ti-trash"></i></button>
+            </div>
+          </div>
+        </div>
+ 
+        <!-- Kartu 6 — URL sumber -->
+        <div class="kb-card" data-cat="produk" data-status="aktif">
+          <div class="kb-card-top">
+            <div class="kb-file-icon kb-icon-url"><i class="ti ti-world"></i></div>
+            <div class="kb-card-badges">
+              <span class="kb-badge kb-badge-aktif"><span class="kb-dot kb-dot-green"></span>Aktif</span>
+              <span class="kb-badge kb-badge-ai"><i class="ti ti-robot"></i>Terlatih</span>
+            </div>
+          </div>
+          <div class="kb-card-name">indotrading.com/products — Auto-sync</div>
+          <div class="kb-card-meta">
+            <span><i class="ti ti-box"></i> Produk & Layanan</span>
+            <span class="kb-url-tag"><i class="ti ti-link"></i> URL</span>
+          </div>
+          <div class="kb-card-cov">
+            <span class="kb-cov-label">Cakupan AI</span>
+            <div class="kb-cov-track"><div class="kb-cov-fill" style="width:80%"></div></div>
+            <span class="kb-cov-pct">80%</span>
+          </div>
+          <div class="kb-card-footer">
+            <span class="kb-card-date"><i class="ti ti-refresh"></i> Sync 1 jam lalu</span>
+            <div class="kb-card-actions">
+              <button class="kb-icon-btn" title="Sync Sekarang" onclick="kbSync(6)"><i class="ti ti-refresh"></i></button>
+              <button class="kb-icon-btn" title="Edit" onclick="kbEdit(6)"><i class="ti ti-pencil"></i></button>
+              <button class="kb-icon-btn kb-icon-danger" title="Hapus" onclick="kbDelete(6)"><i class="ti ti-trash"></i></button>
+            </div>
+          </div>
+        </div>
+ 
+        <!-- Kartu 7 -->
+        <div class="kb-card" data-cat="harga" data-status="nonaktif">
+          <div class="kb-card-top">
+            <div class="kb-file-icon kb-icon-pdf" style="opacity:.45"><i class="ti ti-file-type-pdf"></i></div>
+            <div class="kb-card-badges">
+              <span class="kb-badge kb-badge-nonaktif"><span class="kb-dot kb-dot-gray"></span>Nonaktif</span>
+            </div>
+          </div>
+          <div class="kb-card-name kb-card-muted">Promo Lebaran 2024 — Sudah Kedaluwarsa</div>
+          <div class="kb-card-meta" style="opacity:.5">
+            <span><i class="ti ti-tag"></i> Harga & Promo</span>
+            <span><i class="ti ti-file"></i> 120 KB</span>
+          </div>
+          <div class="kb-card-cov kb-cov-muted">
+            <span class="kb-cov-label">Cakupan AI</span>
+            <div class="kb-cov-track"><div class="kb-cov-fill kb-cov-gray" style="width:100%"></div></div>
+            <span class="kb-cov-pct" style="color:var(--gray-400)">N/A</span>
+          </div>
+          <div class="kb-card-footer">
+            <span class="kb-card-date" style="opacity:.5"><i class="ti ti-calendar"></i> Apr 2024</span>
+            <div class="kb-card-actions">
+              <button class="kb-icon-btn" title="Aktifkan kembali" onclick="kbActivate(7)"><i class="ti ti-player-play"></i></button>
+              <button class="kb-icon-btn kb-icon-danger" title="Hapus permanen" onclick="kbDelete(7)"><i class="ti ti-trash"></i></button>
+            </div>
+          </div>
+        </div>
+ 
+        <!-- Kartu 8 -->
+        <div class="kb-card" data-cat="faq" data-status="aktif">
+          <div class="kb-card-top">
+            <div class="kb-file-icon kb-icon-txt"><i class="ti ti-file-text"></i></div>
+            <div class="kb-card-badges">
+              <span class="kb-badge kb-badge-aktif"><span class="kb-dot kb-dot-green"></span>Aktif</span>
+              <span class="kb-badge kb-badge-ai"><i class="ti ti-robot"></i>Terlatih</span>
+            </div>
+          </div>
+          <div class="kb-card-name">Kebijakan Retur & Garansi Produk</div>
+          <div class="kb-card-meta">
+            <span><i class="ti ti-message-question"></i> FAQ Pelanggan</span>
+            <span><i class="ti ti-file"></i> 88 KB</span>
+          </div>
+          <div class="kb-card-cov">
+            <span class="kb-cov-label">Cakupan AI</span>
+            <div class="kb-cov-track"><div class="kb-cov-fill" style="width:99%"></div></div>
+            <span class="kb-cov-pct">99%</span>
+          </div>
+          <div class="kb-card-footer">
+            <span class="kb-card-date"><i class="ti ti-calendar"></i> Diperbarui 3 hari lalu</span>
+            <div class="kb-card-actions">
+              <button class="kb-icon-btn" title="Pratinjau" onclick="kbPreview(8)"><i class="ti ti-eye"></i></button>
+              <button class="kb-icon-btn" title="Edit" onclick="kbEdit(8)"><i class="ti ti-pencil"></i></button>
+              <button class="kb-icon-btn kb-icon-danger" title="Hapus" onclick="kbDelete(8)"><i class="ti ti-trash"></i></button>
+            </div>
+          </div>
+        </div>
+ 
+      </div>
+      <!-- akhir kb-grid -->
+ 
+      <!-- EMPTY STATE -->
+      <div class="kb-empty" id="kb-empty" style="display:none">
+        <i class="ti ti-file-search"></i>
+        <div>Tidak ada dokumen ditemukan</div>
+        <span>Coba ubah filter atau kata kunci pencarian Anda</span>
+        <button class="kb-btn-primary" style="margin-top:8px" onclick="kbResetFilter()">
+          <i class="ti ti-refresh"></i> Reset Filter
+        </button>
+      </div>
+ 
+    </div>
+    <!-- akhir kb-main -->
+ 
+  </div>
+  <!-- akhir kb-body -->
+ 
+ 
+  <!-- ══════════════════════════════════════════════════════════════
+       MODAL: TAMBAH DOKUMEN
+       ══════════════════════════════════════════════════════════════ -->
+  <div class="kb-modal-overlay" id="kb-modal-add" style="display:none" onclick="if(event.target===this)kbCloseModal('add')">
+    <div class="kb-modal">
+      <div class="kb-modal-header">
+        <div class="kb-modal-title"><i class="ti ti-plus" style="color:var(--red)"></i> Tambah Dokumen</div>
+        <button class="kb-modal-close" onclick="kbCloseModal('add')"><i class="ti ti-x"></i></button>
+      </div>
+      <div class="kb-modal-body">
+ 
+        <!-- Pilih tipe sumber -->
+        <div class="kb-source-tabs">
+          <button class="kb-src-tab active" data-src="file" onclick="kbSwitchSrc(this, 'file')">
+            <i class="ti ti-upload"></i> Upload File
+          </button>
+          <button class="kb-src-tab" data-src="url" onclick="kbSwitchSrc(this, 'url')">
+            <i class="ti ti-world"></i> URL / Website
+          </button>
+          <button class="kb-src-tab" data-src="teks" onclick="kbSwitchSrc(this, 'teks')">
+            <i class="ti ti-pencil"></i> Teks Langsung
+          </button>
+        </div>
+ 
+        <!-- Panel: Upload File -->
+        <div class="kb-src-panel" id="kb-src-file">
+          <div class="kb-dropzone" id="kb-dropzone" ondragover="kbOnDragOver(event)" ondrop="kbOnDrop(event)" ondragleave="kbOnDragLeave(event)" onclick="document.getElementById('kb-file-input').click()">
+            <i class="ti ti-cloud-upload"></i>
+            <div class="kb-drop-title">Tarik & lepas file di sini</div>
+            <div class="kb-drop-sub">atau klik untuk memilih file</div>
+            <div class="kb-drop-types">PDF, DOCX, XLSX, TXT, CSV — maks. 20 MB</div>
+            <input type="file" id="kb-file-input" multiple accept=".pdf,.docx,.xlsx,.txt,.csv" style="display:none" onchange="kbOnFileSelect(event)"/>
+          </div>
+          <div class="kb-file-list" id="kb-file-list"></div>
+        </div>
+ 
+        <!-- Panel: URL -->
+        <div class="kb-src-panel" id="kb-src-url" style="display:none">
+          <div class="kb-fd-group">
+            <label class="kb-fd-label">URL Halaman / Website</label>
+            <input type="url" class="kb-fd-input" placeholder="https://indotrading.com/products" id="kb-url-input"/>
+            <div class="kb-fd-hint"><i class="ti ti-info-circle"></i> AI akan melakukan crawl dan mengambil konten secara otomatis.</div>
+          </div>
+          <div class="kb-fd-group">
+            <label class="kb-radio-row" style="gap:8px">
+              <input type="checkbox" id="kb-url-sync"/>
+              <span style="font-size:12px"><i class="ti ti-refresh" style="color:var(--red)"></i> Aktifkan auto-sync setiap 24 jam</span>
+            </label>
+          </div>
+        </div>
+ 
+        <!-- Panel: Teks -->
+        <div class="kb-src-panel" id="kb-src-teks" style="display:none">
+          <div class="kb-fd-group">
+            <label class="kb-fd-label">Judul Dokumen</label>
+            <input type="text" class="kb-fd-input" placeholder="cth: Kebijakan Retur Produk" id="kb-teks-title"/>
+          </div>
+          <div class="kb-fd-group">
+            <label class="kb-fd-label">Konten</label>
+            <textarea class="kb-fd-textarea" rows="8" placeholder="Tuliskan konten pengetahuan di sini…" id="kb-teks-content"></textarea>
+          </div>
+        </div>
+ 
+        <!-- Kategori & Pengaturan -->
+        <div class="kb-fd-group">
+          <label class="kb-fd-label">Kategori</label>
+          <select class="kb-fd-select" id="kb-add-cat">
+            <option value="">Pilih kategori…</option>
+            <option value="produk">Produk & Layanan</option>
+            <option value="harga">Harga & Promo</option>
+            <option value="faq">FAQ Pelanggan</option>
+            <option value="sop">SOP & Prosedur</option>
+            <option value="pengiriman">Pengiriman</option>
+          </select>
+        </div>
+ 
+        <div class="kb-fd-check-row">
+          <input type="checkbox" id="kb-add-train" checked/>
+          <label for="kb-add-train" style="font-size:12px;cursor:pointer">
+            <i class="ti ti-robot" style="color:var(--red)"></i>
+            Latih AI secara otomatis setelah disimpan
+          </label>
+        </div>
+ 
+      </div>
+      <div class="kb-modal-footer">
+        <button class="kb-btn-ghost" onclick="kbCloseModal('add')">Batal</button>
+        <button class="kb-btn-primary" onclick="kbSaveDoc()">
+          <i class="ti ti-check"></i> Simpan & Latih AI
+        </button>
+      </div>
+    </div>
+  </div>
+ 
+  <!-- ══════════════════════════════════════════════════════════════
+       MODAL: LATIH ULANG AI
+       ══════════════════════════════════════════════════════════════ -->
+  <div class="kb-modal-overlay" id="kb-modal-train" style="display:none" onclick="if(event.target===this)kbCloseModal('train')">
+    <div class="kb-modal kb-modal-sm">
+      <div class="kb-modal-header">
+        <div class="kb-modal-title"><i class="ti ti-brain" style="color:var(--red)"></i> Latih Ulang AI</div>
+        <button class="kb-modal-close" onclick="kbCloseModal('train')"><i class="ti ti-x"></i></button>
+      </div>
+      <div class="kb-modal-body">
+        <div class="kb-train-info">
+          <i class="ti ti-info-circle" style="color:var(--red);font-size:15px;flex-shrink:0"></i>
+          <span>AI akan mempelajari ulang seluruh dokumen aktif. Proses ini memakan waktu sekitar <strong>2–5 menit</strong> dan tidak akan mempengaruhi layanan yang sedang berjalan.</span>
+        </div>
+ 
+        <div class="kb-train-scope">
+          <label class="kb-radio-row" style="font-size:12px">
+            <input type="radio" name="kb-train-scope" value="semua" checked/>
+            <span>Latih ulang semua dokumen aktif (24 file)</span>
+          </label>
+          <label class="kb-radio-row" style="font-size:12px">
+            <input type="radio" name="kb-train-scope" value="baru"/>
+            <span>Hanya dokumen baru / diperbarui (3 file)</span>
+          </label>
+        </div>
+ 
+        <div class="kb-train-progress" id="kb-train-progress" style="display:none">
+          <div class="kb-train-bar-wrap">
+            <div class="kb-train-bar" id="kb-train-bar"></div>
+          </div>
+          <div class="kb-train-status" id="kb-train-status">Memulai proses pelatihan…</div>
+        </div>
+      </div>
+      <div class="kb-modal-footer">
+        <button class="kb-btn-ghost" id="kb-train-cancel-btn" onclick="kbCloseModal('train')">Batal</button>
+        <button class="kb-btn-primary" id="kb-train-start-btn" onclick="kbStartTrain()">
+          <i class="ti ti-player-play"></i> Mulai Pelatihan
+        </button>
+      </div>
+    </div>
+  </div>
+ 
+  <!-- ── Toast ──────────────────────────────────────────────────── -->
+  <div class="kb-toast" id="kb-toast" style="display:none"></div>
+ 
 </div>
+<!-- ENDING KNOWLEDGE BASE PAGE -->
+
 
 <!-- ════════════════════════════════════════════════════════════
      MODALS APPOINTMENT
@@ -3449,6 +4013,7 @@
 <script src="/script_page/analitik.js"></script>
 <script src="/script_page/integrasi.js"></script>
 <script src="/script_page/pengaturan-agent.js"></script>
+<script src="/script_page/knowledge-base.js"></script>
 
 </body>
 </html>
