@@ -13,6 +13,7 @@
   <link rel="stylesheet" href="page.css/integrasi.css">
   <link rel="stylesheet" href="page.css/pengaturan-agent.css">
   <link rel="stylesheet" href="page.css/knowledge-base.css">
+  <link rel="stylesheet" href="page.css/aicall.css">
   <link rel="stylesheet" href="desktopOnly.css">
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
@@ -100,7 +101,10 @@
     <div class="sb-section">Konfigurasi</div>
     <a class="sb-item" href="#"><i class="ti ti-plug-connected" aria-hidden="true"></i><span>Integrasi</span></a>
     <a class="sb-item" href="#"><i class="ti ti-adjustments-horizontal" aria-hidden="true"></i><span>Pengaturan Agent</span></a>
-    <a class="sb-item" href="#"><i class="ti ti-file-description" aria-hidden="true"></i><span>Knowledge Base</span></a>
+    <a class="sb-item" href="#"><i class="ti ti-file-description" aria-hidden="true"></i><span>Knowledge Base</span></a
+      >
+    <div class="sb-section">Service</div>
+    <a class="sb-item" href="#"><i class="ti ti-plug-connected" aria-hidden="true"></i><span>AI Call</span></a>
 
     <div class="sb-footer">
       <div class="sb-user">
@@ -133,9 +137,9 @@
         <!-- Halaman Overview -->
         <div id="overview-page" class="overview-page">
           <!-- METRICS -->
-          <div class="metric-card">
-            <h1>Armsfloor</h1>
-        </div>
+          <!-- <div class="metric-card">
+              <h1>Armsfloor</h1>
+          </div> -->
 
           <div class="metrics">
             <div class="metric-card accent">
@@ -238,7 +242,10 @@
           <div>
             <div class="sec-head">
               <div class="sec-title">Percakapan Terbaru</div>
-              <div class="sec-action">Lihat semua <i class="ti ti-chevron-right" style="font-size:11px"></i></div>
+              <div class="sec-action">
+                <i class="ti ti-chevron-right" style="font-size:11px"></i>
+                <span id="Percakapan">Lihat Semua</span>
+              </div>
             </div>
             <div class="conv-table">
               <div class="ct-header"><span>Kontak</span><span>Pesan Terakhir</span><span>Channel</span><span>Ditangani</span><span>Status</span></div>
@@ -941,8 +948,8 @@
   <!-- ── Info Bar ──────────────────────────────────────────────── -->
   <div class="lp-info-bar">
     <div class="lp-info-left">
-      <span class="lp-badge-diamond"><i class="ti ti-crown"></i> Diamond Member</span>
-      <div class="lp-info-sep"></div>
+      <!-- <span class="lp-badge-diamond"><i class="ti ti-crown"></i> Diamond Member</span> -->
+      <!-- <div class="lp-info-sep"></div> -->
       <div class="lp-responsiveness">
         <i class="ti ti-activity" style="color:#22c55e;font-size:13px"></i>
         Responsiveness:
@@ -1032,7 +1039,7 @@
   </div>
  
   <!-- ── AREA 2: Sumber Leads + AI Source Intelligence ─────────── -->
-  <div class="lp-section">
+  <!-- <div class="lp-section">
     <div class="lp-sec-head">
       <div class="lp-sec-title">
         <i class="ti ti-antenna" style="color:var(--red)"></i>
@@ -1046,7 +1053,6 @@
     </div>
     <div class="lp-sumber-grid">
  
-      <!-- WA -->
       <div class="lp-sumber-card active-src" onclick="filterLeadSrc(this,'wa')">
         <div class="lp-src-top">
           <div class="lp-src-icon wa-src"><i class="ti ti-brand-whatsapp"></i></div>
@@ -1055,7 +1061,7 @@
         <div class="lp-src-num">429</div>
         <div class="lp-src-name">Klik Telepon & WA</div>
         <div class="lp-src-desc">Pembeli yang menekan tombol WA atau telepon di profil Anda</div>
-        <!-- AI Insight -->
+        
         <div class="lp-src-ai-insight">
           <i class="ti ti-sparkles lp-ai-icon-sm"></i>
           <span>Konversi tertinggi minggu ini — <strong>rata-rata balas 4 menit</strong></span>
@@ -1063,7 +1069,6 @@
         <button class="lp-src-link">→ Lihat leads ini</button>
       </div>
  
-      <!-- Kirim Pesan -->
       <div class="lp-sumber-card" onclick="filterLeadSrc(this,'msg')">
         <div class="lp-src-top">
           <div class="lp-src-icon msg-src"><i class="ti ti-message-2"></i></div>
@@ -1071,7 +1076,7 @@
         <div class="lp-src-num">60</div>
         <div class="lp-src-name">Kirim Pesan</div>
         <div class="lp-src-desc">Pembeli yang mengirim chat langsung melalui platform Indotrading</div>
-        <!-- AI Insight -->
+        
         <div class="lp-src-ai-insight warning">
           <i class="ti ti-alert-triangle lp-ai-icon-sm" style="color:#d97706"></i>
           <span><strong>12 pesan belum dibalas</strong> &gt; 24 jam — segera respon</span>
@@ -1079,7 +1084,6 @@
         <button class="lp-src-link" style="color:#3b82f6">→ Lihat leads ini</button>
       </div>
  
-      <!-- RFQ -->
       <div class="lp-sumber-card" onclick="filterLeadSrc(this,'rfq')">
         <div class="lp-src-top">
           <div class="lp-src-icon rfq-src"><i class="ti ti-file-invoice"></i></div>
@@ -1087,7 +1091,7 @@
         <div class="lp-src-num">43</div>
         <div class="lp-src-name">RFQ</div>
         <div class="lp-src-desc">Pembeli yang mengirim permintaan harga resmi untuk produk Anda</div>
-        <!-- AI Insight -->
+
         <div class="lp-src-ai-insight success">
           <i class="ti ti-trophy lp-ai-icon-sm" style="color:#16a34a"></i>
           <span>Closing rate <strong>68% — tertinggi</strong> dari semua sumber</span>
@@ -1095,7 +1099,6 @@
         <button class="lp-src-link" style="color:#d97706">→ Lihat leads ini</button>
       </div>
  
-      <!-- Kunjungi Profil -->
       <div class="lp-sumber-card" onclick="filterLeadSrc(this,'profil')">
         <div class="lp-src-top">
           <div class="lp-src-icon profil-src"><i class="ti ti-eye"></i></div>
@@ -1103,7 +1106,7 @@
         <div class="lp-src-num">986</div>
         <div class="lp-src-name">Kunjungi Profil</div>
         <div class="lp-src-desc">Pembeli yang membuka halaman profil atau produk toko Anda</div>
-        <!-- AI Insight -->
+
         <div class="lp-src-ai-insight">
           <i class="ti ti-sparkles lp-ai-icon-sm"></i>
           <span><strong>34 pengunjung</strong> buka halaman produk aluminium &gt; 3x</span>
@@ -1112,7 +1115,7 @@
       </div>
  
     </div>
-  </div>
+  </div> -->
  
   <!-- ── AREA 3: AI Lead Recommendation Banner ──────────────────── -->
   <div class="lp-buy-banner lp-ai-banner">
@@ -1168,16 +1171,16 @@
     <div class="lp-nl-pills-wrap">
       <span class="lp-nl-label"><i class="ti ti-sparkles"></i> Coba tanya AI:</span>
       <button class="lp-nl-pill" onclick="applyNlPill(this,'leads Jakarta belum dihubungi 3 hari')">
-        <i class="ti ti-map-pin"></i> Jakarta belum dihubungi 3 hari
+        <i class="ti ti-map-pin"></i> Question 1
       </button>
       <button class="lp-nl-pill" onclick="applyNlPill(this,'real lead RFQ belum follow-up')">
-        <i class="ti ti-file-invoice"></i> Real lead RFQ belum follow-up
+        <i class="ti ti-file-invoice"></i> Question 2
       </button>
       <button class="lp-nl-pill" onclick="applyNlPill(this,'leads score HOT hari ini')">
-        <i class="ti ti-flame"></i> Score HOT hari ini
+        <i class="ti ti-flame"></i> Question 3
       </button>
       <button class="lp-nl-pill" onclick="applyNlPill(this,'Surabaya kirim pesan belum dibalas')">
-        <i class="ti ti-message-2"></i> Surabaya pesan belum dibalas
+        <i class="ti ti-message-2"></i> Question 4
       </button>
     </div>
   </div>
@@ -2290,9 +2293,11 @@
       <div class="pa-nav-item active" data-section="persona">
         <i class="ti ti-mood-smile" aria-hidden="true"></i> Gaya Bahasa & Persona
       </div>
-      <div class="pa-nav-item" data-section="greeting">
+
+      <!-- >> Pesan Pembuka Disable -->
+      <!-- <div class="pa-nav-item" data-section="greeting">
         <i class="ti ti-message-circle" aria-hidden="true"></i> Pesan Pembuka
-      </div>
+      </div> -->
  
       <!-- 2 -->
       <div class="pa-nav-section">Manajemen Agent</div>
@@ -3816,6 +3821,342 @@
 </div>
 <!-- ENDING KNOWLEDGE BASE PAGE -->
 
+<div id="ai-call-page" class="ai-call-page" style="display:none">
+
+  <!-- HEADER HERO -->
+  <div class="ac-hero">
+    <div class="ac-hero-left">
+      <div class="ac-hero-badge"><i class="ti ti-phone-call"></i> Add-on Aktif</div>
+      <h2 class="ac-hero-title">AI Voice</h2>
+      <p class="ac-hero-desc">Panggilan telepon otomatis berbasis AI — tangani inbound, lakukan outbound follow-up, dan bicara dengan suara alami seperti manusia.</p>
+      <div class="ac-hero-actions">
+        <button class="ac-btn-primary" onclick="acOpenSetup()"><i class="ti ti-settings"></i> Konfigurasi Suara</button>
+        <button class="ac-btn-ghost" onclick="acOpenLog()"><i class="ti ti-history"></i> Lihat Log Panggilan</button>
+      </div>
+    </div>
+    <div class="ac-hero-right">
+      <div class="ac-pulse-wrap">
+        <div class="ac-pulse-ring r1"></div>
+        <div class="ac-pulse-ring r2"></div>
+        <div class="ac-pulse-ring r3"></div>
+        <div class="ac-pulse-core">
+          <i class="ti ti-phone"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- METRIC STRIP -->
+  <div class="ac-metrics">
+    <div class="ac-metric">
+      <div class="ac-metric-icon" style="background:var(--red-light);color:var(--red)"><i class="ti ti-phone-incoming"></i></div>
+      <div>
+        <div class="ac-metric-val">348</div>
+        <div class="ac-metric-lbl">Inbound bulan ini</div>
+      </div>
+    </div>
+    <div class="ac-metric">
+      <div class="ac-metric-icon" style="background:#eef2ff;color:#4b5eaa"><i class="ti ti-phone-outgoing"></i></div>
+      <div>
+        <div class="ac-metric-val">512</div>
+        <div class="ac-metric-lbl">Outbound dikirim</div>
+      </div>
+    </div>
+    <div class="ac-metric">
+      <div class="ac-metric-icon" style="background:var(--green-bg);color:var(--green)"><i class="ti ti-check"></i></div>
+      <div>
+        <div class="ac-metric-val">74%</div>
+        <div class="ac-metric-lbl">Tingkat jawab</div>
+      </div>
+    </div>
+    <div class="ac-metric">
+      <div class="ac-metric-icon" style="background:var(--amber-bg);color:var(--amber)"><i class="ti ti-clock"></i></div>
+      <div>
+        <div class="ac-metric-val">2m 18d</div>
+        <div class="ac-metric-lbl">Rata-rata durasi</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TWO COLUMN GRID -->
+  <div class="ac-grid">
+
+    <!-- FITUR CARDS -->
+    <div class="ac-features-col">
+      <div class="ac-section-head">
+        <span class="ac-section-title">Kemampuan AI Voice</span>
+      </div>
+
+      <div class="ac-feature-card">
+        <div class="ac-fc-icon" style="background:var(--red-light)">
+          <i class="ti ti-phone-incoming" style="color:var(--red)"></i>
+        </div>
+        <div class="ac-fc-body">
+          <div class="ac-fc-title">Inbound Call Handling</div>
+          <div class="ac-fc-desc">Terima dan tangani panggilan masuk secara otomatis 24/7 — dari salam pembuka, FAQ, hingga routing ke agen manusia jika diperlukan.</div>
+          <div class="ac-fc-tags">
+            <span class="ac-tag">Auto-answer</span>
+            <span class="ac-tag">FAQ otomatis</span>
+            <span class="ac-tag">Transfer ke agen</span>
+          </div>
+        </div>
+        <div class="ac-fc-status on">Aktif</div>
+      </div>
+
+      <div class="ac-feature-card">
+        <div class="ac-fc-icon" style="background:#eef2ff">
+          <i class="ti ti-phone-outgoing" style="color:#4b5eaa"></i>
+        </div>
+        <div class="ac-fc-body">
+          <div class="ac-fc-title">Outbound Call Otomatis</div>
+          <div class="ac-fc-desc">AI melakukan panggilan keluar untuk follow-up lead, pengingat pembayaran, konfirmasi pesanan, atau kampanye penjangkauan pelanggan.</div>
+          <div class="ac-fc-tags">
+            <span class="ac-tag">Follow-up lead</span>
+            <span class="ac-tag">Reminder otomatis</span>
+            <span class="ac-tag">Kampanye massal</span>
+          </div>
+        </div>
+        <div class="ac-fc-status on">Aktif</div>
+      </div>
+
+      <div class="ac-feature-card">
+        <div class="ac-fc-icon" style="background:var(--green-bg)">
+          <i class="ti ti-waveform" style="color:var(--green)"></i>
+        </div>
+        <div class="ac-fc-body">
+          <div class="ac-fc-title">Suara Natural Seperti Manusia</div>
+          <div class="ac-fc-desc">Text-to-speech berkualitas tinggi dengan intonasi, jeda, dan emosi yang alami — pelanggan tidak menyadari sedang berbicara dengan AI.</div>
+          <div class="ac-fc-tags">
+            <span class="ac-tag">TTS Premium</span>
+            <span class="ac-tag">Pilihan suara</span>
+            <span class="ac-tag">Bahasa Indonesia</span>
+          </div>
+        </div>
+        <div class="ac-fc-status on">Aktif</div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT COL: Panggilan Aktif + Log Terbaru -->
+    <div class="ac-right-col">
+
+      <!-- PANGGILAN AKTIF -->
+      <div class="ac-live-card">
+        <div class="ac-section-head">
+          <span class="ac-section-title"><span class="ac-live-dot"></span> Panggilan Berlangsung</span>
+          <span class="ac-live-count">2 aktif</span>
+        </div>
+
+        <div class="ac-live-item">
+          <div class="ac-live-avatar" style="background:var(--red-light);color:var(--red)">PT</div>
+          <div class="ac-live-info">
+            <div class="ac-live-name">PT Mitra Jaya Abadi</div>
+            <div class="ac-live-meta"><i class="ti ti-phone-incoming"></i> Inbound · <span class="ac-live-timer" data-start="82">01:22</span></div>
+          </div>
+          <div class="ac-live-wave">
+            <span></span><span></span><span></span><span></span><span></span>
+          </div>
+        </div>
+
+        <div class="ac-live-item">
+          <div class="ac-live-avatar" style="background:#eef2ff;color:#4b5eaa">BU</div>
+          <div class="ac-live-info">
+            <div class="ac-live-name">Budi Utomo</div>
+            <div class="ac-live-meta"><i class="ti ti-phone-outgoing"></i> Outbound · <span class="ac-live-timer" data-start="31">00:31</span></div>
+          </div>
+          <div class="ac-live-wave">
+            <span></span><span></span><span></span><span></span><span></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- LOG PANGGILAN TERBARU -->
+      <div class="ac-log-card">
+        <div class="ac-section-head">
+          <span class="ac-section-title">Log Panggilan Terbaru</span>
+          <span class="ac-section-action" onclick="acOpenLog()">Lihat semua <i class="ti ti-chevron-right"></i></span>
+        </div>
+
+        <div class="ac-log-list">
+
+          <div class="ac-log-item">
+            <div class="ac-log-icon in"><i class="ti ti-phone-incoming"></i></div>
+            <div class="ac-log-body">
+              <div class="ac-log-name">CV Sumber Makmur</div>
+              <div class="ac-log-meta">Inbound · 08:43 · 3m 12d</div>
+            </div>
+            <span class="ac-log-badge done">Selesai</span>
+          </div>
+
+          <div class="ac-log-item">
+            <div class="ac-log-icon out"><i class="ti ti-phone-outgoing"></i></div>
+            <div class="ac-log-body">
+              <div class="ac-log-name">Hendra Saputra</div>
+              <div class="ac-log-meta">Outbound · 08:15 · 1m 47d</div>
+            </div>
+            <span class="ac-log-badge done">Selesai</span>
+          </div>
+
+          <div class="ac-log-item">
+            <div class="ac-log-icon in"><i class="ti ti-phone-incoming"></i></div>
+            <div class="ac-log-body">
+              <div class="ac-log-name">Rina Wahyuni</div>
+              <div class="ac-log-meta">Inbound · 07:58 · Tidak Dijawab</div>
+            </div>
+            <span class="ac-log-badge missed">Terlewat</span>
+          </div>
+
+          <div class="ac-log-item">
+            <div class="ac-log-icon out"><i class="ti ti-phone-outgoing"></i></div>
+            <div class="ac-log-body">
+              <div class="ac-log-name">Toko Baja Mandiri</div>
+              <div class="ac-log-meta">Outbound · Kemarin · 4m 05d</div>
+            </div>
+            <span class="ac-log-badge done">Selesai</span>
+          </div>
+
+          <div class="ac-log-item">
+            <div class="ac-log-icon out"><i class="ti ti-phone-outgoing"></i></div>
+            <div class="ac-log-body">
+              <div class="ac-log-name">Dewi Lestari</div>
+              <div class="ac-log-meta">Outbound · Kemarin · Sibuk</div>
+            </div>
+            <span class="ac-log-badge busy">Sibuk</span>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- OUTBOUND CAMPAIGN SECTION -->
+  <div class="ac-campaign-section">
+    <div class="ac-section-head">
+      <span class="ac-section-title">Kampanye Outbound</span>
+      <button class="ac-btn-primary sm" onclick="acNewCampaign()"><i class="ti ti-plus"></i> Buat Kampanye</button>
+    </div>
+
+    <div class="ac-campaign-list">
+
+      <div class="ac-camp-card">
+        <div class="ac-camp-header">
+          <div class="ac-camp-name">Follow-up Lead Minggu Ini</div>
+          <span class="ac-camp-status running">Berjalan</span>
+        </div>
+        <div class="ac-camp-progress-wrap">
+          <div class="ac-camp-progress-bar" style="width:68%"></div>
+        </div>
+        <div class="ac-camp-stats">
+          <span><strong>68</strong> / 100 kontak</span>
+          <span><strong>47</strong> dijawab</span>
+          <span><strong>12</strong> konversi</span>
+        </div>
+      </div>
+
+      <div class="ac-camp-card">
+        <div class="ac-camp-header">
+          <div class="ac-camp-name">Reminder Pembayaran Jatuh Tempo</div>
+          <span class="ac-camp-status done">Selesai</span>
+        </div>
+        <div class="ac-camp-progress-wrap">
+          <div class="ac-camp-progress-bar" style="width:100%;background:var(--green)"></div>
+        </div>
+        <div class="ac-camp-stats">
+          <span><strong>200</strong> / 200 kontak</span>
+          <span><strong>156</strong> dijawab</span>
+          <span><strong>89</strong> tindak lanjut</span>
+        </div>
+      </div>
+
+      <div class="ac-camp-card">
+        <div class="ac-camp-header">
+          <div class="ac-camp-name">Survei Kepuasan Pelanggan</div>
+          <span class="ac-camp-status draft">Draft</span>
+        </div>
+        <div class="ac-camp-progress-wrap">
+          <div class="ac-camp-progress-bar" style="width:0%"></div>
+        </div>
+        <div class="ac-camp-stats">
+          <span><strong>0</strong> / 75 kontak</span>
+          <span>Belum dimulai</span>
+          <button class="ac-camp-start-btn" onclick="acStartCampaign(this)"><i class="ti ti-player-play"></i> Mulai</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MODAL: Konfigurasi Suara -->
+  <div id="ac-modal-setup" class="ac-modal-overlay" style="display:none" onclick="acCloseModal('ac-modal-setup',event)">
+    <div class="ac-modal">
+      <div class="ac-modal-head">
+        <div class="ac-modal-title"><i class="ti ti-settings"></i> Konfigurasi AI Voice</div>
+        <button class="ac-modal-close" onclick="acCloseModal('ac-modal-setup')"><i class="ti ti-x"></i></button>
+      </div>
+      <div class="ac-modal-body">
+
+        <div class="ac-form-group">
+          <label class="ac-form-label">Pilih Suara AI</label>
+          <div class="ac-voice-options">
+            <div class="ac-voice-opt active" onclick="acSelectVoice(this,'siti')">
+              <div class="ac-voice-av f">S</div>
+              <div>
+                <div class="ac-voice-name">Siti</div>
+                <div class="ac-voice-meta">Wanita · Formal</div>
+              </div>
+              <i class="ti ti-check ac-voice-check"></i>
+            </div>
+            <div class="ac-voice-opt" onclick="acSelectVoice(this,'budi')">
+              <div class="ac-voice-av m">B</div>
+              <div>
+                <div class="ac-voice-name">Budi</div>
+                <div class="ac-voice-meta">Pria · Profesional</div>
+              </div>
+              <i class="ti ti-check ac-voice-check"></i>
+            </div>
+            <div class="ac-voice-opt" onclick="acSelectVoice(this,'rani')">
+              <div class="ac-voice-av f2">R</div>
+              <div>
+                <div class="ac-voice-name">Rani</div>
+                <div class="ac-voice-meta">Wanita · Santai</div>
+              </div>
+              <i class="ti ti-check ac-voice-check"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- DISABLE SPEED VOICE -->
+        <!-- <div class="ac-form-group">
+          <label class="ac-form-label">Kecepatan Bicara</label>
+          <input type="range" class="ac-slider" min="0.8" max="1.4" step="0.05" value="1.0" oninput="this.nextElementSibling.textContent = parseFloat(this.value).toFixed(2) + 'x'">
+          <span class="ac-slider-val">1.00x</span>
+        </div> -->
+
+        <div class="ac-form-group">
+          <label class="ac-form-label">Salam Pembuka (Inbound)</label>
+          <textarea class="ac-textarea" rows="3" placeholder="Contoh: Halo, terima kasih telah menghubungi kami. Ada yang bisa saya bantu?">Halo, terima kasih telah menghubungi kami. Ada yang bisa saya bantu?</textarea>
+        </div>
+
+        <div class="ac-form-group">
+          <label class="ac-form-label">Bahasa</label>
+          <select class="ac-select">
+            <option>Bahasa Indonesia</option>
+            <option>English</option>
+            <option>Campuran (Indonesia + English)</option>
+          </select>
+        </div>
+
+      </div>
+      <div class="ac-modal-footer">
+        <button class="ac-btn-ghost" onclick="acCloseModal('ac-modal-setup')">Batal</button>
+        <button class="ac-btn-primary" onclick="acSaveSetup()"><i class="ti ti-device-floppy"></i> Simpan Konfigurasi</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
 
 <!-- ════════════════════════════════════════════════════════════
      MODALS APPOINTMENT
@@ -4003,11 +4344,18 @@
       CATATAN 2: Saya tidak menambahkan button back to list kontak chat pada panel ini, dikarenakan right panel dikhususkan untuk chat popup berdasarkan chat yang dipilih dari halaman "PERCAKAPAN", jika chat Halaman "Percakapan" menampilkan CHAT A dan "right panel" menampilkan CHAT B, maka akan berpotensi membingungkan user yang memungkinkan terjadinya human error. 
       -->
 
-      <div class="col-right">
+      <!-- Toggle button — anchored to left edge of col-right -->
+      <button class="col-right-toggle" id="colRightToggle" onclick="toggleColRight()" title="Sembunyikan panel">
+        <svg id="colRightToggleIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="9 18 15 12 9 6"/>
+        </svg>
+      </button>
+
+      <div class="col-right" id="colRight">
         <div class="rp-tabs">
-          <div class="rp-tab active">Live Chat</div>
-          <div class="rp-tab">Detail Kontak</div>
-          <div class="rp-tab">Ringkasan AI</div>
+          <div class="rp-tab active" onclick="rpSwitchTab('live-chat')">Live Chat</div>
+          <div class="rp-tab" onclick="rpSwitchTab('detail-kontak')">Detail Kontak</div>
+          <div class="rp-tab" onclick="rpSwitchTab('ringkasan-ai')">Ringkasan AI</div>
         </div>
         <div class="rp-chat-header">
           <div class="rp-contact">
@@ -4020,46 +4368,259 @@
             <div class="rp-act" title="Opsi lainnya"><i class="ti ti-dots-vertical" aria-label="Opsi"></i></div>
           </div>
         </div>
-        <div style="padding:6px 14px;border-bottom:1px solid var(--gray-100);display:flex;align-items:center;gap:6px">
-          <div style="background:var(--red-light);color:var(--red);font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;display:flex;align-items:center;gap:4px"><i class="ti ti-robot" style="font-size:11px"></i> Ditangani AI — Agent Sales</div>
+
+        <!-- Hanya Bagian Sini yang berubah -->
+
+        <!-- ─── PANEL: Live Chat ─────────────────────────────── -->
+        <div id="rp-panel-live-chat" class="rp-panel">
+          <div style="padding:6px 14px;border-bottom:1px solid var(--gray-100);display:flex;align-items:center;gap:6px">
+            <div style="background:var(--red-light);color:var(--red);font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;display:flex;align-items:center;gap:4px"><i class="ti ti-robot" style="font-size:11px"></i> Ditangani AI — Agent Sales</div>
+          </div>
+          <div class="chat-body">
+            <div class="msg user">
+              <div class="msg-bubble">Halo, saya mau tanya soal produk kalian</div>
+              <div class="msg-meta">10:24</div>
+            </div>
+            <div class="msg bot">
+              <div class="msg-bubble">Halo Pak Budi! Senang bisa membantu. Produk apa yang ingin Bapak ketahui? Kami memiliki berbagai kategori industri.</div>
+              <div class="msg-meta"><span class="ai-label">AI</span> 10:24</div>
+            </div>
+            <div class="msg user">
+              <div class="msg-bubble">Saya cari spare part mesin packing, butuh 50 pcs</div>
+              <div class="msg-meta">10:26</div>
+            </div>
+            <div class="msg bot">
+              <div class="msg-bubble">Baik Pak! Untuk spare part mesin packing 50 pcs, kami punya stok tersedia. Boleh tahu tipe mesinnya apa? Saya bisa langsung cekkan harga dan estimasi pengiriman.</div>
+              <div class="msg-meta"><span class="ai-label">AI</span> 10:26</div>
+            </div>
+            <div class="msg user">
+              <div class="msg-bubble">Oke mas, saya mau order 2 box dulu untuk sample. Bisa COD?</div>
+              <div class="msg-meta">10:29</div>
+            </div>
+            <div class="msg bot">
+              <div class="msg-bubble">Bisa Pak! Untuk sample 2 box, kami siapkan dengan pengiriman COD. Total Rp 1.240.000 termasuk ongkir Jakarta. Saya buatkan invoice sekarang ya?</div>
+              <div class="msg-meta"><span class="ai-label">AI</span> 10:29</div>
+            </div>
+          </div>
+          <div class="chat-input-wrap">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+              <div style="font-size:10px;color:var(--gray-400)">Balas sebagai Admin (override AI)</div>
+              <div style="font-size:10px;color:var(--red);cursor:pointer;display:flex;align-items:center;gap:3px"><i class="ti ti-robot" style="font-size:11px"></i> Biarkan AI</div>
+            </div>
+            <div class="chat-input-row">
+              <i class="ti ti-paperclip" aria-label="Lampirkan file"></i>
+              <input placeholder="Ketik pesan..." readonly/>
+              <i class="ti ti-send" aria-label="Kirim pesan"></i>
+            </div>
+          </div>
         </div>
-        <div class="chat-body">
-          <div class="msg user">
-            <div class="msg-bubble">Halo, saya mau tanya soal produk kalian</div>
-            <div class="msg-meta">10:24</div>
-          </div>
-          <div class="msg bot">
-            <div class="msg-bubble">Halo Pak Budi! Senang bisa membantu. Produk apa yang ingin Bapak ketahui? Kami memiliki berbagai kategori industri.</div>
-            <div class="msg-meta"><span class="ai-label">AI</span> 10:24</div>
-          </div>
-          <div class="msg user">
-            <div class="msg-bubble">Saya cari spare part mesin packing, butuh 50 pcs</div>
-            <div class="msg-meta">10:26</div>
-          </div>
-          <div class="msg bot">
-            <div class="msg-bubble">Baik Pak! Untuk spare part mesin packing 50 pcs, kami punya stok tersedia. Boleh tahu tipe mesinnya apa? Saya bisa langsung cekkan harga dan estimasi pengiriman.</div>
-            <div class="msg-meta"><span class="ai-label">AI</span> 10:26</div>
-          </div>
-          <div class="msg user">
-            <div class="msg-bubble">Oke mas, saya mau order 2 box dulu untuk sample. Bisa COD?</div>
-            <div class="msg-meta">10:29</div>
-          </div>
-          <div class="msg bot">
-            <div class="msg-bubble">Bisa Pak! Untuk sample 2 box, kami siapkan dengan pengiriman COD. Total Rp 1.240.000 termasuk ongkir Jakarta. Saya buatkan invoice sekarang ya?</div>
-            <div class="msg-meta"><span class="ai-label">AI</span> 10:29</div>
+
+        <!-- ─── PANEL: Detail Kontak ─────────────────────────── -->
+        <div id="rp-panel-detail-kontak" class="rp-panel" style="display:none">
+          <div class="rp-detail-body">
+
+            <!-- Foto & identitas utama -->
+            <div class="rp-dk-hero">
+              <div class="rp-dk-av">BW</div>
+              <div class="rp-dk-name">Budi Wicaksono</div>
+              <div class="rp-dk-company">PT. Maju Bersama Tbk</div>
+              <div class="rp-dk-badges">
+                <span class="rp-dk-badge badge-lead">Lead</span>
+                <span class="rp-dk-badge badge-warm">Warm</span>
+              </div>
+            </div>
+
+            <!-- Info kontak -->
+            <div class="rp-dk-section">
+              <div class="rp-dk-sec-title">Informasi Kontak</div>
+              <div class="rp-dk-rows">
+                <div class="rp-dk-row">
+                  <span class="rp-dk-icon"><i class="ti ti-brand-whatsapp" style="color:#16a34a"></i></span>
+                  <div>
+                    <div class="rp-dk-lbl">WhatsApp</div>
+                    <div class="rp-dk-val">+62 812-3456-7890</div>
+                  </div>
+                  <button class="rp-dk-copy" title="Salin" onclick="rpCopy('+62 812-3456-7890', this)"><i class="ti ti-copy"></i></button>
+                </div>
+                <div class="rp-dk-row">
+                  <span class="rp-dk-icon"><i class="ti ti-mail" style="color:var(--red)"></i></span>
+                  <div>
+                    <div class="rp-dk-lbl">Email</div>
+                    <div class="rp-dk-val">budi.w@majubersama.co.id</div>
+                  </div>
+                  <button class="rp-dk-copy" title="Salin" onclick="rpCopy('budi.w@majubersama.co.id', this)"><i class="ti ti-copy"></i></button>
+                </div>
+                <div class="rp-dk-row">
+                  <span class="rp-dk-icon"><i class="ti ti-building" style="color:var(--gray-400)"></i></span>
+                  <div>
+                    <div class="rp-dk-lbl">Perusahaan</div>
+                    <div class="rp-dk-val">PT. Maju Bersama Tbk</div>
+                  </div>
+                </div>
+                <div class="rp-dk-row">
+                  <span class="rp-dk-icon"><i class="ti ti-map-pin" style="color:var(--gray-400)"></i></span>
+                  <div>
+                    <div class="rp-dk-lbl">Kota</div>
+                    <div class="rp-dk-val">Jakarta Selatan</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Statistik interaksi -->
+            <div class="rp-dk-section">
+              <div class="rp-dk-sec-title">Statistik Interaksi</div>
+              <div class="rp-dk-stats-grid">
+                <div class="rp-dk-stat">
+                  <div class="rp-dk-stat-val">7</div>
+                  <div class="rp-dk-stat-lbl">Percakapan</div>
+                </div>
+                <div class="rp-dk-stat">
+                  <div class="rp-dk-stat-val" style="color:var(--green)">3</div>
+                  <div class="rp-dk-stat-lbl">Order</div>
+                </div>
+                <div class="rp-dk-stat">
+                  <div class="rp-dk-stat-val" style="color:var(--red)">Rp 4,8jt</div>
+                  <div class="rp-dk-stat-lbl">Total Belanja</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Riwayat percakapan -->
+            <div class="rp-dk-section">
+              <div class="rp-dk-sec-title">Riwayat Percakapan</div>
+              <div class="rp-dk-history">
+                <div class="rp-dk-hist-item">
+                  <div class="rp-dk-hist-dot" style="background:var(--green)"></div>
+                  <div>
+                    <div class="rp-dk-hist-title">Tanya spare part mesin packing</div>
+                    <div class="rp-dk-hist-meta">Hari ini · 10:24 · <span style="color:var(--red)">AI</span></div>
+                  </div>
+                </div>
+                <div class="rp-dk-hist-item">
+                  <div class="rp-dk-hist-dot" style="background:var(--gray-400)"></div>
+                  <div>
+                    <div class="rp-dk-hist-title">Order 2 box sample → Selesai</div>
+                    <div class="rp-dk-hist-meta">28 Mei 2025 · <span style="color:var(--red)">AI</span></div>
+                  </div>
+                </div>
+                <div class="rp-dk-hist-item">
+                  <div class="rp-dk-hist-dot" style="background:var(--gray-400)"></div>
+                  <div>
+                    <div class="rp-dk-hist-title">Konfirmasi pengiriman</div>
+                    <div class="rp-dk-hist-meta">20 Mei 2025 · Human</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Catatan agen -->
+            <div class="rp-dk-section">
+              <div class="rp-dk-sec-title" style="display:flex;align-items:center;justify-content:space-between">
+                Catatan Agen
+                <button class="rp-dk-add-note" onclick="rpAddNote()"><i class="ti ti-plus"></i> Tambah</button>
+              </div>
+              <div class="rp-dk-note">
+                <i class="ti ti-notes" style="font-size:13px;color:var(--amber);flex-shrink:0;margin-top:1px"></i>
+                <span>Customer tertarik dengan bundling spare part + jasa servis. Follow-up H+3.</span>
+              </div>
+            </div>
+
           </div>
         </div>
-        <div class="chat-input-wrap">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-            <div style="font-size:10px;color:var(--gray-400)">Balas sebagai Admin (override AI)</div>
-            <div style="font-size:10px;color:var(--red);cursor:pointer;display:flex;align-items:center;gap:3px"><i class="ti ti-robot" style="font-size:11px"></i> Biarkan AI</div>
-          </div>
-          <div class="chat-input-row">
-            <i class="ti ti-paperclip" aria-label="Lampirkan file"></i>
-            <input placeholder="Ketik pesan..." readonly/>
-            <i class="ti ti-send" aria-label="Kirim pesan"></i>
+
+        <!-- ─── PANEL: Ringkasan AI ───────────────────────────── -->
+        <div id="rp-panel-ringkasan-ai" class="rp-panel" style="display:none">
+          <div class="rp-detail-body">
+
+            <!-- Skor & intent -->
+            <div class="rp-ai-score-card">
+              <div class="rp-ai-score-left">
+                <div class="rp-ai-score-num">87</div>
+                <div class="rp-ai-score-lbl">Lead Score</div>
+              </div>
+              <div class="rp-ai-score-right">
+                <div class="rp-ai-score-bar-wrap">
+                  <div class="rp-ai-score-bar" style="width:87%"></div>
+                </div>
+                <div class="rp-ai-score-tags">
+                  <span class="rp-ai-tag tag-hot">🔥 High Intent</span>
+                  <span class="rp-ai-tag tag-buy">Siap Beli</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Ringkasan percakapan -->
+            <div class="rp-dk-section">
+              <div class="rp-dk-sec-title"><i class="ti ti-sparkles" style="color:var(--red)"></i> Ringkasan Percakapan</div>
+              <div class="rp-ai-summary-text">
+                Customer menanyakan spare part mesin packing dan berminat order <strong>50 pcs</strong>. Dimulai dengan pembelian sample <strong>2 box (Rp 1,24 jt)</strong> via COD. AI berhasil mengarahkan ke closing dalam <strong>5 menit</strong>.
+              </div>
+            </div>
+
+            <!-- Topik yang dibahas -->
+            <div class="rp-dk-section">
+              <div class="rp-dk-sec-title">Topik yang Dibahas</div>
+              <div class="rp-ai-topics">
+                <span class="rp-ai-topic"><i class="ti ti-package"></i> Spare part mesin packing</span>
+                <span class="rp-ai-topic"><i class="ti ti-truck"></i> Pengiriman COD</span>
+                <span class="rp-ai-topic"><i class="ti ti-currency-dollar"></i> Harga & invoice</span>
+                <span class="rp-ai-topic"><i class="ti ti-box"></i> Qty 50 pcs</span>
+              </div>
+            </div>
+
+            <!-- Rekomendasi AI -->
+            <div class="rp-dk-section">
+              <div class="rp-dk-sec-title"><i class="ti ti-robot" style="color:var(--red)"></i> Rekomendasi AI</div>
+              <div class="rp-ai-recs">
+                <div class="rp-ai-rec">
+                  <div class="rp-ai-rec-dot" style="background:var(--red)"></div>
+                  <span>Follow-up dalam <strong>24 jam</strong> untuk konfirmasi order bulk 50 pcs.</span>
+                </div>
+                <div class="rp-ai-rec">
+                  <div class="rp-ai-rec-dot" style="background:var(--amber)"></div>
+                  <span>Tawarkan diskon <strong>5%</strong> untuk order > 30 pcs sebagai upsell.</span>
+                </div>
+                <div class="rp-ai-rec">
+                  <div class="rp-ai-rec-dot" style="background:var(--green)"></div>
+                  <span>Kirim katalog produk serupa via WhatsApp setelah invoice dikirim.</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Sentimen -->
+            <div class="rp-dk-section">
+              <div class="rp-dk-sec-title">Analisis Sentimen</div>
+              <div class="rp-ai-sentiment-row">
+                <div class="rp-ai-sent-item">
+                  <div class="rp-ai-sent-label">Positif</div>
+                  <div class="rp-ai-sent-bar-wrap">
+                    <div class="rp-ai-sent-bar" style="width:72%;background:var(--green)"></div>
+                  </div>
+                  <div class="rp-ai-sent-pct">72%</div>
+                </div>
+                <div class="rp-ai-sent-item">
+                  <div class="rp-ai-sent-label">Netral</div>
+                  <div class="rp-ai-sent-bar-wrap">
+                    <div class="rp-ai-sent-bar" style="width:24%;background:var(--gray-400)"></div>
+                  </div>
+                  <div class="rp-ai-sent-pct">24%</div>
+                </div>
+                <div class="rp-ai-sent-item">
+                  <div class="rp-ai-sent-label">Negatif</div>
+                  <div class="rp-ai-sent-bar-wrap">
+                    <div class="rp-ai-sent-bar" style="width:4%;background:var(--red)"></div>
+                  </div>
+                  <div class="rp-ai-sent-pct">4%</div>
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
+
+        <!-- Sampai sini -->
+
       </div>
 
     </div>
@@ -4075,7 +4636,12 @@
 <script src="script_page/integrasi.js"></script>
 <script src="script_page/pengaturan-agent.js"></script>
 <script src="script_page/knowledge-base.js"></script>
+<script src="script_page/aicall.js"></script>
 <script src="desktopOnly.js"></script>
+
+<script>
+
+</script>
 
 </body>
 </html>

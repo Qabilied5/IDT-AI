@@ -88,6 +88,7 @@ const pages = {
   'Integrasi': 'integrasi-page',
   'Pengaturan Agent': 'pengaturan-agent-page',
   'Knowledge Base': 'knowledge-base-page',
+  'AI Call': 'ai-call-page',
 };
 
 function showPage(pageId) {
@@ -100,29 +101,121 @@ function showPage(pageId) {
 }
 
 function initNav() {
-  const navItems = document.querySelectorAll('.sb-item');
+  const navItems = document.querySelectorAll('.sb-item, .sec-action');
+
   navItems.forEach(item => {
-    const label = item.querySelector('span')?.textContent?.trim();
+
+    let label;
+
+    if (item.classList.contains('sec-action')) {
+      label = item.querySelector('span')?.id?.trim();
+    } else {
+      label = item.querySelector('span')?.textContent?.trim();
+    }
+
     if (!pages[label]) return;
 
     item.addEventListener('click', e => {
       e.preventDefault();
+
       navItems.forEach(i => i.classList.remove('active'));
-      item.classList.add('active');
+
+      if (item.classList.contains('sb-item')) {
+        item.classList.add('active');
+      }
+
       showPage(pages[label]);
 
-      // Update topbar title
       const topbarTitle = document.querySelector('.topbar-title');
       if (topbarTitle) topbarTitle.textContent = label;
     });
   });
 
-  // Init: hide all except overview
   Object.values(pages).forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = 'none';
   });
+
   showPage('overview-page');
 }
 
 document.addEventListener('DOMContentLoaded', initNav);
+
+
+// >> COL RIGHT FUNCTION
+(function () {
+  var STORAGE_KEY = 'colRightVisible';
+
+  function setPanel(visible, animate) {
+    var panel  = document.getElementById('colRight');
+    var btn    = document.getElementById('colRightToggle');
+    if (!panel || !btn) return;
+
+    if (!animate) {
+      panel.style.transition = 'none';
+      requestAnimationFrame(function () {
+        panel.style.transition = '';
+      });
+    }
+
+    if (visible) {
+      panel.classList.remove('collapsed');
+      btn.classList.remove('panel-hidden');
+      btn.title = 'Sembunyikan panel';
+    } else {
+      panel.classList.add('collapsed');
+      btn.classList.add('panel-hidden');
+      btn.title = 'Tampilkan panel';
+    }
+
+    localStorage.setItem(STORAGE_KEY, visible ? '1' : '0');
+  }
+
+  window.toggleColRight = function () {
+    var panel = document.getElementById('colRight');
+    if (!panel) return;
+    var isVisible = !panel.classList.contains('collapsed');
+    setPanel(!isVisible, true);
+  };
+
+  // Restore saved state on load (no animation on init)
+  document.addEventListener('DOMContentLoaded', function () {
+    var saved = localStorage.getItem(STORAGE_KEY);
+    // Default: visible (null = first time)
+    setPanel(saved !== '0', false);
+  });
+})();
+
+
+// >> RIGHT COL FUNCTION
+// ── Right Panel Tab Switching ────────────────────────────────────
+function rpSwitchTab(tabId) {
+  // Update tab active state
+  const tabs = document.querySelectorAll('.rp-tab');
+  const tabMap = ['live-chat', 'detail-kontak', 'ringkasan-ai'];
+  tabs.forEach((tab, i) => {
+    tab.classList.toggle('active', tabMap[i] === tabId);
+  });
+
+  // Show/hide panels
+  const panels = ['live-chat', 'detail-kontak', 'ringkasan-ai'];
+  panels.forEach(id => {
+    const el = document.getElementById('rp-panel-' + id);
+    if (el) el.style.display = id === tabId ? 'flex' : 'none';
+  });
+}
+
+// Copy to clipboard helper
+async function rpCopy(text, btn) {
+  try {
+    await navigator.clipboard.writeText(text);
+    const icon = btn.querySelector('i');
+    if (icon) { icon.className = 'ti ti-check'; setTimeout(() => { icon.className = 'ti ti-copy'; }, 1500); }
+  } catch(e) {}
+}
+
+// Add note placeholder
+function rpAddNote() {
+  const note = document.querySelector('.rp-dk-note span');
+  if (note) note.textContent = prompt('Tambah catatan:') || note.textContent;
+}
