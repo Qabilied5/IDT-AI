@@ -169,31 +169,107 @@ body {
 .topbar {
   background: var(--white);
   border-bottom: 1px solid var(--gray-200);
-  padding: 0 24px;
-  height: 52px;
-  display: flex;
+  padding: 0 20px 0 24px;
+  height: 56px;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
   flex-shrink: 0;
+  gap: 12px;
 }
 .topbar-left {
   display: flex;
   align-items: center;
-  gap: 8px;
+  min-width: 0;
+}
+.topbar-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.tb-greeting-chip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--red-light);
+  color: var(--red);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 9px;
+  border-radius: 100px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  letter-spacing: 0.1px;
+}
+.tb-greeting-chip i {
+  font-size: 12px;
+}
+.tb-sep {
+  width: 1px;
+  height: 18px;
+  background: var(--gray-200);
+  flex-shrink: 0;
 }
 .topbar-title {
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 700;
+  color: var(--gray-800);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-.topbar-sub {
-  font-size: 12px;
+.topbar-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.tb-datetime {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--gray-50);
+  border: 1px solid var(--gray-200);
+  border-radius: 10px;
+  padding: 6px 12px;
+  white-space: nowrap;
+}
+.tb-dt-icon {
+  font-size: 13px;
   color: var(--gray-400);
+}
+.tb-date-str {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--gray-600);
+  letter-spacing: 0.1px;
+}
+.tb-dt-divider {
+  width: 1px;
+  height: 14px;
+  background: var(--gray-200);
+  margin: 0 2px;
+}
+.tb-time-str {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--gray-800);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.5px;
+  min-width: 52px;
 }
 .topbar-right {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+  justify-content: flex-end;
 }
+
+/* Greeting chip time-of-day variants */
+.tb-greeting-chip.greeting-pagi  { background: #fff7e6; color: #b45309; }  /* Amber — pagi */
+.tb-greeting-chip.greeting-siang { background: var(--red-light); color: var(--red); }  /* Red — siang */
+.tb-greeting-chip.greeting-sore  { background: #fff1f0; color: #c2410c; }  /* Orange-red — sore */
+.tb-greeting-chip.greeting-malam { background: #eef2ff; color: #3730a3; }  /* Indigo — malam */
 .tb-btn {
   display: flex;
   align-items: center;
@@ -1029,3 +1105,14 @@ body {
 }
 .rp-ai-sent-bar { height: 100%; border-radius: 3px; transition: width .4s; }
 .rp-ai-sent-pct { font-size: 11px; font-weight: 600; color: var(--gray-800); width: 30px; text-align: right; }
+
+.ai-toggle-text{
+  background-color: var(--red);
+  color: var(--gray-100);
+  padding: 4px 6px;
+  border-radius: 4px;
+  min-width: 85px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

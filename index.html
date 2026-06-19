@@ -120,11 +120,25 @@
     <!-- TOPBAR -->
     <div class="topbar">
       <div class="topbar-left">
-        <div class="topbar-title">Overview</div>
-        <div class="topbar-sub" style="margin-left:6px">— Hari ini, Rabu 3 Juni 2025</div>
+        <div class="topbar-breadcrumb">
+          <span class="tb-greeting-chip" id="tbGreetingChip">
+            <i class="ti ti-sun" id="tbGreetingIcon"></i>
+            <span id="tbGreetingText">Selamat Pagi</span>
+          </span>
+          <span class="tb-sep"></span>
+          <div class="topbar-title">Overview</div>
+        </div>
+      </div>
+      <div class="topbar-center">
+        <div class="tb-datetime">
+          <i class="ti ti-calendar-event tb-dt-icon"></i>
+          <span id="tbDateStr" class="tb-date-str"></span>
+          <span class="tb-dt-divider"></span>
+          <i class="ti ti-clock tb-dt-icon"></i>
+          <span id="tbTimeStr" class="tb-time-str"></span>
+        </div>
       </div>
       <div class="topbar-right">
-        <button class="tb-btn"><i class="ti ti-calendar-week"></i> 7 hari terakhir</button>
         <div class="tb-notif"><i class="ti ti-bell" style="font-size:16px"></i><div class="tb-notif-dot"></div></div>
         <button class="tb-btn tb-btn-red"><i class="ti ti-plus"></i> Buat Agent Baru</button>
       </div>
@@ -532,7 +546,7 @@
                     <i class="ti ti-robot"></i> AI aktif — ketik untuk override manual
                   </span>
                   <span class="pc-ai-toggle" id="pc-ai-toggle" onclick="toggleAI()">
-                    <i class="ti ti-robot"></i> <span id="ai-toggle-text">Nonaktifkan AI</span>
+                    <i class="ti ti-robot"></i> <span class="ai-toggle-text" id="ai-toggle-text">Nonaktifkan AI</span>
                   </span>
                 </div>
                 <div class="chat-input-row">
@@ -994,7 +1008,7 @@
       <button class="lp-kat-btn" data-kat="real" onclick="filterLeadKat(this,'real')">
         <div class="lp-kat-icon green"><i class="ti ti-circle-check"></i></div>
         <div>
-          <div class="lp-kat-num" style="display:flex;align-items:baseline;gap:6px">
+          <div class="lp-kat-num" style="display:flex;align-items:center;justify-content: center; gap:6px">
             <span data-kat-count="real">247</span>
           </div>
           <div class="lp-kat-label">Real Lead</div>
@@ -1599,14 +1613,14 @@
       </div>
       <table class="an-table">
         <thead>
-          <tr><th>#</th><th>Produk</th><th>Upsell Berhasil</th><th>Revenue</th><th>Rate</th><th>Tren</th></tr>
+          <tr><th>#</th><th>Produk</th><th>Upsell Berhasil</th><th>Average</th><th>Rate</th><th>Tren</th></tr>
         </thead>
         <tbody>
           <tr>
             <td class="an-rank">1</td>
             <td><strong>Spare Part Mesin Packing A200</strong></td>
             <td>148</td>
-            <td>Rp 4,2 jt avg</td>
+            <td>Rp 4,2 jt</td>
             <td><span class="badge" style="background:var(--green-bg);color:var(--green)">42%</span></td>
             <td><span class="an-trend-up">↑ +18%</span></td>
           </tr>
@@ -1614,7 +1628,7 @@
             <td class="an-rank">2</td>
             <td><strong>Filter Industri Premium</strong></td>
             <td>121</td>
-            <td>Rp 2,8 jt avg</td>
+            <td>Rp 2,8 jt</td>
             <td><span class="badge" style="background:var(--green-bg);color:var(--green)">38%</span></td>
             <td><span class="an-trend-up">↑ +9%</span></td>
           </tr>
@@ -1622,7 +1636,7 @@
             <td class="an-rank">3</td>
             <td><strong>Bearing Set Conveyor</strong></td>
             <td>98</td>
-            <td>Rp 1,9 jt avg</td>
+            <td>Rp 1,9 jt</td>
             <td><span class="badge" style="background:var(--amber-bg);color:var(--amber)">31%</span></td>
             <td><span class="an-trend-up">↑ +4%</span></td>
           </tr>
@@ -1630,7 +1644,7 @@
             <td class="an-rank">4</td>
             <td><strong>Sensor Suhu Industrial</strong></td>
             <td>79</td>
-            <td>Rp 3,1 jt avg</td>
+            <td>Rp 3,1 jt</td>
             <td><span class="badge" style="background:var(--amber-bg);color:var(--amber)">27%</span></td>
             <td><span class="an-trend-down">↓ -2%</span></td>
           </tr>
@@ -1638,7 +1652,7 @@
             <td class="an-rank">5</td>
             <td><strong>Valve Pneumatik VC Series</strong></td>
             <td>64</td>
-            <td>Rp 2,2 jt avg</td>
+            <td>Rp 2,2 jt</td>
             <td><span class="badge" style="background:var(--red-light);color:var(--red)">22%</span></td>
             <td><span class="an-trend-up">↑ +7%</span></td>
           </tr>
@@ -1994,7 +2008,7 @@
 
       <!-- Buat Appointment -->
       <button class="ap-btn-primary" onclick="apOpenCreate()">
-        <i class="ti ti-plus"></i> Buat Appointment
+        <i class="ti ti-plus"></i>Buat Appointment
       </button>
     </div>
   </div>
@@ -2342,7 +2356,7 @@
           </div>
           <div class="pa-page-actions">
             <button class="pa-btn pa-btn-ghost" onclick="paDiscardChanges()"><i class="ti ti-x"></i> Batal</button>
-            <button class="pa-btn pa-btn-primary" id="pa-save-btn" onclick="paSaveSettings()"><i class="ti ti-device-floppy"></i> Simpan Perubahan</button>
+            <button class="pa-btn pa-btn-primary" id="pa-save-btn" onclick="paSaveSettings()"><i class="ti ti-device-floppy"></i>Simpan Perubahan</button>
           </div>
         </div>
  
@@ -2357,7 +2371,7 @@
                 <label class="pa-label" for="pa-agent-name">Nama Agent <span class="pa-label-hint">(wajib)</span></label>
                 <div class="pa-input-prefix">
                   <span class="pa-input-prefix-label"><i class="ti ti-robot" style="font-size:13px"></i></span>
-                  <input id="pa-agent-name" type="text" value="Halo AI" placeholder="Mis. Halo AI, Sari, Andi..." aria-label="Nama Agent">
+                  <input id="pa-agent-name" type="text" value="Halo AI" placeholder="Mis. IDT AI, Sari, Andi..." aria-label="Nama Agent">
                 </div>
                 <div class="pa-helper">Nama ini muncul di header chat dan notifikasi pelanggan.</div>
               </div>
@@ -2410,7 +2424,7 @@
             <div class="pa-preview-box">
               <div class="pa-preview-label">
                 <i class="ti ti-eye" style="font-size:13px"></i> Preview — balasan AI sebagai
-                <strong id="pa-agent-name-val" style="color:var(--gray-800)">Halo AI</strong>
+                <strong id="pa-agent-name-val" style="color:var(--gray-800)">IDT AI</strong>
               </div>
               <div class="pa-preview-bubble">
                 <span id="pa-preview-text">Halo! Makasih udah hubungi Indotrading 😊 Ada yang bisa kami bantu hari ini?</span>
@@ -2509,7 +2523,7 @@
           <div class="pa-card-body">
             <div class="pa-field">
               <label class="pa-label" for="pa-greeting">Pesan pembuka default</label>
-              <textarea id="pa-greeting" class="pa-textarea" style="min-height:90px">Halo! Selamat datang di Indotrading 👋 Saya Halo AI, siap membantu kebutuhan bisnis Anda hari ini. Ada yang bisa saya bantu?</textarea>
+              <textarea id="pa-greeting" class="pa-textarea" style="min-height:90px">Halo! Selamat datang di Indotrading 👋 Saya IDT AI, siap membantu kebutuhan bisnis Anda hari ini. Ada yang bisa saya bantu?</textarea>
               <div class="pa-char-row"><span id="pa-greeting-count">0/300</span></div>
             </div>
             <div class="pa-toggle-row">
@@ -2832,7 +2846,7 @@
             <div class="pa-toggle-row">
               <div class="pa-toggle-info">
                 <div class="pa-toggle-label">Aktif 24 jam / 7 hari</div>
-                <div class="pa-toggle-desc">AI selalu online tanpa batasan jam — cocok untuk bisnis B2B lintas zona waktu.</div>
+                <div class="pa-toggle-desc">AI selalu online tanpa batasan jam.</div>
               </div>
               <label class="pa-switch">
                 <input type="checkbox" id="pa-24x7" checked>
@@ -3257,6 +3271,188 @@
     </form>
   </div>
 </div>
+<!-- ── Modal: Tambah / Edit Brand ──────────────────────────────── -->
+<div id="pa-modal-brand" class="pa-modal-overlay" style="display:none" role="dialog" aria-modal="true" aria-labelledby="pa-modal-brand-title">
+  <div class="pa-modal pa-modal-brand-wide">
+    <div class="pa-modal-header">
+      <div class="pa-modal-title"><i class="ti ti-building-store" style="color:var(--red)"></i> <span id="pa-modal-brand-title">Tambah Brand Baru</span></div>
+      <button class="pa-modal-close" onclick="closeBrandModal()" aria-label="Tutup"><i class="ti ti-x"></i></button>
+    </div>
+
+    <div class="pa-modal-brand-layout">
+
+      <!-- KIRI: Form -->
+      <div class="pa-modal-body pa-brand-form-col">
+        <form id="pa-brand-form" onsubmit="return false">
+
+          <!-- Identitas Brand -->
+          <div class="pa-brand-section-label">Identitas Brand</div>
+
+          <div class="pa-field">
+            <label class="pa-label" for="pa-brand-name">Nama Brand <span class="pa-label-hint">(wajib)</span></label>
+            <input id="pa-brand-name" class="pa-input" type="text" placeholder="Mis. Indotrading Kimia, TechMart, GreenBuild..." oninput="paBrandNameInput()" required>
+          </div>
+
+          <div class="pa-form-2col">
+            <div class="pa-field">
+              <label class="pa-label" for="pa-brand-industry">Kategori Industri <span class="pa-label-hint">(wajib)</span></label>
+              <select id="pa-brand-industry" class="pa-select" onchange="updateBrandPreview()" required>
+                <option value="">— Pilih kategori —</option>
+                <option value="Platform Utama">Platform Utama</option>
+                <option value="Industri Mesin">Industri Mesin</option>
+                <option value="Bahan Kimia">Bahan Kimia</option>
+                <option value="Konstruksi & Bangunan">Konstruksi & Bangunan</option>
+                <option value="Elektronik & Teknologi">Elektronik & Teknologi</option>
+                <option value="Makanan & Minuman">Makanan & Minuman</option>
+                <option value="Tekstil & Garmen">Tekstil & Garmen</option>
+                <option value="Otomotif & Spare Part">Otomotif & Spare Part</option>
+                <option value="Kesehatan & Farmasi">Kesehatan & Farmasi</option>
+                <option value="Pertanian & Perkebunan">Pertanian & Perkebunan</option>
+                <option value="Energi & Tambang">Energi & Tambang</option>
+                <option value="Logistik & Distribusi">Logistik & Distribusi</option>
+                <option value="Retail & E-Commerce">Retail & E-Commerce</option>
+                <option value="Jasa & Konsultan">Jasa & Konsultan</option>
+                <option value="Lainnya">Lainnya</option>
+              </select>
+            </div>
+            <div class="pa-field">
+              <label class="pa-label" for="pa-brand-abbr">Singkatan <span class="pa-label-hint">(maks 3 huruf)</span></label>
+              <input id="pa-brand-abbr" class="pa-input" type="text" maxlength="3" placeholder="IT" style="text-transform:uppercase" oninput="this.dataset.manualEdit='1';updateBrandPreview()">
+              <div class="pa-helper">Tampil pada avatar brand.</div>
+            </div>
+          </div>
+
+          <div class="pa-field">
+            <label class="pa-label">Warna Brand</label>
+            <div class="pa-color-row">
+              <div class="pa-color-swatches">
+                <button type="button" class="pa-color-swatch selected" data-color="#c8102e" style="background:#c8102e" onclick="paBrandColorPick(this,'#c8102e')" title="Merah"></button>
+                <button type="button" class="pa-color-swatch" data-color="#1d4ed8" style="background:#1d4ed8" onclick="paBrandColorPick(this,'#1d4ed8')" title="Biru"></button>
+                <button type="button" class="pa-color-swatch" data-color="#15803d" style="background:#15803d" onclick="paBrandColorPick(this,'#15803d')" title="Hijau"></button>
+                <button type="button" class="pa-color-swatch" data-color="#7c3aed" style="background:#7c3aed" onclick="paBrandColorPick(this,'#7c3aed')" title="Ungu"></button>
+                <button type="button" class="pa-color-swatch" data-color="#b45309" style="background:#b45309" onclick="paBrandColorPick(this,'#b45309')" title="Oranye"></button>
+                <button type="button" class="pa-color-swatch" data-color="#0e7490" style="background:#0e7490" onclick="paBrandColorPick(this,'#0e7490')" title="Teal"></button>
+                <button type="button" class="pa-color-swatch" data-color="#be185d" style="background:#be185d" onclick="paBrandColorPick(this,'#be185d')" title="Pink"></button>
+                <button type="button" class="pa-color-swatch" data-color="#374151" style="background:#374151" onclick="paBrandColorPick(this,'#374151')" title="Abu"></button>
+              </div>
+              <label class="pa-color-custom-wrap" title="Pilih warna kustom">
+                <i class="ti ti-palette"></i>
+                <input type="color" id="pa-brand-color" value="#c8102e" oninput="updateBrandPreview();document.querySelectorAll('.pa-color-swatch').forEach(s=>s.classList.remove('selected'))">
+              </label>
+            </div>
+          </div>
+
+          <div class="pa-field">
+            <label class="pa-label" for="pa-brand-desc">Deskripsi Brand</label>
+            <textarea id="pa-brand-desc" class="pa-textarea" style="min-height:62px" placeholder="Jelaskan bisnis atau produk utama brand ini secara singkat..."></textarea>
+          </div>
+
+          <!-- Kontak & Informasi -->
+          <div class="pa-brand-section-label" style="margin-top:4px">Kontak & Informasi</div>
+
+          <div class="pa-form-2col">
+            <div class="pa-field">
+              <label class="pa-label" for="pa-brand-website">Website</label>
+              <div class="pa-input-prefix">
+                <span class="pa-input-prefix-label"><i class="ti ti-world" style="font-size:12px"></i></span>
+                <input id="pa-brand-website" type="url" placeholder="https://brand.com">
+              </div>
+            </div>
+            <div class="pa-field">
+              <label class="pa-label" for="pa-brand-phone">No. Telepon / WhatsApp</label>
+              <div class="pa-input-prefix">
+                <span class="pa-input-prefix-label"><i class="ti ti-phone" style="font-size:12px"></i></span>
+                <input id="pa-brand-phone" type="tel" placeholder="0812-xxxx-xxxx">
+              </div>
+            </div>
+          </div>
+
+          <div class="pa-form-2col">
+            <div class="pa-field">
+              <label class="pa-label" for="pa-brand-email">Email Bisnis</label>
+              <div class="pa-input-prefix">
+                <span class="pa-input-prefix-label"><i class="ti ti-mail" style="font-size:12px"></i></span>
+                <input id="pa-brand-email" type="email" placeholder="cs@brand.com">
+              </div>
+            </div>
+            <div class="pa-field">
+              <label class="pa-label" for="pa-brand-tone">Tone AI untuk Brand</label>
+              <select id="pa-brand-tone" class="pa-select" onchange="updateBrandPreview()">
+                <option value="formal">Formal — Profesional & sopan</option>
+                <option value="santai" selected>Santai — Hangat & akrab</option>
+                <option value="industri">Industri — Teknikal & to the point</option>
+                <option value="custom">Custom — Instruksi sendiri</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="pa-field">
+            <label class="pa-label" for="pa-brand-address">Alamat Bisnis</label>
+            <input id="pa-brand-address" class="pa-input" type="text" placeholder="Jl. Sudirman No. 1, Jakarta Selatan...">
+          </div>
+
+          <div class="pa-field">
+            <label class="pa-label" for="pa-brand-greeting">Pesan Pembuka AI <span class="pa-label-hint">(opsional)</span></label>
+            <textarea id="pa-brand-greeting" class="pa-textarea" style="min-height:54px" placeholder="Halo! Selamat datang di [nama brand]. Ada yang bisa kami bantu?"></textarea>
+            <div class="pa-helper">Kosongkan untuk menggunakan pesan pembuka default.</div>
+          </div>
+
+        </form>
+      </div>
+
+      <!-- KANAN: Preview -->
+      <div class="pa-brand-preview-col">
+        <div class="pa-brand-preview-label"><i class="ti ti-eye" style="font-size:12px"></i> Preview Kartu Brand</div>
+        <div class="pa-brand-card active-brand" id="pa-brand-preview-card" style="pointer-events:none;cursor:default;max-width:220px">
+          <div class="pa-brand-card-top" style="background:#c8102e"></div>
+          <div class="pa-brand-card-body">
+            <div class="pa-brand-card-head">
+              <div style="display:flex;align-items:center;gap:9px">
+                <div class="pa-brand-logo" style="background:#c8102e">IT</div>
+                <div>
+                  <div class="pa-brand-name">Nama Brand</div>
+                  <div class="pa-brand-cat">Kategori Bisnis</div>
+                </div>
+              </div>
+            </div>
+            <div class="pa-brand-stats">
+              <div class="pa-brand-stat">
+                <div class="pa-brand-stat-val">0</div>
+                <div class="pa-brand-stat-lbl">Percakapan</div>
+              </div>
+              <div class="pa-brand-stat">
+                <div class="pa-brand-stat-val">0</div>
+                <div class="pa-brand-stat-lbl">Agent</div>
+              </div>
+            </div>
+          </div>
+          <div class="pa-brand-preview-tone-row">
+            <i class="ti ti-typography" style="font-size:11px;color:var(--gray-400)"></i>
+            <span style="font-size:10.5px;color:var(--gray-400)">Tone:</span>
+            <span class="pa-brand-preview-tone" style="font-size:10.5px;font-weight:600;color:var(--gray-600)">Santai</span>
+          </div>
+        </div>
+
+        <div class="pa-brand-preview-tips">
+          <div class="pa-brand-tip"><i class="ti ti-check" style="color:var(--green)"></i> Brand tampil di grid konfigurasi</div>
+          <div class="pa-brand-tip"><i class="ti ti-check" style="color:var(--green)"></i> Bisa diaktifkan sebagai brand utama</div>
+          <div class="pa-brand-tip"><i class="ti ti-check" style="color:var(--green)"></i> Tone AI terpisah per brand</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pa-modal-footer pa-brand-footer">
+      <div id="pa-brand-delete-wrap" style="display:none">
+        <button class="pa-btn pa-btn-danger" onclick="deleteBrand(parseInt(document.getElementById('pa-modal-brand').dataset.editId))"><i class="ti ti-trash"></i> Hapus Brand</button>
+      </div>
+      <div style="display:flex;gap:8px;margin-left:auto">
+        <button class="pa-btn pa-btn-ghost" onclick="closeBrandModal()">Batal</button>
+        <button class="pa-btn pa-btn-primary" id="pa-modal-brand-submit" onclick="saveBrandModal()"><i class="ti ti-building-store"></i> Tambah Brand</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ENDING PENGATURAN AGENT PAGE -->
 
 
@@ -4377,7 +4573,7 @@
             <div style="background:var(--red-light);color:var(--red);font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;display:flex;align-items:center;gap:4px"><i class="ti ti-robot" style="font-size:11px"></i> Ditangani AI — Agent Sales</div>
           </div>
           <div class="chat-body">
-            <div class="msg user">
+            <!-- <div class="msg user">
               <div class="msg-bubble">Halo, saya mau tanya soal produk kalian</div>
               <div class="msg-meta">10:24</div>
             </div>
@@ -4400,12 +4596,12 @@
             <div class="msg bot">
               <div class="msg-bubble">Bisa Pak! Untuk sample 2 box, kami siapkan dengan pengiriman COD. Total Rp 1.240.000 termasuk ongkir Jakarta. Saya buatkan invoice sekarang ya?</div>
               <div class="msg-meta"><span class="ai-label">AI</span> 10:29</div>
-            </div>
+            </div> -->
           </div>
           <div class="chat-input-wrap">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
               <div style="font-size:10px;color:var(--gray-400)">Balas sebagai Admin (override AI)</div>
-              <div style="font-size:10px;color:var(--red);cursor:pointer;display:flex;align-items:center;gap:3px"><i class="ti ti-robot" style="font-size:11px"></i> Biarkan AI</div>
+              <div style="font-size:10px;color:var(--red);cursor:pointer;display:flex;align-items:center;gap:3px; background-color: var(--red); color: var(--gray-100); padding: 0 6px; border-radius: 4px; min-height: 30px;"><i class="ti ti-robot" style="font-size:11px"></i> Biarkan AI</div>
             </div>
             <div class="chat-input-row">
               <i class="ti ti-paperclip" aria-label="Lampirkan file"></i>

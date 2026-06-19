@@ -142,6 +142,60 @@ function initNav() {
 document.addEventListener('DOMContentLoaded', initNav);
 
 
+// >> DYNAMIC TOPBAR ─────────────────────────────────────────────
+(function () {
+  const DAYS_FULL = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+  const MONTHS    = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+
+  function getGreeting(h) {
+    if (h >= 5  && h < 12) return { text: 'Selamat Pagi',  icon: 'ti-sun',        cls: 'greeting-pagi'  };
+    if (h >= 12 && h < 15) return { text: 'Selamat Siang', icon: 'ti-sun-high',   cls: 'greeting-siang' };
+    if (h >= 15 && h < 19) return { text: 'Selamat Sore',  icon: 'ti-sunset-2',   cls: 'greeting-sore'  };
+    return                         { text: 'Selamat Malam', icon: 'ti-moon-stars', cls: 'greeting-malam' };
+  }
+
+  function pad(n) { return String(n).padStart(2, '0'); }
+
+  let lastGreetingCls = '';
+
+  function updateTopbar() {
+    const now = new Date();
+    const h   = now.getHours();
+    const dow = now.getDay();
+    const d   = now.getDate();
+    const mo  = now.getMonth();
+    const yr  = now.getFullYear();
+
+    // Date: "Kamis, 18 Jun 2026"
+    const dateEl = document.getElementById('tbDateStr');
+    if (dateEl) dateEl.textContent = `${DAYS_FULL[dow]}, ${d} ${MONTHS[mo]} ${yr}`;
+
+    // Time: "10:42:07"
+    const timeEl = document.getElementById('tbTimeStr');
+    if (timeEl) timeEl.textContent = `${pad(h)}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+
+    // Greeting chip
+    const greeting = getGreeting(h);
+    const chipEl   = document.getElementById('tbGreetingChip');
+    const iconEl   = document.getElementById('tbGreetingIcon');
+    const textEl   = document.getElementById('tbGreetingText');
+
+    if (textEl) textEl.textContent = greeting.text;
+    if (iconEl) iconEl.className = 'ti ' + greeting.icon;
+    if (chipEl && lastGreetingCls !== greeting.cls) {
+      chipEl.classList.remove('greeting-pagi', 'greeting-siang', 'greeting-sore', 'greeting-malam');
+      chipEl.classList.add(greeting.cls);
+      lastGreetingCls = greeting.cls;
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    updateTopbar();
+    setInterval(updateTopbar, 1000);
+  });
+})();
+
+
 // >> COL RIGHT FUNCTION
 (function () {
   var STORAGE_KEY = 'colRightVisible';

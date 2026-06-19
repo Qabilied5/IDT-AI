@@ -331,12 +331,156 @@ function removeAgent(id) {
 
 // ── Modal: Brand ──────────────────────────────────────────────
 function openAddBrandModal() {
-  paShowToast('Fitur tambah brand segera hadir', '');
+  const overlay = document.getElementById('pa-modal-brand');
+  if (!overlay) return;
+  // Reset ke mode "tambah"
+  overlay.dataset.editId = '';
+  document.getElementById('pa-modal-brand-title').textContent = 'Tambah Brand Baru';
+  document.getElementById('pa-modal-brand-submit').innerHTML = '<i class="ti ti-building-store"></i> Tambah Brand';
+  document.getElementById('pa-brand-form').reset();
+  // Reset color picker
+  document.querySelectorAll('.pa-color-swatch').forEach(s => s.classList.remove('selected'));
+  document.querySelector('.pa-color-swatch[data-color="#c8102e"]')?.classList.add('selected');
+  document.getElementById('pa-brand-color').value = '#c8102e';
+  updateBrandPreview();
+  overlay.style.display = 'flex';
 }
+
 function openBrandModal(id) {
   const brand = paState.brands.find(b => b.id === id);
   if (!brand) return;
-  paShowToast(`Buka konfigurasi: ${brand.name}`, '');
+  const overlay = document.getElementById('pa-modal-brand');
+  if (!overlay) return;
+  // Mode "edit"
+  overlay.dataset.editId = id;
+  document.getElementById('pa-modal-brand-title').textContent = 'Edit Brand';
+  document.getElementById('pa-modal-brand-submit').innerHTML = '<i class="ti ti-device-floppy"></i> Simpan Perubahan';
+  // Isi form dengan data brand
+  document.getElementById('pa-brand-name').value        = brand.name;
+  document.getElementById('pa-brand-industry').value   = brand.cat;
+  document.getElementById('pa-brand-abbr').value       = brand.abbr;
+  document.getElementById('pa-brand-color').value      = brand.color;
+  document.getElementById('pa-brand-desc').value       = brand.desc || '';
+  document.getElementById('pa-brand-website').value    = brand.website || '';
+  document.getElementById('pa-brand-phone').value      = brand.phone || '';
+  document.getElementById('pa-brand-email').value      = brand.email || '';
+  document.getElementById('pa-brand-address').value    = brand.address || '';
+  document.getElementById('pa-brand-tone').value       = brand.tone || 'santai';
+  document.getElementById('pa-brand-greeting').value   = brand.greeting || '';
+  // Color swatch
+  document.querySelectorAll('.pa-color-swatch').forEach(s => {
+    s.classList.toggle('selected', s.dataset.color === brand.color);
+  });
+  updateBrandPreview();
+  overlay.style.display = 'flex';
+}
+
+function closeBrandModal() {
+  const overlay = document.getElementById('pa-modal-brand');
+  if (overlay) overlay.style.display = 'none';
+}
+
+function saveBrandModal() {
+  const name    = document.getElementById('pa-brand-name').value.trim();
+  const abbr    = document.getElementById('pa-brand-abbr').value.trim().toUpperCase().slice(0, 3);
+  const color   = document.getElementById('pa-brand-color').value;
+  const cat     = document.getElementById('pa-brand-industry').value;
+  const desc    = document.getElementById('pa-brand-desc').value.trim();
+  const website = document.getElementById('pa-brand-website').value.trim();
+  const phone   = document.getElementById('pa-brand-phone').value.trim();
+  const email   = document.getElementById('pa-brand-email').value.trim();
+  const address = document.getElementById('pa-brand-address').value.trim();
+  const tone    = document.getElementById('pa-brand-tone').value;
+  const greeting = document.getElementById('pa-brand-greeting').value.trim();
+
+  if (!name) {
+    document.getElementById('pa-brand-name').focus();
+    paShowToast('Nama brand wajib diisi', 'error');
+    return;
+  }
+  if (!cat) {
+    document.getElementById('pa-brand-industry').focus();
+    paShowToast('Kategori industri wajib diisi', 'error');
+    return;
+  }
+
+  const overlay = document.getElementById('pa-modal-brand');
+  const editId  = parseInt(overlay.dataset.editId);
+
+  const btn = document.getElementById('pa-modal-brand-submit');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="ti ti-loader-2" style="animation:spin .8s linear infinite"></i> Menyimpan...';
+
+  setTimeout(() => {
+    if (editId) {
+      // Edit existing
+      const brand = paState.brands.find(b => b.id === editId);
+      if (brand) {
+        Object.assign(brand, { name, abbr: abbr || name.slice(0,2).toUpperCase(), color, cat, desc, website, phone, email, address, tone, greeting });
+      }
+      paShowToast(`Brand "${name}" berhasil diperbarui`, 'success');
+    } else {
+      // Add new
+      const newId = Math.max(0, ...paState.brands.map(b => b.id)) + 1;
+      paState.brands.push({
+        id: newId,
+        name, abbr: abbr || name.slice(0,2).toUpperCase(),
+        color, cat, desc, website, phone, email, address, tone, greeting,
+        conv: 0, agents: 0, active: false
+      });
+      paShowToast(`Brand "${name}" berhasil ditambahkan`, 'success');
+    }
+    renderBrandCards();
+    closeBrandModal();
+    btn.disabled = false;
+  }, 700);
+}
+
+function deleteBrand(id) {
+  const brand = paState.brands.find(b => b.id === id);
+  if (!brand) return;
+  if (!confirm(`Hapus brand "${brand.name}"? Tindakan ini tidak dapat dibatalkan.`)) return;
+  paState.brands = paState.brands.filter(b => b.id !== id);
+  renderBrandCards();
+  closeBrandModal();
+  paShowToast(`Brand "${brand.name}" dihapus`, '');
+}
+
+function updateBrandPreview() {
+  const name  = document.getElementById('pa-brand-name')?.value.trim() || 'Nama Brand';
+  const abbr  = document.getElementById('pa-brand-abbr')?.value.trim().toUpperCase().slice(0,3) || name.slice(0,2).toUpperCase();
+  const color = document.getElementById('pa-brand-color')?.value || '#c8102e';
+  const cat   = document.getElementById('pa-brand-industry')?.value || 'Kategori Bisnis';
+  const tone  = document.getElementById('pa-brand-tone')?.value || 'santai';
+
+  const prev = document.getElementById('pa-brand-preview-card');
+  if (!prev) return;
+  prev.querySelector('.pa-brand-card-top').style.background    = color;
+  prev.querySelector('.pa-brand-logo').style.background        = color;
+  prev.querySelector('.pa-brand-logo').textContent             = abbr || name.slice(0,2).toUpperCase();
+  prev.querySelector('.pa-brand-name').textContent             = name;
+  prev.querySelector('.pa-brand-cat').textContent              = cat;
+  prev.querySelector('.pa-brand-preview-tone').textContent     = tone.charAt(0).toUpperCase() + tone.slice(1);
+}
+
+function paBrandColorPick(el, color) {
+  document.querySelectorAll('.pa-color-swatch').forEach(s => s.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('pa-brand-color').value = color;
+  updateBrandPreview();
+}
+
+// Auto-generate abbr from brand name
+function paBrandNameInput() {
+  const name = document.getElementById('pa-brand-name').value.trim();
+  const abbrEl = document.getElementById('pa-brand-abbr');
+  // Only auto-fill if abbr is still empty or matches previous auto-generation
+  const words = name.split(/\s+/).filter(Boolean);
+  const auto  = words.length >= 2
+    ? words.slice(0, 2).map(w => w[0]).join('').toUpperCase()
+    : name.slice(0, 2).toUpperCase();
+  if (!abbrEl.dataset.manualEdit) abbrEl.value = auto;
+  updateBrandPreview();
 }
 
 // ── Toast ─────────────────────────────────────────────────────

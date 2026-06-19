@@ -7,7 +7,6 @@
 .ai-call-page {
   flex-direction: column;
   gap: 20px;
-  /* padding: 20px; */
   overflow-y: auto;
   flex: 1;
   min-width: 0;
@@ -124,6 +123,12 @@
   position: relative;
   z-index: 1;
   box-shadow: 0 4px 16px rgba(200,16,46,0.28);
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.ac-pulse-core:hover {
+  transform: scale(1.06);
+  box-shadow: 0 6px 20px rgba(200,16,46,0.38);
 }
 
 /* ── BUTTONS ──────────────────────────────── */
@@ -139,11 +144,12 @@
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background 0.15s, transform 0.1s;
   font-family: var(--font);
 }
-.ac-btn-primary:hover { background: var(--red-dark); }
-.ac-btn-primary.sm   { padding: 6px 12px; font-size: 11px; }
+.ac-btn-primary:hover  { background: var(--red-dark); }
+.ac-btn-primary:active { transform: scale(0.97); }
+.ac-btn-primary.sm     { padding: 6px 12px; font-size: 11px; }
 
 .ac-btn-ghost {
   display: inline-flex;
@@ -157,10 +163,11 @@
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
-  transition: border-color 0.15s, color 0.15s;
+  transition: border-color 0.15s, color 0.15s, transform 0.1s;
   font-family: var(--font);
 }
-.ac-btn-ghost:hover { border-color: var(--gray-400); color: var(--gray-800); }
+.ac-btn-ghost:hover  { border-color: var(--gray-400); color: var(--gray-800); }
+.ac-btn-ghost:active { transform: scale(0.97); }
 
 /* ── METRIC STRIP ─────────────────────────── */
 .ac-metrics {
@@ -177,6 +184,12 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.ac-metric:hover {
+  border-color: var(--gray-400);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
 }
 
 .ac-metric-icon {
@@ -227,8 +240,9 @@
   display: flex;
   align-items: center;
   gap: 2px;
+  transition: opacity 0.15s;
 }
-.ac-section-action:hover { text-decoration: underline; }
+.ac-section-action:hover { text-decoration: underline; opacity: 0.8; }
 
 .ac-live-count {
   font-size: 11px;
@@ -262,9 +276,12 @@
   display: flex;
   align-items: flex-start;
   gap: 14px;
-  transition: border-color 0.15s;
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
-.ac-feature-card:hover { border-color: var(--gray-400); }
+.ac-feature-card:hover {
+  border-color: var(--gray-400);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
 
 .ac-fc-icon {
   width: 40px;
@@ -315,15 +332,13 @@
   border-radius: 100px;
   flex-shrink: 0;
   margin-top: 2px;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  user-select: none;
 }
-.ac-fc-status.on {
-  background: var(--green-bg);
-  color: var(--green);
-}
-.ac-fc-status.off {
-  background: var(--gray-100);
-  color: var(--gray-400);
-}
+.ac-fc-status:hover { opacity: 0.8; }
+.ac-fc-status.on  { background: var(--green-bg);  color: var(--green); }
+.ac-fc-status.off { background: var(--gray-100);  color: var(--gray-400); }
 
 /* ── RIGHT COL ────────────────────────────── */
 .ac-right-col {
@@ -438,6 +453,7 @@
   padding: 8px 6px;
   border-radius: 8px;
   transition: background 0.12s;
+  cursor: pointer;
 }
 .ac-log-item:hover { background: var(--gray-50); }
 
@@ -500,9 +516,13 @@
   border: 1px solid var(--gray-200);
   border-radius: 9px;
   padding: 14px;
-  transition: border-color 0.15s;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  cursor: pointer;
 }
-.ac-camp-card:hover { border-color: var(--gray-400); }
+.ac-camp-card:hover {
+  border-color: var(--gray-400);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
 
 .ac-camp-header {
   display: flex;
@@ -545,7 +565,7 @@
   height: 100%;
   background: var(--red);
   border-radius: 2px;
-  transition: width 0.4s;
+  transition: width 0.5s ease;
 }
 
 .ac-camp-stats {
@@ -570,10 +590,11 @@
   padding: 3px 9px;
   cursor: pointer;
   font-family: var(--font);
-  transition: background 0.15s;
+  transition: background 0.15s, transform 0.1s;
   margin-left: auto;
 }
-.ac-camp-start-btn:hover { background: var(--red-mid); }
+.ac-camp-start-btn:hover  { background: var(--red-mid); }
+.ac-camp-start-btn:active { transform: scale(0.95); }
 
 /* ── MODAL ────────────────────────────────── */
 .ac-modal-overlay {
@@ -585,6 +606,8 @@
   align-items: center;
   justify-content: center;
   backdrop-filter: blur(2px);
+  opacity: 1;
+  transition: opacity 0.18s;
 }
 
 .ac-modal {
@@ -597,6 +620,12 @@
   flex-direction: column;
   box-shadow: 0 16px 48px rgba(0,0,0,0.18);
   overflow: hidden;
+  animation: acModalIn 0.2s ease;
+}
+
+@keyframes acModalIn {
+  from { transform: scale(0.96); opacity: 0; }
+  to   { transform: scale(1);    opacity: 1; }
 }
 
 .ac-modal-head {
@@ -678,8 +707,8 @@
   cursor: pointer;
   transition: border-color 0.15s, background 0.15s;
 }
-.ac-voice-opt:hover       { border-color: var(--gray-400); background: var(--gray-50); }
-.ac-voice-opt.active      { border-color: var(--red); background: var(--red-light); }
+.ac-voice-opt:hover  { border-color: var(--gray-400); background: var(--gray-50); }
+.ac-voice-opt.active { border-color: var(--red); background: var(--red-light); }
 
 .ac-voice-av {
   width: 32px;
@@ -745,8 +774,9 @@
   outline: none;
   transition: border-color 0.15s;
   background: var(--white);
+  box-sizing: border-box;
 }
-.ac-textarea:focus { border-color: var(--red); }
+.ac-textarea:focus { border-color: var(--red); box-shadow: 0 0 0 2px rgba(200,16,46,0.08); }
 
 .ac-select {
   width: 100%;
@@ -762,3 +792,15 @@
   transition: border-color 0.15s;
 }
 .ac-select:focus { border-color: var(--red); }
+
+/* ── LIVE ITEM ACTION BUTTONS ─────────────── */
+.ac-live-actions button {
+  transition: background 0.12s, transform 0.1s;
+}
+.ac-live-actions button:active { transform: scale(0.92); }
+
+/* ── TOAST POPUP (global) ─────────────────── */
+.ac-toast-popup {
+  pointer-events: none;
+  word-break: break-word;
+}
