@@ -21,6 +21,11 @@ const paState = {
     { id:3, name:'Indotrading Kimia',  cat:'Bahan Kimia',      color:'#15803d', abbr:'IK', conv:189,  agents:1, active: false },
   ],
   keywords: ['komplain', 'refund', 'rusak', 'tidak terima', 'salah kirim'],
+  jadwal: [
+    { id:1, hari:'Senin – Jumat', mulai:'08:00', selesai:'17:00', aktif:true  },
+    { id:2, hari:'Sabtu',         mulai:'09:00', selesai:'14:00', aktif:true  },
+    { id:3, hari:'Minggu',        mulai:'00:00', selesai:'00:00', aktif:false },
+  ],
 };
 
 // ── Init ──────────────────────────────────────────────────────
@@ -28,6 +33,7 @@ function initPengaturanAgent() {
   renderAgentTable();
   renderBrandCards();
   renderKeywordTags();
+  renderJadwalRows();
   updatePreviewBubble();
   bindPaNav();
   bindPaFormEvents();
@@ -230,6 +236,80 @@ function removeKeyword(idx) {
   paState.keywords.splice(idx, 1);
   renderKeywordTags();
   markDirty('keywords');
+}
+
+// ── Jadwal jam kerja (dynamic rows) ────────────────────────────
+function renderJadwalRows() {
+  const wrap = document.getElementById('pa-jadwal-rows');
+  if (!wrap) return;
+
+  wrap.innerHTML = paState.jadwal.map(row => `
+    <div class="pa-jadwal-row ${row.aktif ? '' : 'is-off'}" data-id="${row.id}">
+      <input
+        class="pa-input pa-jadwal-day-input"
+        type="text"
+        value="${row.hari}"
+        placeholder="Mis. Senin, Senin – Jumat..."
+        aria-label="Nama hari"
+        oninput="updateJadwalField(${row.id}, 'hari', this.value)">
+      <input
+        class="pa-input"
+        type="time"
+        value="${row.mulai}"
+        ${row.aktif ? '' : 'disabled'}
+        aria-label="Jam mulai"
+        onchange="updateJadwalField(${row.id}, 'mulai', this.value)">
+      <input
+        class="pa-input"
+        type="time"
+        value="${row.selesai}"
+        ${row.aktif ? '' : 'disabled'}
+        aria-label="Jam selesai"
+        onchange="updateJadwalField(${row.id}, 'selesai', this.value)">
+      <label class="pa-switch">
+        <input type="checkbox" ${row.aktif ? 'checked' : ''} onchange="toggleJadwalActive(${row.id}, this.checked)">
+        <span class="pa-switch-track"></span>
+        <span class="pa-switch-thumb"></span>
+      </label>
+      <button type="button" class="pa-jadwal-remove-btn" title="Hapus baris" onclick="removeJadwalRow(${row.id})">
+        <i class="ti ti-trash"></i>
+      </button>
+    </div>
+  `).join('');
+}
+
+function addJadwalRow() {
+  const newId = Math.max(0, ...paState.jadwal.map(r => r.id)) + 1;
+  paState.jadwal.push({ id: newId, hari: 'Hari Baru', mulai: '08:00', selesai: '17:00', aktif: true });
+  renderJadwalRows();
+  markDirty('jadwal');
+
+  // Fokus ke input nama hari yang baru ditambahkan
+  const row = document.querySelector(`.pa-jadwal-row[data-id="${newId}"] .pa-jadwal-day-input`);
+  if (row) { row.focus(); row.select(); }
+}
+
+function removeJadwalRow(id) {
+  if (paState.jadwal.length <= 1) {
+    paShowToast('Minimal harus ada satu baris jadwal', 'error');
+    return;
+  }
+  paState.jadwal = paState.jadwal.filter(r => r.id !== id);
+  renderJadwalRows();
+  markDirty('jadwal');
+}
+
+function toggleJadwalActive(id, checked) {
+  const row = paState.jadwal.find(r => r.id === id);
+  if (row) row.aktif = checked;
+  renderJadwalRows();
+  markDirty('jadwal');
+}
+
+function updateJadwalField(id, field, value) {
+  const row = paState.jadwal.find(r => r.id === id);
+  if (row) row[field] = value;
+  markDirty('jadwal');
 }
 
 // ── Toggle switch helpers ─────────────────────────────────────

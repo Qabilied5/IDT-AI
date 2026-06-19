@@ -939,6 +939,59 @@
   margin: 4px 0;
 }
 
+/* ── Jadwal jam kerja (dynamic rows) ────────────────────────────── */
+.pa-jadwal-headrow {
+  display: grid;
+  grid-template-columns: 130px 1fr 1fr 52px 32px;
+  gap: 8px;
+  align-items: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--gray-400);
+  letter-spacing: .5px;
+  text-transform: uppercase;
+  padding: 0 2px;
+}
+.pa-jadwal-row {
+  display: grid;
+  grid-template-columns: 130px 1fr 1fr 52px 32px;
+  gap: 8px;
+  align-items: center;
+}
+.pa-jadwal-day-input {
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 6px 10px;
+}
+.pa-jadwal-row input[type="time"] {
+  padding: 6px 10px;
+}
+.pa-jadwal-row.is-off .pa-jadwal-day-input,
+.pa-jadwal-row.is-off input[type="time"] {
+  opacity: .45;
+}
+.pa-jadwal-remove-btn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  color: var(--gray-300);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background .15s ease, color .15s ease;
+}
+.pa-jadwal-remove-btn:hover {
+  background: var(--red-light);
+  color: var(--red);
+}
+.pa-jadwal-add-btn {
+  align-self: flex-start;
+  margin-top: 2px;
+}
+
 /* ── Scrollbar ───────────────────────────────────────────────── */
 .pa-content::-webkit-scrollbar { width: 5px; }
 .pa-content::-webkit-scrollbar-track { background: transparent; }
@@ -1107,4 +1160,14 @@
 /* Show delete button only in edit mode */
 #pa-modal-brand[data-edit-id]:not([data-edit-id=""]) #pa-brand-delete-wrap {
   display: block !important;
+}
+
+#pa-jadwal-rows {
+    flex-direction: column;
+    display: flex;
+    gap: 8px;
+}
+
+.ap-th-row, .ap-row {
+    grid-template-columns: 22px 160px 120px 90px 140px 100px 70px 72px;
 }
