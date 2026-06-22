@@ -296,6 +296,82 @@ function hubungiWA(id) {
   // window.open(`https://wa.me/62${lead.phone}`, '_blank');
 }
 
+// ── AREA 3: Buy Leads Banner — Lihat Rekomendasi AI ───────────
+function getAiRecommendedLeads(limit = 6) {
+  // Pilih leads dengan AI Score HOT atau WARM, prioritas HOT dulu,
+  // lalu urutkan berdasarkan tanggal terbaru.
+  const scoreRank = { HOT: 0, WARM: 1, COLD: 2 };
+  return [...LEADS_DATA]
+    .map(lead => ({ lead, ai: AI_SCORES[lead.id] || { score: 'WARM', reason: 'Sedang dianalisa' } }))
+    .filter(({ ai }) => ai.score !== 'COLD')
+    .sort((a, b) => scoreRank[a.ai.score] - scoreRank[b.ai.score])
+    .slice(0, limit);
+}
+
+function openAiRecommendation() {
+  const overlay = document.getElementById('lp-modal-airec');
+  if (!overlay) return;
+
+  const items = getAiRecommendedLeads();
+  const scoreIcon = { HOT: '🔥', WARM: '🌤', COLD: '🧊' };
+  const scoreCls  = { HOT: 'hot', WARM: 'warm', COLD: 'cold' };
+
+  const listEl = document.getElementById('lp-airec-list');
+  document.getElementById('lp-airec-count').textContent = items.length;
+
+  if (items.length === 0) {
+    listEl.innerHTML = `
+      <div style="text-align:center;padding:24px 10px;color:#9ca3af;font-size:12px">
+        <i class="ti ti-mood-empty" style="font-size:24px;display:block;margin-bottom:6px"></i>
+        Belum ada rekomendasi baru saat ini.
+      </div>`;
+  } else {
+    listEl.innerHTML = items.map(({ lead, ai }) => {
+      const initials = lead.nama.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+      const alreadyHandled = lead.status !== 'belum';
+      return `
+        <div class="lp-airec-item" data-id="${lead.id}">
+          <div class="lp-airec-avatar">${initials}</div>
+          <div class="lp-airec-info">
+            <div class="lp-airec-name">${lead.nama} <span style="color:#9ca3af;font-weight:500">— ${lead.kota}</span></div>
+            <div class="lp-airec-company">${lead.perusahaan}</div>
+            <div class="lp-airec-reason"><i class="ti ti-sparkles" style="font-size:9px"></i>${ai.reason}</div>
+          </div>
+          <span class="lp-airec-score ${scoreCls[ai.score]}">${scoreIcon[ai.score]} ${ai.score}</span>
+          <button class="lp-airec-action" ${alreadyHandled ? 'disabled' : ''} onclick="hubungiAiRecLead(${lead.id})">
+            <i class="ti ${alreadyHandled ? 'ti-circle-check' : 'ti-brand-whatsapp'}"></i>
+            ${alreadyHandled ? 'Dihubungi' : 'Hubungi'}
+          </button>
+        </div>`;
+    }).join('');
+  }
+
+  overlay.style.display = 'flex';
+}
+
+function closeAiRecommendation() {
+  const overlay = document.getElementById('lp-modal-airec');
+  if (overlay) overlay.style.display = 'none';
+}
+
+function hubungiAiRecLead(id) {
+  hubungiWA(id);
+  // Refresh tampilan list di dalam modal supaya tombol berubah jadi "Dihubungi"
+  openAiRecommendation();
+}
+
+// ── AREA 3: Buy Leads Banner — Cara Kerja Buy Leads ───────────
+function openHowBuyLeadsWorks() {
+  const overlay = document.getElementById('lp-modal-howit');
+  if (overlay) overlay.style.display = 'flex';
+}
+
+function closeHowBuyLeadsWorks() {
+  const overlay = document.getElementById('lp-modal-howit');
+  if (overlay) overlay.style.display = 'none';
+}
+
+
 // ── Toast ─────────────────────────────────────────────────────
 function showLpToast(msg, type = '') {
   const toast = document.getElementById('lp-toast');

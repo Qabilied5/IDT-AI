@@ -1147,10 +1147,10 @@
       </div>
     </div>
     <div class="lp-buy-right">
-      <button class="lp-btn-buy-primary" onclick="showLpToast('Membuka rekomendasi AI…','success')">
+      <button class="lp-btn-buy-primary" onclick="openAiRecommendation()">
         <i class="ti ti-sparkles"></i> Lihat Rekomendasi AI
       </button>
-      <button class="lp-btn-buy-ghost" onclick="showLpToast('Cara Kerja Buy Leads dibuka','')">
+      <button class="lp-btn-buy-ghost" onclick="openHowBuyLeadsWorks()">
         <i class="ti ti-info-circle"></i> Cara Kerja Buy Leads
       </button>
     </div>
@@ -1364,6 +1364,78 @@
   </div>
 </div>
  
+<div id="lp-modal-airec" class="lp-modal-overlay" style="display:none">
+  <div class="lp-modal lp-modal-lg">
+    <div class="lp-modal-header">
+      <div class="lp-modal-title"><i class="ti ti-brain" style="color:var(--red)"></i> Rekomendasi AI</div>
+      <button class="lp-modal-close" onclick="closeAiRecommendation()"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="lp-modal-body">
+      <div class="lp-airec-summary">
+        <i class="ti ti-sparkles"></i>
+        <span>AI menemukan <strong id="lp-airec-count">0</strong> leads dengan niat beli tinggi yang belum sempat Anda follow-up.</span>
+      </div>
+      <div class="lp-airec-list" id="lp-airec-list">
+        <!-- dirender oleh JS: openAiRecommendation() -->
+      </div>
+    </div>
+    <div class="lp-modal-footer">
+      <button class="lp-btn-ghost" onclick="closeAiRecommendation()">Tutup</button>
+    </div>
+  </div>
+</div>
+ 
+<!-- Modal: Cara Kerja Buy Leads (AREA 3) -->
+<div id="lp-modal-howit" class="lp-modal-overlay" style="display:none">
+  <div class="lp-modal">
+    <div class="lp-modal-header">
+      <div class="lp-modal-title"><i class="ti ti-info-circle" style="color:var(--red)"></i> Cara Kerja Buy Leads</div>
+      <button class="lp-modal-close" onclick="closeHowBuyLeadsWorks()"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="lp-modal-body">
+      <div class="lp-howit-steps">
+        <div class="lp-howit-step">
+          <div class="lp-howit-num">1</div>
+          <div class="lp-howit-text">
+            <div class="lp-howit-title">AI memantau aktivitas leads secara real-time</div>
+            <div class="lp-howit-desc">Klik WA, kirim pesan, RFQ, dan kunjungan profil dianalisis otomatis untuk menilai niat beli tiap prospek.</div>
+          </div>
+        </div>
+        <div class="lp-howit-step">
+          <div class="lp-howit-num">2</div>
+          <div class="lp-howit-text">
+            <div class="lp-howit-title">AI memberi skor HOT / WARM / COLD</div>
+            <div class="lp-howit-desc">Setiap lead diberi skor berdasarkan kecocokan produk, kecepatan respons, dan riwayat transaksi serupa.</div>
+          </div>
+        </div>
+        <div class="lp-howit-step">
+          <div class="lp-howit-num">3</div>
+          <div class="lp-howit-text">
+            <div class="lp-howit-title">Leads bernilai tinggi direkomendasikan ke Anda</div>
+            <div class="lp-howit-desc">Lead dengan skor tertinggi muncul di banner "Rekomendasi AI" agar Anda bisa follow-up lebih dulu sebelum kompetitor.</div>
+          </div>
+        </div>
+        <div class="lp-howit-step">
+          <div class="lp-howit-num">4</div>
+          <div class="lp-howit-text">
+            <div class="lp-howit-title">Gunakan token untuk membuka kontak lengkap</div>
+            <div class="lp-howit-desc">Token gratis atau berbayar digunakan untuk mengakses detail kontak leads baru yang belum pernah Anda hubungi.</div>
+          </div>
+        </div>
+      </div>
+      <div class="lp-howit-note">
+        <i class="ti ti-bulb"></i>
+        <span>Tips: leads dengan skor 🔥 HOT punya kemungkinan tertinggi untuk merespons dalam 1 jam pertama — prioritaskan follow-up secepatnya.</span>
+      </div>
+    </div>
+    <div class="lp-modal-footer">
+      <button class="lp-btn-ghost" onclick="closeHowBuyLeadsWorks()">Tutup</button>
+      <button class="lp-btn-primary-sm" onclick="closeHowBuyLeadsWorks();openAiRecommendation()">
+        <i class="ti ti-sparkles"></i> Lihat Rekomendasi AI
+      </button>
+    </div>
+  </div>
+</div>
 <!-- ── Toast ─────────────────────────────────────────────────── -->
 <div id="lp-toast" class="lp-toast" style="display:none"></div>
         <!-- ENDING LEADS PAGE -->
