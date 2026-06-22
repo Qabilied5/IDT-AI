@@ -946,16 +946,15 @@
       <div class="lp-title">Leads Prospek</div>
       <div class="lp-subtitle">Kelola dan follow-up semua prospek bisnis Anda dengan bantuan AI</div>
     </div>
-    <div class="lp-token-box">
-      <i class="ti ti-coin"></i>
-      <div>
-        <div class="lp-token-label">Saldo Token</div>
-        <div class="lp-token-val">
-          <span class="lp-token-free">30 gratis</span>
-          &nbsp;|&nbsp;<span class="lp-token-paid">3 berbayar</span>
-        </div>
-      </div>
-      <button class="lp-btn-token"><i class="ti ti-plus"></i> Beli Token</button>
+    <div class="lp-biztype-wrap">
+      <label for="lp-biztype-select" class="lp-biztype-label"><i class="ti ti-building-store"></i> Tipe Bisnis</label>
+      <select id="lp-biztype-select" class="lp-biztype-select" onchange="applyBizType(this.value)">
+        <option value="b2b">B2B (Distributor / Manufaktur)</option>
+        <option value="b2c">B2C (Toko Online / Ritel)</option>
+        <option value="saas">SaaS (Aplikasi / Software)</option>
+        <option value="fnb">F&amp;B (Restoran / Kafe)</option>
+        <option value="jasa">Jasa / Edukasi</option>
+      </select>
     </div>
   </div>
  
@@ -1014,7 +1013,7 @@
           <div class="lp-kat-label">Real Lead</div>
           <div class="lp-ai-qualify-badge green">
             <i class="ti ti-sparkles" style="font-size:8px"></i>
-            73% cocok produk Anda
+            <span id="lp-qualify-badge-real">73% cocok produk Anda</span>
           </div>
         </div>
       </button>
@@ -1139,9 +1138,9 @@
       </div>
       <div>
         <div class="lp-buy-badge"><i class="ti ti-sparkles"></i> AI RECOMMENDATION</div>
-        <div class="lp-buy-title">AI menemukan <span class="lp-ai-highlight">24 leads aluminium aktif</span> hari ini</div>
+        <div class="lp-buy-title">AI menemukan <span class="lp-ai-highlight">24 leads aktif</span> hari ini</div>
         <div class="lp-buy-desc">
-          Berdasarkan riwayat transaksi dan perilaku pencarian, AI mengidentifikasi pembeli dengan niat beli tinggi yang belum pernah menghubungi toko Anda. Akses sekarang sebelum competitor Anda duluan.
+          Berdasarkan riwayat interaksi dan perilaku pencarian, AI mengidentifikasi calon pelanggan dengan niat tinggi yang belum pernah menghubungi bisnis Anda. Akses sekarang sebelum competitor Anda duluan.
           <span class="lp-ai-refresh-info"><i class="ti ti-refresh"></i> Diperbarui 5 menit lalu</span>
         </div>
       </div>
@@ -1164,7 +1163,7 @@
         <input
           id="lp-search"
           type="text"
-          placeholder="Cari Perusahaan, nama, email, handphone, atau nama produk…"
+          placeholder="Cari nama, perusahaan, email, telepon, atau produk/layanan…"
           oninput="filterLeadsTable()"
         >
       </div>
@@ -1398,14 +1397,14 @@
           <div class="lp-howit-num">1</div>
           <div class="lp-howit-text">
             <div class="lp-howit-title">AI memantau aktivitas leads secara real-time</div>
-            <div class="lp-howit-desc">Klik WA, kirim pesan, RFQ, dan kunjungan profil dianalisis otomatis untuk menilai niat beli tiap prospek.</div>
+            <div class="lp-howit-desc">Klik WA, pesan masuk, permintaan/booking, dan kunjungan profil dianalisis otomatis untuk menilai niat tiap prospek.</div>
           </div>
         </div>
         <div class="lp-howit-step">
           <div class="lp-howit-num">2</div>
           <div class="lp-howit-text">
             <div class="lp-howit-title">AI memberi skor HOT / WARM / COLD</div>
-            <div class="lp-howit-desc">Setiap lead diberi skor berdasarkan kecocokan produk, kecepatan respons, dan riwayat transaksi serupa.</div>
+            <div class="lp-howit-desc">Setiap lead diberi skor berdasarkan kecocokan produk/layanan, kecepatan respons, dan riwayat interaksi serupa.</div>
           </div>
         </div>
         <div class="lp-howit-step">
@@ -1680,7 +1679,7 @@
     <!-- Top produk upsell -->
     <div class="chart-card">
       <div class="sec-head">
-        <div class="sec-title">Top 5 Produk Upselling oleh AI</div>
+        <div class="sec-title">Top 5 Upselling oleh AI</div>
         <div class="sec-action">Lihat semua <i class="ti ti-chevron-right" style="font-size:11px"></i></div>
       </div>
       <table class="an-table">
@@ -1943,7 +1942,7 @@
     </div>
  
     <!-- Stok kritis -->
-    <div class="chart-card">
+    <!-- <div class="chart-card">
       <div class="sec-head">
         <div class="sec-title">
           <span style="display:flex;align-items:center;gap:6px">
@@ -1991,7 +1990,7 @@
           </tr>
         </tbody>
       </table>
-    </div>
+    </div> -->
  
     <!-- Revenue chart -->
     <div class="chart-card">
@@ -4729,12 +4728,12 @@
                   <div class="rp-dk-stat-lbl">Percakapan</div>
                 </div>
                 <div class="rp-dk-stat">
-                  <div class="rp-dk-stat-val" style="color:var(--green)">3</div>
-                  <div class="rp-dk-stat-lbl">Order</div>
+                  <div class="rp-dk-stat-val" id="rpDkStat1Val" style="color:var(--green)">3</div>
+                  <div class="rp-dk-stat-lbl" id="rpDkStat1Lbl">Order</div>
                 </div>
                 <div class="rp-dk-stat">
-                  <div class="rp-dk-stat-val" style="color:var(--red)">Rp 4,8jt</div>
-                  <div class="rp-dk-stat-lbl">Total Belanja</div>
+                  <div class="rp-dk-stat-val" id="rpDkStat2Val" style="color:var(--red)">Rp 4,8jt</div>
+                  <div class="rp-dk-stat-lbl" id="rpDkStat2Lbl">Total Belanja</div>
                 </div>
               </div>
             </div>
@@ -4746,14 +4745,14 @@
                 <div class="rp-dk-hist-item">
                   <div class="rp-dk-hist-dot" style="background:var(--green)"></div>
                   <div>
-                    <div class="rp-dk-hist-title">Tanya spare part mesin packing</div>
+                    <div class="rp-dk-hist-title">Menanyakan detail produk/layanan</div>
                     <div class="rp-dk-hist-meta">Hari ini · 10:24 · <span style="color:var(--red)">AI</span></div>
                   </div>
                 </div>
                 <div class="rp-dk-hist-item">
                   <div class="rp-dk-hist-dot" style="background:var(--gray-400)"></div>
                   <div>
-                    <div class="rp-dk-hist-title">Order 2 box sample → Selesai</div>
+                    <div class="rp-dk-hist-title">Order/booking → Selesai</div>
                     <div class="rp-dk-hist-meta">28 Mei 2025 · <span style="color:var(--red)">AI</span></div>
                   </div>
                 </div>

@@ -1,7 +1,93 @@
 /* ===================================
-   leads-page.js — Indotrading AI
-   Kontak / Leads Page Logic
+   leads-page.js — Leads / Kontak Page Logic
+   Generik untuk berbagai tipe bisnis:
+   B2B, B2C, SaaS, F&B, Jasa/Edukasi
    =================================== */
+
+// ── Konfigurasi terminologi per tipe bisnis ───────────────────
+// Setiap tipe bisnis punya istilah berbeda untuk sumber lead,
+// badge kecocokan AI, dan statistik kontak — supaya dashboard
+// terasa relevan untuk semua jenis klien, bukan hanya B2B marketplace.
+const LP_BIZ_TYPES = {
+  b2b: {
+    label: 'B2B (Distributor / Manufaktur)',
+    sumber: {
+      wa:     { name: 'Klik WA & Telepon', desc: 'Calon klien yang menekan tombol WA atau telepon di profil Anda' },
+      msg:    { name: 'Kirim Pesan',       desc: 'Calon klien yang mengirim chat langsung ke bisnis Anda' },
+      rfq:    { name: 'Permintaan Penawaran (RFQ)', desc: 'Calon klien yang mengirim permintaan harga resmi' },
+      profil: { name: 'Kunjungi Profil',   desc: 'Calon klien yang membuka halaman profil atau katalog Anda' },
+    },
+    qualifyBadge: '73% cocok produk/layanan Anda',
+    stat1: 'Order', stat2: 'Total Belanja',
+  },
+  b2c: {
+    label: 'B2C (Toko Online / Ritel)',
+    sumber: {
+      wa:     { name: 'Klik WA & Telepon', desc: 'Pembeli yang menekan tombol WA atau telepon di toko Anda' },
+      msg:    { name: 'Kirim Pesan',       desc: 'Pembeli yang mengirim chat langsung ke toko Anda' },
+      rfq:    { name: 'Tanya Stok/Harga',  desc: 'Pembeli yang menanyakan ketersediaan atau harga produk' },
+      profil: { name: 'Kunjungi Toko',     desc: 'Pembeli yang membuka halaman toko atau produk Anda' },
+    },
+    qualifyBadge: '73% cocok produk Anda',
+    stat1: 'Order', stat2: 'Total Belanja',
+  },
+  saas: {
+    label: 'SaaS (Aplikasi / Software)',
+    sumber: {
+      wa:     { name: 'Klik Chat & Telepon', desc: 'Calon pengguna yang menghubungi via chat atau telepon' },
+      msg:    { name: 'Kirim Pesan',         desc: 'Calon pengguna yang mengirim pesan langsung' },
+      rfq:    { name: 'Request Demo',        desc: 'Calon pengguna yang meminta demo atau trial produk' },
+      profil: { name: 'Kunjungi Halaman Pricing', desc: 'Calon pengguna yang membuka halaman pricing/produk' },
+    },
+    qualifyBadge: '73% cocok paket Basic',
+    stat1: 'Trial Aktif', stat2: 'Total MRR',
+  },
+  fnb: {
+    label: 'F&B (Restoran / Kafe)',
+    sumber: {
+      wa:     { name: 'Klik WA & Telepon', desc: 'Pelanggan yang menghubungi via WA atau telepon' },
+      msg:    { name: 'Kirim Pesan',       desc: 'Pelanggan yang chat langsung ke resto/kafe Anda' },
+      rfq:    { name: 'Reservasi/Pre-order', desc: 'Pelanggan yang melakukan reservasi meja atau pre-order' },
+      profil: { name: 'Kunjungi Profil',   desc: 'Pelanggan yang membuka halaman menu/profil Anda' },
+    },
+    qualifyBadge: '73% cocok menu Anda',
+    stat1: 'Reservasi', stat2: 'Total Belanja',
+  },
+  jasa: {
+    label: 'Jasa / Edukasi',
+    sumber: {
+      wa:     { name: 'Klik WA & Telepon', desc: 'Klien yang menghubungi via WA atau telepon' },
+      msg:    { name: 'Kirim Pesan',       desc: 'Klien yang chat langsung ke bisnis Anda' },
+      rfq:    { name: 'Booking Konsultasi/Kelas', desc: 'Klien yang mengajukan sesi konsultasi atau mendaftar kelas' },
+      profil: { name: 'Kunjungi Profil',   desc: 'Klien yang membuka halaman layanan Anda' },
+    },
+    qualifyBadge: '73% sesuai kebutuhan Anda',
+    stat1: 'Sesi Konsultasi', stat2: 'Kelas Terdaftar',
+  },
+};
+
+function bizCfg() {
+  return LP_BIZ_TYPES[lpState.biz] || LP_BIZ_TYPES.b2b;
+}
+
+// ── Update seluruh UI yang berubah berdasarkan tipe bisnis ────
+function applyBizType(type) {
+  if (!LP_BIZ_TYPES[type]) return;
+  lpState.biz = type;
+
+  // AI qualify badge di kategori "Real Lead"
+  const badge = document.getElementById('lp-qualify-badge-real');
+  if (badge) badge.textContent = bizCfg().qualifyBadge;
+
+  // Statistik di panel Detail Kontak (Order/Total Belanja, dsb)
+  const lbl1 = document.getElementById('rpDkStat1Lbl');
+  const lbl2 = document.getElementById('rpDkStat2Lbl');
+  if (lbl1) lbl1.textContent = bizCfg().stat1;
+  if (lbl2) lbl2.textContent = bizCfg().stat2;
+
+  // Render ulang tabel leads supaya label sumber ikut berubah
+  renderLeadsTable();
+}
 
 // ── Data dummy leads ──────────────────────────────────────────
 const LEADS_DATA = [
@@ -31,6 +117,7 @@ let lpState = {
   page: 1,
   perPage: 10,
   statusTarget: null, // id lead yg sedang diupdate status
+  biz: 'b2b',          // tipe bisnis aktif: b2b | b2c | saas | fnb | jasa
 };
 
 // ── Init ──────────────────────────────────────────────────────
@@ -128,7 +215,7 @@ function renderLeadsTable() {
 function renderLeadRow(lead) {
   const catLabel = { real:'Real Lead', potensi:'Potensi', belum:'Belum Dikualifikasi' };
   const catClass = lead.kategori;
-  const srcLabel = { wa:'Indotrading – WA', msg:'Indotrading – Pesan', rfq:'Indotrading – RFQ', profil:'Indotrading – Profil' };
+  const srcCfg   = bizCfg().sumber;
   const srcClass = { wa:'src-wa', msg:'src-msg', rfq:'src-rfq', profil:'src-profil' };
   const aktClass = { wa:'wa', msg:'msg', rfq:'rfq', profil:'profil' };
   const aktIcon  = { wa:'ti-brand-whatsapp', msg:'ti-message-2', rfq:'ti-file-invoice', profil:'ti-eye' };
@@ -147,7 +234,7 @@ function renderLeadRow(lead) {
       <div class="lp-row-date"><i class="ti ti-clock" style="font-size:10px"></i>${lead.tanggal}</div>
       <div class="lp-row-tags">
         <span class="lp-tag ${catClass}"><i class="ti ${catClass==='real'?'ti-circle-check':catClass==='potensi'?'ti-star':'ti-minus-circle'}" style="font-size:9px"></i>${catLabel[lead.kategori]}</span>
-        <span class="lp-tag ${srcClass[lead.sumber]}"><i class="ti ${aktIcon[lead.sumber]}" style="font-size:9px"></i>${srcLabel[lead.sumber]}</span>
+        <span class="lp-tag ${srcClass[lead.sumber]}"><i class="ti ${aktIcon[lead.sumber]}" style="font-size:9px"></i>${srcCfg[lead.sumber].name}</span>
       </div>
     </div>
     <div>
@@ -235,7 +322,7 @@ function openLeadModal(id) {
     `<i class="ti ti-user-circle"></i> ${lead.nama}`;
 
   const catLabel = { real:'Real Lead', potensi:'Potensi', belum:'Belum Dikualifikasi' };
-  const srcLabel = { wa:'Klik WA & Telepon', msg:'Kirim Pesan', rfq:'RFQ', profil:'Kunjungi Profil' };
+  const srcCfg = bizCfg().sumber;
   const statusLabel = { belum:'Belum dihubungi', dihubungi:'Sudah dihubungi', followup:'Follow-up lanjutan', closed:'Closed / Deal' };
 
   document.getElementById('lp-modal-body').innerHTML = `
@@ -245,7 +332,7 @@ function openLeadModal(id) {
     <div class="lp-detail-row"><span class="lp-detail-label">Kota</span><span class="lp-detail-val">${lead.kota}</span></div>
     <div class="lp-detail-row"><span class="lp-detail-label">Tanggal</span><span class="lp-detail-val">${lead.tanggal}</span></div>
     <div class="lp-detail-row"><span class="lp-detail-label">Kategori</span><span class="lp-detail-val">${catLabel[lead.kategori] || '-'}</span></div>
-    <div class="lp-detail-row"><span class="lp-detail-label">Sumber</span><span class="lp-detail-val">${srcLabel[lead.sumber] || '-'}</span></div>
+    <div class="lp-detail-row"><span class="lp-detail-label">Sumber</span><span class="lp-detail-val">${srcCfg[lead.sumber]?.name || '-'}</span></div>
     <div class="lp-detail-row"><span class="lp-detail-label">Aktivitas</span><span class="lp-detail-val">${lead.aktivitas}</span></div>
     <div class="lp-detail-row"><span class="lp-detail-label">Status</span><span class="lp-detail-val">${statusLabel[lead.status] || '-'}</span></div>
   `;
@@ -394,7 +481,7 @@ function showLpToast(msg, type = '') {
 //   });
 
 /* ============================================================
-   leads-page-ai.js — Indotrading AI
+   leads-page-ai.js
    Logika 7 AI Feature Areas untuk halaman Leads
    Harus di-load SETELAH leads-page.js
    ============================================================ */
@@ -406,7 +493,7 @@ const AI_SCORES = {
   2:  { score:'HOT',  reason:'Real Lead, Jakarta, buka profil 3x hari ini' },
   3:  { score:'WARM', reason:'Sudah dihubungi, tapi belum reply 2 hari' },
   4:  { score:'HOT',  reason:'RFQ dikirim — intent beli sangat tinggi' },
-  5:  { score:'WARM', reason:'Kunjungi profil aluminium 2x, belum hubungi' },
+  5:  { score:'WARM', reason:'Kunjungi profil 2x, belum hubungi' },
   6:  { score:'COLD', reason:'Hanya lihat profil, tidak ada aksi lanjut' },
   7:  { score:'HOT',  reason:'Klik WA 30 menit lalu — sudah dihubungi ✓' },
   8:  { score:'WARM', reason:'Pesan terkirim, masih menunggu balasan' },
@@ -443,10 +530,10 @@ const AI_URGENCY = {
 // dengan konteks: nama, perusahaan, produk, AI score, aktivitas terakhir.
 function generateAiMessage(lead) {
   const templates = {
-    wa: `Halo ${lead.nama} dari ${lead.perusahaan}! 👋\n\nSaya dari Alumex Perkasa Jaya. Kami lihat Anda tadi mengklik nomor WA kami — apakah ada produk aluminium yang sedang Anda cari?\n\nKami siap bantu dengan penawaran terbaik dan ready stok. Boleh share kebutuhannya? 🙏`,
-    msg: `Halo ${lead.nama}! 😊\n\nTerima kasih sudah mengirim pesan ke toko kami di Indotrading. Kami mau pastikan pertanyaan Anda sudah terjawab dengan baik.\n\nAda yang bisa kami bantu lebih lanjut terkait produk aluminium untuk ${lead.perusahaan}? Kami ada promo khusus minggu ini!`,
-    rfq: `Yth. Bapak/Ibu ${lead.nama},\n\nKami dari Alumex Perkasa Jaya — merespons RFQ yang sudah Anda kirimkan. Terima kasih atas kepercayaan Anda!\n\nBerikut kami siapkan penawaran harga kompetitif sesuai spesifikasi yang diminta. Bisa kami diskusikan lebih lanjut via WA ini? 📋`,
-    profil: `Halo ${lead.nama} dari ${lead.perusahaan}! 👋\n\nKami perhatikan Anda baru saja mengunjungi halaman produk kami. Apakah ada item yang menarik minat Anda?\n\nKami dengan senang hati membantu dan bisa berikan sample atau penawaran khusus untuk pembelian pertama. 🏭`,
+    wa: `Halo ${lead.nama} dari ${lead.perusahaan}! 👋\n\nKami lihat Anda tadi mengklik nomor WA kami — apakah ada yang sedang Anda cari atau butuhkan?\n\nKami siap bantu dengan penawaran terbaik. Boleh share kebutuhannya? 🙏`,
+    msg: `Halo ${lead.nama}! 😊\n\nTerima kasih sudah mengirim pesan ke kami. Kami mau pastikan pertanyaan Anda sudah terjawab dengan baik.\n\nAda yang bisa kami bantu lebih lanjut untuk ${lead.perusahaan}? Kami ada promo khusus minggu ini!`,
+    rfq: `Yth. Bapak/Ibu ${lead.nama},\n\nTerima kasih atas permintaan/booking yang sudah Anda kirimkan. Kami sangat menghargai kepercayaan Anda!\n\nBerikut kami siapkan penawaran terbaik sesuai kebutuhan yang diminta. Bisa kami diskusikan lebih lanjut via WA ini? 📋`,
+    profil: `Halo ${lead.nama} dari ${lead.perusahaan}! 👋\n\nKami perhatikan Anda baru saja mengunjungi halaman kami. Apakah ada hal yang menarik minat Anda?\n\nKami dengan senang hati membantu dan bisa berikan penawaran khusus untuk Anda. 🙌`,
   };
   return templates[lead.sumber] || templates.wa;
 }
@@ -455,7 +542,7 @@ function generateAiMessage(lead) {
 const _origRenderLeadRow = window.renderLeadRow;
 window.renderLeadRow = function(lead) {
   const catLabel    = { real:'Real Lead', potensi:'Potensi', belum:'Belum Dikualifikasi' };
-  const srcLabel    = { wa:'Indotrading – WA', msg:'Indotrading – Pesan', rfq:'Indotrading – RFQ', profil:'Indotrading – Profil' };
+  const srcCfg      = bizCfg().sumber;
   const srcClass    = { wa:'src-wa', msg:'src-msg', rfq:'src-rfq', profil:'src-profil' };
   const aktClass    = { wa:'wa', msg:'msg', rfq:'rfq', profil:'profil' };
   const aktIcon     = { wa:'ti-brand-whatsapp', msg:'ti-message-2', rfq:'ti-file-invoice', profil:'ti-eye' };
@@ -490,7 +577,7 @@ window.renderLeadRow = function(lead) {
         </span>
         <span class="lp-tag ${srcClass[lead.sumber]}">
           <i class="ti ${aktIcon[lead.sumber]}" style="font-size:9px"></i>
-          ${srcLabel[lead.sumber]}
+          ${srcCfg[lead.sumber].name}
         </span>
       </div>
     </div>
