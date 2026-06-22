@@ -940,21 +940,11 @@
         <!-- LEADS PAGE -->
         <div id="leads-page" class="active-page">
  
-  <!-- ── AREA 0: Header + Token ──────────────────────────────── -->
+  <!-- ── AREA 0: Header ──────────────────────────────────────── -->
   <div class="lp-header">
     <div>
-      <div class="lp-title">Leads Prospek</div>
-      <div class="lp-subtitle">Kelola dan follow-up semua prospek bisnis Anda dengan bantuan AI</div>
-    </div>
-    <div class="lp-biztype-wrap">
-      <label for="lp-biztype-select" class="lp-biztype-label"><i class="ti ti-building-store"></i> Tipe Bisnis</label>
-      <select id="lp-biztype-select" class="lp-biztype-select" onchange="applyBizType(this.value)">
-        <option value="b2b">B2B (Distributor / Manufaktur)</option>
-        <option value="b2c">B2C (Toko Online / Ritel)</option>
-        <option value="saas">SaaS (Aplikasi / Software)</option>
-        <option value="fnb">F&amp;B (Restoran / Kafe)</option>
-        <option value="jasa">Jasa / Edukasi</option>
-      </select>
+      <div class="lp-title">Kontak &amp; Leads</div>
+      <div class="lp-subtitle">Pantau, kelola, dan follow-up semua kontak &amp; prospek Anda dalam satu tempat</div>
     </div>
   </div>
  
@@ -1013,7 +1003,7 @@
           <div class="lp-kat-label">Real Lead</div>
           <div class="lp-ai-qualify-badge green">
             <i class="ti ti-sparkles" style="font-size:8px"></i>
-            <span id="lp-qualify-badge-real">73% cocok produk Anda</span>
+            <span id="lp-qualify-badge-real">73% relevan dengan bisnis Anda</span>
           </div>
         </div>
       </button>
@@ -1140,7 +1130,7 @@
         <div class="lp-buy-badge"><i class="ti ti-sparkles"></i> AI RECOMMENDATION</div>
         <div class="lp-buy-title">AI menemukan <span class="lp-ai-highlight">24 leads aktif</span> hari ini</div>
         <div class="lp-buy-desc">
-          Berdasarkan riwayat interaksi dan perilaku pencarian, AI mengidentifikasi calon pelanggan dengan niat tinggi yang belum pernah menghubungi bisnis Anda. Akses sekarang sebelum competitor Anda duluan.
+          Berdasarkan riwayat interaksi dan perilaku pencarian, AI mengidentifikasi calon pelanggan dengan niat tinggi yang belum pernah menghubungi Anda. Akses sekarang sebelum competitor Anda duluan.
           <span class="lp-ai-refresh-info"><i class="ti ti-refresh"></i> Diperbarui 5 menit lalu</span>
         </div>
       </div>
@@ -1163,7 +1153,7 @@
         <input
           id="lp-search"
           type="text"
-          placeholder="Cari nama, perusahaan, email, telepon, atau produk/layanan…"
+          placeholder="Cari nama, email, telepon, atau produk/layanan…"
           oninput="filterLeadsTable()"
         >
       </div>
@@ -1184,16 +1174,16 @@
     <div class="lp-nl-pills-wrap">
       <span class="lp-nl-label"><i class="ti ti-sparkles"></i> Coba tanya AI:</span>
       <button class="lp-nl-pill" onclick="applyNlPill(this,'leads Jakarta belum dihubungi 3 hari')">
-        <i class="ti ti-map-pin"></i> Question 1
+        <i class="ti ti-map-pin"></i> Belum dihubungi 3 hari
       </button>
-      <button class="lp-nl-pill" onclick="applyNlPill(this,'real lead RFQ belum follow-up')">
-        <i class="ti ti-file-invoice"></i> Question 2
+      <button class="lp-nl-pill" onclick="applyNlPill(this,'real lead belum follow-up minggu ini')">
+        <i class="ti ti-circle-check"></i> Real lead belum follow-up
       </button>
       <button class="lp-nl-pill" onclick="applyNlPill(this,'leads score HOT hari ini')">
-        <i class="ti ti-flame"></i> Question 3
+        <i class="ti ti-flame"></i> Score HOT hari ini
       </button>
-      <button class="lp-nl-pill" onclick="applyNlPill(this,'Surabaya kirim pesan belum dibalas')">
-        <i class="ti ti-message-2"></i> Question 4
+      <button class="lp-nl-pill" onclick="applyNlPill(this,'kontak baru masuk belum dibalas')">
+        <i class="ti ti-message-2"></i> Pesan belum dibalas
       </button>
     </div>
   </div>
@@ -1666,8 +1656,8 @@
               <span class="an-funnel-val">4,038</span>
             </div>
           </div>
-          <div class="an-funnel-step" style="--w:34%">
-            <div class="an-funnel-bar" style="background:#f0fdf4;border:1px solid #bbf7d0">
+          <div class="an-funnel-step" style="--w:40%">
+            <div class="an-funnel-bar" style="background:#f0fdf4;border:1px solid #bbf7d0;">
               <span class="an-funnel-label">Closing / Order</span>
               <span class="an-funnel-val">2,860</span>
             </div>
@@ -1916,7 +1906,7 @@
           <tr>
             <th>No. Invoice</th>
             <th>Customer</th>
-            <th>Produk</th>
+            <th>Produk / Layanan</th>
             <th>Nominal</th>
             <th>Tgl. Kirim</th>
             <th>Status</th>
@@ -4073,72 +4063,90 @@
 </div>
 <!-- ENDING KNOWLEDGE BASE PAGE -->
 
+<!-- HALAMAN AI CALL -->
 <div id="ai-call-page" class="ai-call-page" style="display:none">
-
-  <!-- HEADER HERO -->
+ 
+  <!-- ── HERO ──────────────────────────────────── -->
   <div class="ac-hero">
     <div class="ac-hero-left">
       <div class="ac-hero-badge"><i class="ti ti-phone-call"></i> Add-on Aktif</div>
       <h2 class="ac-hero-title">AI Voice</h2>
       <p class="ac-hero-desc">Panggilan telepon otomatis berbasis AI — tangani inbound, lakukan outbound follow-up, dan bicara dengan suara alami seperti manusia.</p>
       <div class="ac-hero-actions">
-        <button class="ac-btn-primary" onclick="acOpenSetup()"><i class="ti ti-settings"></i> Konfigurasi Suara</button>
-        <button class="ac-btn-ghost" onclick="acOpenLog()"><i class="ti ti-history"></i> Lihat Log Panggilan</button>
+        <button class="ac-btn-primary" onclick="acOpenSetup()">
+          <i class="ti ti-settings"></i> Konfigurasi Suara
+        </button>
+        <button class="ac-btn-ghost" onclick="acOpenLog()">
+          <i class="ti ti-history"></i> Lihat Log Panggilan
+        </button>
+        <!-- BARU: tombol outbound manual -->
+        <button class="ac-btn-ghost" onclick="acOpenOutbound()">
+          <i class="ti ti-phone-outgoing"></i> Panggilan Manual
+        </button>
       </div>
     </div>
     <div class="ac-hero-right">
+      <!-- Pulse core sekarang bisa diklik → buka modal outbound -->
       <div class="ac-pulse-wrap">
         <div class="ac-pulse-ring r1"></div>
         <div class="ac-pulse-ring r2"></div>
         <div class="ac-pulse-ring r3"></div>
-        <div class="ac-pulse-core">
+        <div class="ac-pulse-core" title="Klik untuk panggilan outbound manual">
           <i class="ti ti-phone"></i>
         </div>
       </div>
     </div>
   </div>
-
-  <!-- METRIC STRIP -->
+ 
+  <!-- ── METRIC STRIP ───────────────────────────── -->
   <div class="ac-metrics">
     <div class="ac-metric">
-      <div class="ac-metric-icon" style="background:var(--red-light);color:var(--red)"><i class="ti ti-phone-incoming"></i></div>
+      <div class="ac-metric-icon" style="background:var(--red-light);color:var(--red)">
+        <i class="ti ti-phone-incoming"></i>
+      </div>
       <div>
         <div class="ac-metric-val">348</div>
         <div class="ac-metric-lbl">Inbound bulan ini</div>
       </div>
     </div>
     <div class="ac-metric">
-      <div class="ac-metric-icon" style="background:#eef2ff;color:#4b5eaa"><i class="ti ti-phone-outgoing"></i></div>
+      <div class="ac-metric-icon" style="background:#eef2ff;color:#4b5eaa">
+        <i class="ti ti-phone-outgoing"></i>
+      </div>
       <div>
         <div class="ac-metric-val">512</div>
         <div class="ac-metric-lbl">Outbound dikirim</div>
       </div>
     </div>
     <div class="ac-metric">
-      <div class="ac-metric-icon" style="background:var(--green-bg);color:var(--green)"><i class="ti ti-check"></i></div>
+      <div class="ac-metric-icon" style="background:var(--green-bg);color:var(--green)">
+        <i class="ti ti-check"></i>
+      </div>
       <div>
         <div class="ac-metric-val">74%</div>
         <div class="ac-metric-lbl">Tingkat jawab</div>
       </div>
     </div>
     <div class="ac-metric">
-      <div class="ac-metric-icon" style="background:var(--amber-bg);color:var(--amber)"><i class="ti ti-clock"></i></div>
+      <div class="ac-metric-icon" style="background:var(--amber-bg);color:var(--amber)">
+        <i class="ti ti-clock"></i>
+      </div>
       <div>
         <div class="ac-metric-val">2m 18d</div>
         <div class="ac-metric-lbl">Rata-rata durasi</div>
       </div>
     </div>
   </div>
-
-  <!-- TWO COLUMN GRID -->
+ 
+  <!-- ── TWO COLUMN GRID ───────────────────────── -->
   <div class="ac-grid">
-
-    <!-- FITUR CARDS -->
+ 
+    <!-- FITUR CARDS (kiri) -->
     <div class="ac-features-col">
       <div class="ac-section-head">
         <span class="ac-section-title">Kemampuan AI Voice</span>
       </div>
-
+ 
       <div class="ac-feature-card">
         <div class="ac-fc-icon" style="background:var(--red-light)">
           <i class="ti ti-phone-incoming" style="color:var(--red)"></i>
@@ -4152,9 +4160,10 @@
             <span class="ac-tag">Transfer ke agen</span>
           </div>
         </div>
-        <div class="ac-fc-status on">Aktif</div>
+        <!-- status badge: klik untuk toggle on/off -->
+        <div class="ac-fc-status on" title="Klik untuk toggle">Aktif</div>
       </div>
-
+ 
       <div class="ac-feature-card">
         <div class="ac-fc-icon" style="background:#eef2ff">
           <i class="ti ti-phone-outgoing" style="color:#4b5eaa"></i>
@@ -4168,9 +4177,9 @@
             <span class="ac-tag">Kampanye massal</span>
           </div>
         </div>
-        <div class="ac-fc-status on">Aktif</div>
+        <div class="ac-fc-status on" title="Klik untuk toggle">Aktif</div>
       </div>
-
+ 
       <div class="ac-feature-card">
         <div class="ac-fc-icon" style="background:var(--green-bg)">
           <i class="ti ti-waveform" style="color:var(--green)"></i>
@@ -4184,53 +4193,70 @@
             <span class="ac-tag">Bahasa Indonesia</span>
           </div>
         </div>
-        <div class="ac-fc-status on">Aktif</div>
+        <div class="ac-fc-status on" title="Klik untuk toggle">Aktif</div>
       </div>
-
     </div>
-
-    <!-- RIGHT COL: Panggilan Aktif + Log Terbaru -->
+ 
+    <!-- RIGHT COL: Panggilan Aktif + Log -->
     <div class="ac-right-col">
-
+ 
       <!-- PANGGILAN AKTIF -->
       <div class="ac-live-card">
         <div class="ac-section-head">
-          <span class="ac-section-title"><span class="ac-live-dot"></span> Panggilan Berlangsung</span>
+          <span class="ac-section-title">
+            <span class="ac-live-dot"></span> Panggilan Berlangsung
+          </span>
           <span class="ac-live-count">2 aktif</span>
         </div>
-
+ 
+        <!--
+          Setiap ac-live-item kini akan memiliki 3 tombol yang disuntik oleh JS:
+          [ℹ Detail] [⇄ Transfer] [✕ Akhiri]
+          Hover item → tampil tombol. Klik item → buka modal detail.
+        -->
         <div class="ac-live-item">
           <div class="ac-live-avatar" style="background:var(--red-light);color:var(--red)">PT</div>
           <div class="ac-live-info">
             <div class="ac-live-name">PT Mitra Jaya Abadi</div>
-            <div class="ac-live-meta"><i class="ti ti-phone-incoming"></i> Inbound · <span class="ac-live-timer" data-start="82">01:22</span></div>
+            <div class="ac-live-meta">
+              <i class="ti ti-phone-incoming"></i> Inbound ·
+              <span class="ac-live-timer" data-start="82">01:22</span>
+            </div>
           </div>
           <div class="ac-live-wave">
             <span></span><span></span><span></span><span></span><span></span>
           </div>
         </div>
-
+ 
         <div class="ac-live-item">
           <div class="ac-live-avatar" style="background:#eef2ff;color:#4b5eaa">BU</div>
           <div class="ac-live-info">
             <div class="ac-live-name">Budi Utomo</div>
-            <div class="ac-live-meta"><i class="ti ti-phone-outgoing"></i> Outbound · <span class="ac-live-timer" data-start="31">00:31</span></div>
+            <div class="ac-live-meta">
+              <i class="ti ti-phone-outgoing"></i> Outbound ·
+              <span class="ac-live-timer" data-start="31">00:31</span>
+            </div>
           </div>
           <div class="ac-live-wave">
             <span></span><span></span><span></span><span></span><span></span>
           </div>
         </div>
       </div>
-
+ 
       <!-- LOG PANGGILAN TERBARU -->
       <div class="ac-log-card">
         <div class="ac-section-head">
           <span class="ac-section-title">Log Panggilan Terbaru</span>
-          <span class="ac-section-action" onclick="acOpenLog()">Lihat semua <i class="ti ti-chevron-right"></i></span>
+          <span class="ac-section-action" onclick="acOpenLog()">
+            Lihat semua <i class="ti ti-chevron-right"></i>
+          </span>
         </div>
-
+ 
         <div class="ac-log-list">
-
+          <!--
+            Setiap item dengan badge "done" akan mendapat tombol ▶ putar rekaman
+            yang muncul saat hover (disuntik JS, .ac-log-play).
+          -->
           <div class="ac-log-item">
             <div class="ac-log-icon in"><i class="ti ti-phone-incoming"></i></div>
             <div class="ac-log-body">
@@ -4239,7 +4265,7 @@
             </div>
             <span class="ac-log-badge done">Selesai</span>
           </div>
-
+ 
           <div class="ac-log-item">
             <div class="ac-log-icon out"><i class="ti ti-phone-outgoing"></i></div>
             <div class="ac-log-body">
@@ -4248,7 +4274,7 @@
             </div>
             <span class="ac-log-badge done">Selesai</span>
           </div>
-
+ 
           <div class="ac-log-item">
             <div class="ac-log-icon in"><i class="ti ti-phone-incoming"></i></div>
             <div class="ac-log-body">
@@ -4257,7 +4283,7 @@
             </div>
             <span class="ac-log-badge missed">Terlewat</span>
           </div>
-
+ 
           <div class="ac-log-item">
             <div class="ac-log-icon out"><i class="ti ti-phone-outgoing"></i></div>
             <div class="ac-log-body">
@@ -4266,7 +4292,7 @@
             </div>
             <span class="ac-log-badge done">Selesai</span>
           </div>
-
+ 
           <div class="ac-log-item">
             <div class="ac-log-icon out"><i class="ti ti-phone-outgoing"></i></div>
             <div class="ac-log-body">
@@ -4275,22 +4301,24 @@
             </div>
             <span class="ac-log-badge busy">Sibuk</span>
           </div>
-
         </div>
       </div>
-
+ 
     </div>
-  </div>
-
-  <!-- OUTBOUND CAMPAIGN SECTION -->
+  </div><!-- /.ac-grid -->
+ 
+  <!-- ── OUTBOUND CAMPAIGN SECTION ─────────────── -->
   <div class="ac-campaign-section">
     <div class="ac-section-head">
       <span class="ac-section-title">Kampanye Outbound</span>
-      <button class="ac-btn-primary sm" onclick="acNewCampaign()"><i class="ti ti-plus"></i> Buat Kampanye</button>
+      <button class="ac-btn-primary sm" onclick="acNewCampaign()">
+        <i class="ti ti-plus"></i> Buat Kampanye
+      </button>
     </div>
-
+ 
     <div class="ac-campaign-list">
-
+ 
+      <!-- RUNNING: punya tombol Jeda + Stop (disuntik JS) -->
       <div class="ac-camp-card">
         <div class="ac-camp-header">
           <div class="ac-camp-name">Follow-up Lead Minggu Ini</div>
@@ -4303,9 +4331,14 @@
           <span><strong>68</strong> / 100 kontak</span>
           <span><strong>47</strong> dijawab</span>
           <span><strong>12</strong> konversi</span>
+          <!--
+            JS akan menyuntikkan .ac-camp-actions di sini untuk status "running"
+            berisi [⏸ Jeda] [⏹ Stop]
+          -->
         </div>
       </div>
-
+ 
+      <!-- DONE: hanya tampil, klik → detail -->
       <div class="ac-camp-card">
         <div class="ac-camp-header">
           <div class="ac-camp-name">Reminder Pembayaran Jatuh Tempo</div>
@@ -4320,7 +4353,8 @@
           <span><strong>89</strong> tindak lanjut</span>
         </div>
       </div>
-
+ 
+      <!-- DRAFT: ada tombol "Mulai" → onclick acStartCampaign -->
       <div class="ac-camp-card">
         <div class="ac-camp-header">
           <div class="ac-camp-name">Survei Kepuasan Pelanggan</div>
@@ -4332,22 +4366,30 @@
         <div class="ac-camp-stats">
           <span><strong>0</strong> / 75 kontak</span>
           <span>Belum dimulai</span>
-          <button class="ac-camp-start-btn" onclick="acStartCampaign(this)"><i class="ti ti-player-play"></i> Mulai</button>
+          <button class="ac-camp-start-btn" onclick="acStartCampaign(this)">
+            <i class="ti ti-player-play"></i> Mulai
+          </button>
         </div>
       </div>
-
+ 
     </div>
   </div>
-
-  <!-- MODAL: Konfigurasi Suara -->
-  <div id="ac-modal-setup" class="ac-modal-overlay" style="display:none" onclick="acCloseModal('ac-modal-setup',event)">
+ 
+  <!-- ── MODAL: Konfigurasi Suara (static, tetap di DOM) ──── -->
+  <div id="ac-modal-setup" class="ac-modal-overlay"
+       style="display:none"
+       onclick="acCloseModal('ac-modal-setup',event)">
     <div class="ac-modal">
       <div class="ac-modal-head">
-        <div class="ac-modal-title"><i class="ti ti-settings"></i> Konfigurasi AI Voice</div>
-        <button class="ac-modal-close" onclick="acCloseModal('ac-modal-setup')"><i class="ti ti-x"></i></button>
+        <div class="ac-modal-title">
+          <i class="ti ti-settings"></i> Konfigurasi AI Voice
+        </div>
+        <button class="ac-modal-close" onclick="acCloseModal('ac-modal-setup')">
+          <i class="ti ti-x"></i>
+        </button>
       </div>
       <div class="ac-modal-body">
-
+ 
         <div class="ac-form-group">
           <label class="ac-form-label">Pilih Suara AI</label>
           <div class="ac-voice-options">
@@ -4377,19 +4419,14 @@
             </div>
           </div>
         </div>
-
-        <!-- DISABLE SPEED VOICE -->
-        <!-- <div class="ac-form-group">
-          <label class="ac-form-label">Kecepatan Bicara</label>
-          <input type="range" class="ac-slider" min="0.8" max="1.4" step="0.05" value="1.0" oninput="this.nextElementSibling.textContent = parseFloat(this.value).toFixed(2) + 'x'">
-          <span class="ac-slider-val">1.00x</span>
-        </div> -->
-
+ 
         <div class="ac-form-group">
           <label class="ac-form-label">Salam Pembuka (Inbound)</label>
-          <textarea class="ac-textarea" rows="3" placeholder="Contoh: Halo, terima kasih telah menghubungi kami. Ada yang bisa saya bantu?">Halo, terima kasih telah menghubungi kami. Ada yang bisa saya bantu?</textarea>
+          <textarea class="ac-textarea" rows="3"
+            placeholder="Contoh: Halo, terima kasih telah menghubungi kami. Ada yang bisa saya bantu?"
+          >Halo, terima kasih telah menghubungi kami. Ada yang bisa saya bantu?</textarea>
         </div>
-
+ 
         <div class="ac-form-group">
           <label class="ac-form-label">Bahasa</label>
           <select class="ac-select">
@@ -4398,15 +4435,18 @@
             <option>Campuran (Indonesia + English)</option>
           </select>
         </div>
-
+ 
       </div>
       <div class="ac-modal-footer">
         <button class="ac-btn-ghost" onclick="acCloseModal('ac-modal-setup')">Batal</button>
-        <button class="ac-btn-primary" onclick="acSaveSetup()"><i class="ti ti-device-floppy"></i> Simpan Konfigurasi</button>
+        <button class="ac-btn-primary" onclick="acSaveSetup()">
+          <i class="ti ti-device-floppy"></i> Simpan Konfigurasi
+        </button>
       </div>
     </div>
   </div>
-
+  <!-- /ac-modal-setup -->
+ 
 </div>
 
 

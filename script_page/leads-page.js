@@ -14,7 +14,7 @@ const LP_BIZ_TYPES = {
     sumber: {
       wa:     { name: 'Klik WA & Telepon', desc: 'Calon klien yang menekan tombol WA atau telepon di profil Anda' },
       msg:    { name: 'Kirim Pesan',       desc: 'Calon klien yang mengirim chat langsung ke bisnis Anda' },
-      rfq:    { name: 'Permintaan Penawaran (RFQ)', desc: 'Calon klien yang mengirim permintaan harga resmi' },
+      rfq:    { name: 'Konsultasi', desc: 'Calon klien yang mengirim permintaan harga resmi' },
       profil: { name: 'Kunjungi Profil',   desc: 'Calon klien yang membuka halaman profil atau katalog Anda' },
     },
     qualifyBadge: '73% cocok produk/layanan Anda',
