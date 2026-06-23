@@ -815,7 +815,8 @@
   border-color: #fca5a5;
 }
 .pa-btn-danger:hover { background: #fef2f2; }
-.pa-btn-sm {height: 25px; width: 25px; padding: 5px 10px; font-size: 11px; }
+.pa-btn-sm {height: 35px; width: auto; padding: 10px 20px; font-size: 11px; }
+.pa-btn-sm:hover {background-color: var(--red); color:white;}
 .pa-btn i { font-size: 14px; }
 
 /* ── Info alert ──────────────────────────────────────────────── */

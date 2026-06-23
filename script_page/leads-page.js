@@ -4,65 +4,61 @@
    B2B, B2C, SaaS, F&B, Jasa/Edukasi
    =================================== */
 
-// ── Konfigurasi terminologi per tipe bisnis ───────────────────
-// Setiap tipe bisnis punya istilah berbeda untuk sumber lead,
-// badge kecocokan AI, dan statistik kontak — supaya dashboard
-// terasa relevan untuk semua jenis klien, bukan hanya B2B marketplace.
 const LP_BIZ_TYPES = {
   b2b: {
     label: 'B2B (Distributor / Manufaktur)',
     sumber: {
-      wa:     { name: 'Klik WA & Telepon', desc: 'Calon klien yang menekan tombol WA atau telepon di profil Anda' },
-      msg:    { name: 'Kirim Pesan',       desc: 'Calon klien yang mengirim chat langsung ke bisnis Anda' },
-      rfq:    { name: 'Konsultasi', desc: 'Calon klien yang mengirim permintaan harga resmi' },
-      profil: { name: 'Kunjungi Profil',   desc: 'Calon klien yang membuka halaman profil atau katalog Anda' },
+      wa:     { name: 'Kontak Langsung',       desc: 'Calon klien yang menghubungi via WA, telepon, atau chat langsung' },
+      msg:    { name: 'Kirim Pesan',            desc: 'Calon klien yang mengirim pesan ke bisnis Anda' },
+      rfq:    { name: 'Permintaan Penawaran',   desc: 'Calon klien yang mengirim permintaan harga atau konsultasi resmi' },
+      profil: { name: 'Kunjungan Profil/Website', desc: 'Calon klien yang membuka halaman profil atau katalog Anda' },
     },
     qualifyBadge: '73% cocok produk/layanan Anda',
-    stat1: 'Order', stat2: 'Total Belanja',
+    stat1: 'Transaksi', stat2: 'Total Nilai',
   },
   b2c: {
     label: 'B2C (Toko Online / Ritel)',
     sumber: {
-      wa:     { name: 'Klik WA & Telepon', desc: 'Pembeli yang menekan tombol WA atau telepon di toko Anda' },
-      msg:    { name: 'Kirim Pesan',       desc: 'Pembeli yang mengirim chat langsung ke toko Anda' },
-      rfq:    { name: 'Tanya Stok/Harga',  desc: 'Pembeli yang menanyakan ketersediaan atau harga produk' },
-      profil: { name: 'Kunjungi Toko',     desc: 'Pembeli yang membuka halaman toko atau produk Anda' },
+      wa:     { name: 'Kontak Langsung',       desc: 'Pembeli yang menghubungi langsung via WA atau chat' },
+      msg:    { name: 'Kirim Pesan',            desc: 'Pembeli yang mengirim pesan ke toko Anda' },
+      rfq:    { name: 'Tanya Produk/Harga',    desc: 'Pembeli yang menanyakan ketersediaan atau harga produk' },
+      profil: { name: 'Kunjungan Profil/Website', desc: 'Pembeli yang membuka halaman toko atau produk Anda' },
     },
     qualifyBadge: '73% cocok produk Anda',
-    stat1: 'Order', stat2: 'Total Belanja',
+    stat1: 'Transaksi', stat2: 'Total Nilai',
   },
   saas: {
     label: 'SaaS (Aplikasi / Software)',
     sumber: {
-      wa:     { name: 'Klik Chat & Telepon', desc: 'Calon pengguna yang menghubungi via chat atau telepon' },
-      msg:    { name: 'Kirim Pesan',         desc: 'Calon pengguna yang mengirim pesan langsung' },
-      rfq:    { name: 'Request Demo',        desc: 'Calon pengguna yang meminta demo atau trial produk' },
-      profil: { name: 'Kunjungi Halaman Pricing', desc: 'Calon pengguna yang membuka halaman pricing/produk' },
+      wa:     { name: 'Kontak Langsung',       desc: 'Calon pengguna yang menghubungi via chat atau telepon' },
+      msg:    { name: 'Kirim Pesan',            desc: 'Calon pengguna yang mengirim pesan langsung' },
+      rfq:    { name: 'Request Demo/Trial',    desc: 'Calon pengguna yang meminta demo atau akses trial produk' },
+      profil: { name: 'Kunjungan Profil/Website', desc: 'Calon pengguna yang membuka halaman pricing atau produk' },
     },
-    qualifyBadge: '73% cocok paket Basic',
+    qualifyBadge: '73% cocok layanan Anda',
     stat1: 'Trial Aktif', stat2: 'Total MRR',
   },
   fnb: {
     label: 'F&B (Restoran / Kafe)',
     sumber: {
-      wa:     { name: 'Klik WA & Telepon', desc: 'Pelanggan yang menghubungi via WA atau telepon' },
-      msg:    { name: 'Kirim Pesan',       desc: 'Pelanggan yang chat langsung ke resto/kafe Anda' },
-      rfq:    { name: 'Reservasi/Pre-order', desc: 'Pelanggan yang melakukan reservasi meja atau pre-order' },
-      profil: { name: 'Kunjungi Profil',   desc: 'Pelanggan yang membuka halaman menu/profil Anda' },
+      wa:     { name: 'Kontak Langsung',       desc: 'Pelanggan yang menghubungi langsung via WA atau telepon' },
+      msg:    { name: 'Kirim Pesan',            desc: 'Pelanggan yang chat langsung ke bisnis Anda' },
+      rfq:    { name: 'Reservasi/Pre-order',   desc: 'Pelanggan yang melakukan reservasi atau pre-order' },
+      profil: { name: 'Kunjungan Profil/Website', desc: 'Pelanggan yang membuka halaman menu atau profil Anda' },
     },
-    qualifyBadge: '73% cocok menu Anda',
-    stat1: 'Reservasi', stat2: 'Total Belanja',
+    qualifyBadge: '73% cocok bisnis Anda',
+    stat1: 'Reservasi', stat2: 'Total Nilai',
   },
   jasa: {
     label: 'Jasa / Edukasi',
     sumber: {
-      wa:     { name: 'Klik WA & Telepon', desc: 'Klien yang menghubungi via WA atau telepon' },
-      msg:    { name: 'Kirim Pesan',       desc: 'Klien yang chat langsung ke bisnis Anda' },
-      rfq:    { name: 'Booking Konsultasi/Kelas', desc: 'Klien yang mengajukan sesi konsultasi atau mendaftar kelas' },
-      profil: { name: 'Kunjungi Profil',   desc: 'Klien yang membuka halaman layanan Anda' },
+      wa:     { name: 'Kontak Langsung',       desc: 'Klien yang menghubungi langsung via WA atau telepon' },
+      msg:    { name: 'Kirim Pesan',            desc: 'Klien yang mengirim pesan ke bisnis Anda' },
+      rfq:    { name: 'Booking/Konsultasi',    desc: 'Klien yang mengajukan sesi konsultasi, booking, atau pendaftaran' },
+      profil: { name: 'Kunjungan Profil/Website', desc: 'Klien yang membuka halaman layanan atau profil Anda' },
     },
-    qualifyBadge: '73% sesuai kebutuhan Anda',
-    stat1: 'Sesi Konsultasi', stat2: 'Kelas Terdaftar',
+    qualifyBadge: '73% sesuai layanan Anda',
+    stat1: 'Sesi/Booking', stat2: 'Total Nilai',
   },
 };
 
@@ -91,21 +87,21 @@ function applyBizType(type) {
 
 // ── Data dummy leads ──────────────────────────────────────────
 const LEADS_DATA = [
-  { id:1,  nama:'Meli',          perusahaan:'Gudang Tenda Muhamad Almer', tanggal:'12 Jun 2026', email:'gudangtendamuhamadalmer12@gmail.com', phone:'82381272032', kota:'Jakarta', kategori:'real',    sumber:'wa',     aktivitas:'Klik WA',      status:'belum' },
-  { id:2,  nama:'Dina',          perusahaan:'PT. Cika Inti Karya',        tanggal:'11 Jun 2026', email:'dinadina@gmail.com',                  phone:'87797508972', kota:'Jakarta', kategori:'real',    sumber:'wa',     aktivitas:'Klik WA',      status:'belum' },
-  { id:3,  nama:'Adi Santoso',   perusahaan:'CV. Maju Bersama',           tanggal:'11 Jun 2026', email:'adi.santoso@majubersama.id',           phone:'81234567890', kota:'Surabaya',kategori:'potensi', sumber:'msg',    aktivitas:'Kirim Pesan',  status:'dihubungi' },
-  { id:4,  nama:'Rini Wijaya',   perusahaan:'PT. Sumber Makmur',          tanggal:'10 Jun 2026', email:'rini@sumbermakmur.co.id',             phone:'85678901234', kota:'Bandung', kategori:'real',    sumber:'rfq',    aktivitas:'RFQ',          status:'followup' },
-  { id:5,  nama:'Budi Hartono',  perusahaan:'UD. Karya Abadi',            tanggal:'10 Jun 2026', email:'budi.hartono@gmail.com',              phone:'81398765432', kota:'Semarang',kategori:'potensi', sumber:'profil', aktivitas:'Kunjungi Profil',status:'belum' },
-  { id:6,  nama:'Susi Rahayu',   perusahaan:'PT. Indo Jaya',              tanggal:'09 Jun 2026', email:'susi.rahayu@indojaya.com',            phone:'87712345678', kota:'Medan',   kategori:'belum',   sumber:'profil', aktivitas:'Kunjungi Profil',status:'belum' },
-  { id:7,  nama:'Hendra Kusuma', perusahaan:'CV. Teknik Mandiri',         tanggal:'09 Jun 2026', email:'hendra@teknikmandiri.id',             phone:'82298765001', kota:'Jakarta', kategori:'real',    sumber:'wa',     aktivitas:'Klik WA',      status:'closed' },
-  { id:8,  nama:'Dewi Anggraeni',perusahaan:'PT. Aneka Produk',           tanggal:'08 Jun 2026', email:'dewi.a@anekaproduk.com',              phone:'89512345000', kota:'Yogyakarta',kategori:'potensi',sumber:'msg',   aktivitas:'Kirim Pesan',  status:'dihubungi' },
-  { id:9,  nama:'Fajar Nugraha', perusahaan:'UD. Fajar Tani',             tanggal:'08 Jun 2026', email:'fajar@fajartani.id',                  phone:'81111222333', kota:'Malang',  kategori:'belum',   sumber:'rfq',    aktivitas:'RFQ',          status:'belum' },
-  { id:10, nama:'Lestari Wahyu', perusahaan:'CV. Lestari Group',          tanggal:'07 Jun 2026', email:'lestari.w@lestarigroup.com',          phone:'82233445566', kota:'Surabaya',kategori:'real',    sumber:'wa',     aktivitas:'Klik WA',      status:'followup' },
-  { id:11, nama:'Teguh Prabowo', perusahaan:'PT. Prabowo Industri',       tanggal:'07 Jun 2026', email:'teguh@prabowoindustri.co.id',         phone:'85544332211', kota:'Jakarta', kategori:'real',    sumber:'msg',    aktivitas:'Kirim Pesan',  status:'belum' },
-  { id:12, nama:'Nita Sari',     perusahaan:'CV. Nita Kreatif',           tanggal:'06 Jun 2026', email:'nita@nitakreatif.id',                 phone:'87700998877', kota:'Bandung', kategori:'potensi', sumber:'profil', aktivitas:'Kunjungi Profil',status:'dihubungi' },
-  { id:13, nama:'Arief Gunawan', perusahaan:'PT. Gunawan Jaya',           tanggal:'06 Jun 2026', email:'arief.g@gunawanjaya.id',              phone:'81234000111', kota:'Semarang',kategori:'belum',   sumber:'wa',     aktivitas:'Klik WA',      status:'belum' },
-  { id:14, nama:'Maya Putri',    perusahaan:'UD. Maya Sejahtera',         tanggal:'05 Jun 2026', email:'maya.p@gmail.com',                    phone:'82345123456', kota:'Medan',   kategori:'real',    sumber:'rfq',    aktivitas:'RFQ',          status:'closed' },
-  { id:15, nama:'Rizky Firmansyah','perusahaan':'CV. Rizky Maju',         tanggal:'05 Jun 2026', email:'rizky.f@rizkymaju.id',                phone:'89912345678', kota:'Jakarta', kategori:'potensi', sumber:'msg',    aktivitas:'Kirim Pesan',  status:'belum' },
+  { id:1,  nama:'Meli',          perusahaan:'Gudang Tenda Muhamad Almer', tanggal:'12 Jun 2026', email:'gudangtendamuhamadalmer12@gmail.com', phone:'82381272032', kota:'Jakarta', kategori:'real',    sumber:'wa',     aktivitas:'Kontak Langsung',      status:'belum' },
+  { id:2,  nama:'Dina',          perusahaan:'PT. Cika Inti Karya',        tanggal:'11 Jun 2026', email:'dinadina@gmail.com',                  phone:'87797508972', kota:'Jakarta', kategori:'real',    sumber:'wa',     aktivitas:'Kontak Langsung',      status:'belum' },
+  { id:3,  nama:'Adi Santoso',   perusahaan:'CV. Maju Bersama',           tanggal:'11 Jun 2026', email:'adi.santoso@majubersama.id',           phone:'81234567890', kota:'Surabaya',kategori:'potensi', sumber:'msg',    aktivitas:'Kirim Pesan',          status:'dihubungi' },
+  { id:4,  nama:'Rini Wijaya',   perusahaan:'PT. Sumber Makmur',          tanggal:'10 Jun 2026', email:'rini@sumbermakmur.co.id',             phone:'85678901234', kota:'Bandung', kategori:'real',    sumber:'rfq',    aktivitas:'Permintaan Masuk',     status:'followup' },
+  { id:5,  nama:'Budi Hartono',  perusahaan:'UD. Karya Abadi',            tanggal:'10 Jun 2026', email:'budi.hartono@gmail.com',              phone:'81398765432', kota:'Semarang',kategori:'potensi', sumber:'profil', aktivitas:'Kunjungan Profil',     status:'belum' },
+  { id:6,  nama:'Susi Rahayu',   perusahaan:'PT. Indo Jaya',              tanggal:'09 Jun 2026', email:'susi.rahayu@indojaya.com',            phone:'87712345678', kota:'Medan',   kategori:'belum',   sumber:'profil', aktivitas:'Kunjungan Profil',     status:'belum' },
+  { id:7,  nama:'Hendra Kusuma', perusahaan:'CV. Teknik Mandiri',         tanggal:'09 Jun 2026', email:'hendra@teknikmandiri.id',             phone:'82298765001', kota:'Jakarta', kategori:'real',    sumber:'wa',     aktivitas:'Kontak Langsung',      status:'closed' },
+  { id:8,  nama:'Dewi Anggraeni',perusahaan:'PT. Aneka Produk',           tanggal:'08 Jun 2026', email:'dewi.a@anekaproduk.com',              phone:'89512345000', kota:'Yogyakarta',kategori:'potensi',sumber:'msg',   aktivitas:'Kirim Pesan',          status:'dihubungi' },
+  { id:9,  nama:'Fajar Nugraha', perusahaan:'UD. Fajar Tani',             tanggal:'08 Jun 2026', email:'fajar@fajartani.id',                  phone:'81111222333', kota:'Malang',  kategori:'belum',   sumber:'rfq',    aktivitas:'Permintaan Masuk',     status:'belum' },
+  { id:10, nama:'Lestari Wahyu', perusahaan:'CV. Lestari Group',          tanggal:'07 Jun 2026', email:'lestari.w@lestarigroup.com',          phone:'82233445566', kota:'Surabaya',kategori:'real',    sumber:'wa',     aktivitas:'Kontak Langsung',      status:'followup' },
+  { id:11, nama:'Teguh Prabowo', perusahaan:'PT. Prabowo Industri',       tanggal:'07 Jun 2026', email:'teguh@prabowoindustri.co.id',         phone:'85544332211', kota:'Jakarta', kategori:'real',    sumber:'msg',    aktivitas:'Kirim Pesan',          status:'belum' },
+  { id:12, nama:'Nita Sari',     perusahaan:'CV. Nita Kreatif',           tanggal:'06 Jun 2026', email:'nita@nitakreatif.id',                 phone:'87700998877', kota:'Bandung', kategori:'potensi', sumber:'profil', aktivitas:'Kunjungan Profil',     status:'dihubungi' },
+  { id:13, nama:'Arief Gunawan', perusahaan:'PT. Gunawan Jaya',           tanggal:'06 Jun 2026', email:'arief.g@gunawanjaya.id',              phone:'81234000111', kota:'Semarang',kategori:'belum',   sumber:'wa',     aktivitas:'Kontak Langsung',      status:'belum' },
+  { id:14, nama:'Maya Putri',    perusahaan:'UD. Maya Sejahtera',         tanggal:'05 Jun 2026', email:'maya.p@gmail.com',                    phone:'82345123456', kota:'Medan',   kategori:'real',    sumber:'rfq',    aktivitas:'Permintaan Masuk',     status:'closed' },
+  { id:15, nama:'Rizky Firmansyah','perusahaan':'CV. Rizky Maju',         tanggal:'05 Jun 2026', email:'rizky.f@rizkymaju.id',                phone:'89912345678', kota:'Jakarta', kategori:'potensi', sumber:'msg',    aktivitas:'Kirim Pesan',          status:'belum' },
 ];
 
 // ── State ─────────────────────────────────────────────────────
@@ -218,7 +214,7 @@ function renderLeadRow(lead) {
   const srcCfg   = bizCfg().sumber;
   const srcClass = { wa:'src-wa', msg:'src-msg', rfq:'src-rfq', profil:'src-profil' };
   const aktClass = { wa:'wa', msg:'msg', rfq:'rfq', profil:'profil' };
-  const aktIcon  = { wa:'ti-brand-whatsapp', msg:'ti-message-2', rfq:'ti-file-invoice', profil:'ti-eye' };
+  const aktIcon  = { wa:'ti-message-circle', msg:'ti-message-2', rfq:'ti-calendar-event', profil:'ti-eye' };
   const statusLabel = { belum:'Belum dihubungi', dihubungi:'Sudah dihubungi', followup:'Follow-up lanjutan', closed:'Closed / Deal' };
   const statusClass = { belum:'', dihubungi:'dihubungi', followup:'followup', closed:'closed' };
   const statusIcon  = { belum:'ti-circle', dihubungi:'ti-circle-check', followup:'ti-refresh', closed:'ti-check-circle-2' };
@@ -383,7 +379,7 @@ function hubungiWA(id) {
   // window.open(`https://wa.me/62${lead.phone}`, '_blank');
 }
 
-// ── AREA 3: Buy Leads Banner — Lihat Rekomendasi AI ───────────
+// ── AREA 3: AI Recommendation Banner — Lihat Rekomendasi AI ──────
 function getAiRecommendedLeads(limit = 6) {
   // Pilih leads dengan AI Score HOT atau WARM, prioritas HOT dulu,
   // lalu urutkan berdasarkan tanggal terbaru.
@@ -447,7 +443,7 @@ function hubungiAiRecLead(id) {
   openAiRecommendation();
 }
 
-// ── AREA 3: Buy Leads Banner — Cara Kerja Buy Leads ───────────
+// ── AREA 3: AI Recommendation Banner — Cara Kerja AI Leads ──────
 function openHowBuyLeadsWorks() {
   const overlay = document.getElementById('lp-modal-howit');
   if (overlay) overlay.style.display = 'flex';
@@ -489,20 +485,20 @@ function showLpToast(msg, type = '') {
 // ── AI Score data per lead ────────────────────────────────────
 // Dalam implementasi nyata ini berasal dari model scoring backend.
 const AI_SCORES = {
-  1:  { score:'HOT',  reason:'Klik WA 1 jam lalu — respons terbaik sekarang' },
+  1:  { score:'HOT',  reason:'Kontak langsung 1 jam lalu — respons terbaik sekarang' },
   2:  { score:'HOT',  reason:'Real Lead, Jakarta, buka profil 3x hari ini' },
   3:  { score:'WARM', reason:'Sudah dihubungi, tapi belum reply 2 hari' },
-  4:  { score:'HOT',  reason:'RFQ dikirim — intent beli sangat tinggi' },
-  5:  { score:'WARM', reason:'Kunjungi profil 2x, belum hubungi' },
+  4:  { score:'HOT',  reason:'Permintaan dikirim — intent sangat tinggi' },
+  5:  { score:'WARM', reason:'Kunjungi profil 2x, belum menghubungi' },
   6:  { score:'COLD', reason:'Hanya lihat profil, tidak ada aksi lanjut' },
-  7:  { score:'HOT',  reason:'Klik WA 30 menit lalu — sudah dihubungi ✓' },
+  7:  { score:'HOT',  reason:'Kontak masuk 30 menit lalu — sudah dihubungi ✓' },
   8:  { score:'WARM', reason:'Pesan terkirim, masih menunggu balasan' },
-  9:  { score:'COLD', reason:'RFQ lama, belum ada aktivitas 5+ hari' },
-  10: { score:'WARM', reason:'Repeat WA, follow-up sedang berjalan' },
+  9:  { score:'COLD', reason:'Permintaan lama, belum ada aktivitas 5+ hari' },
+  10: { score:'WARM', reason:'Repeat kontak, follow-up sedang berjalan' },
   11: { score:'HOT',  reason:'Pesan baru hari ini, belum dibalas' },
-  12: { score:'WARM', reason:'Kunjungi profil, Bandung, potensi order' },
-  13: { score:'COLD', reason:'WA klik tapi tidak ada kontak lanjutan' },
-  14: { score:'HOT',  reason:'RFQ closed — kandidat repeat order' },
+  12: { score:'WARM', reason:'Kunjungi profil, Bandung, potensi konversi' },
+  13: { score:'COLD', reason:'Kontak masuk tapi tidak ada tindak lanjut' },
+  14: { score:'HOT',  reason:'Permintaan closed — kandidat repeat kontak' },
   15: { score:'WARM', reason:'Pesan terkirim, belum ada respons 1 hari' },
 };
 
@@ -511,7 +507,7 @@ const AI_URGENCY = {
   1:  { cls:'hot-time',     text:'1 jam lalu — waktu terbaik!' },
   2:  { cls:'hot-time',     text:'2 jam lalu — segera hubungi' },
   3:  { cls:'warn-time',    text:'2 hari belum dibalas' },
-  4:  { cls:'hot-time',     text:'RFQ baru — follow-up sekarang' },
+  4:  { cls:'hot-time',     text:'Permintaan baru — follow-up sekarang' },
   5:  { cls:'warn-time',    text:'3 hari belum dihubungi' },
   6:  { cls:'neutral-time', text:'5 hari tidak ada aktivitas' },
   7:  { cls:'ok-time',      text:'Sudah dihubungi ✓' },
@@ -521,7 +517,7 @@ const AI_URGENCY = {
   11: { cls:'hot-time',     text:'Pesan baru — belum dibalas!' },
   12: { cls:'warn-time',    text:'2 hari sejak kunjungan' },
   13: { cls:'neutral-time', text:'4 hari tidak ada kontak' },
-  14: { cls:'ok-time',      text:'Deal closed ✓' },
+  14: { cls:'ok-time',      text:'Closed ✓' },
   15: { cls:'warn-time',    text:'1 hari belum ada respons' },
 };
 
@@ -530,10 +526,10 @@ const AI_URGENCY = {
 // dengan konteks: nama, perusahaan, produk, AI score, aktivitas terakhir.
 function generateAiMessage(lead) {
   const templates = {
-    wa: `Halo ${lead.nama} dari ${lead.perusahaan}! 👋\n\nKami lihat Anda tadi mengklik nomor WA kami — apakah ada yang sedang Anda cari atau butuhkan?\n\nKami siap bantu dengan penawaran terbaik. Boleh share kebutuhannya? 🙏`,
-    msg: `Halo ${lead.nama}! 😊\n\nTerima kasih sudah mengirim pesan ke kami. Kami mau pastikan pertanyaan Anda sudah terjawab dengan baik.\n\nAda yang bisa kami bantu lebih lanjut untuk ${lead.perusahaan}? Kami ada promo khusus minggu ini!`,
-    rfq: `Yth. Bapak/Ibu ${lead.nama},\n\nTerima kasih atas permintaan/booking yang sudah Anda kirimkan. Kami sangat menghargai kepercayaan Anda!\n\nBerikut kami siapkan penawaran terbaik sesuai kebutuhan yang diminta. Bisa kami diskusikan lebih lanjut via WA ini? 📋`,
-    profil: `Halo ${lead.nama} dari ${lead.perusahaan}! 👋\n\nKami perhatikan Anda baru saja mengunjungi halaman kami. Apakah ada hal yang menarik minat Anda?\n\nKami dengan senang hati membantu dan bisa berikan penawaran khusus untuk Anda. 🙌`,
+    wa: `Halo ${lead.nama}! 👋\n\nKami lihat Anda tadi menghubungi kami — apakah ada yang bisa kami bantu atau informasi yang Anda butuhkan?\n\nKami siap membantu sesuai kebutuhan Anda. Boleh ceritakan apa yang sedang dicari? 🙏`,
+    msg: `Halo ${lead.nama}! 😊\n\nTerima kasih sudah menghubungi kami. Kami ingin memastikan pesan Anda sudah kami terima dengan baik.\n\nAda yang bisa kami bantu lebih lanjut? Kami siap memberikan informasi atau penawaran terbaik untuk Anda!`,
+    rfq: `Halo ${lead.nama}! 🙏\n\nTerima kasih atas permintaan/booking yang sudah Anda kirimkan. Kami sangat menghargai kepercayaan Anda!\n\nKami sedang memproses permintaan Anda dan akan segera menghubungi dengan informasi lengkap. Ada yang ingin didiskusikan lebih lanjut sekarang?`,
+    profil: `Halo ${lead.nama}! 👋\n\nKami perhatikan Anda baru saja mengunjungi halaman kami. Apakah ada hal yang menarik minat Anda atau informasi yang ingin Anda ketahui lebih lanjut?\n\nKami dengan senang hati siap membantu! 🙌`,
   };
   return templates[lead.sumber] || templates.wa;
 }
@@ -545,7 +541,7 @@ window.renderLeadRow = function(lead) {
   const srcCfg      = bizCfg().sumber;
   const srcClass    = { wa:'src-wa', msg:'src-msg', rfq:'src-rfq', profil:'src-profil' };
   const aktClass    = { wa:'wa', msg:'msg', rfq:'rfq', profil:'profil' };
-  const aktIcon     = { wa:'ti-brand-whatsapp', msg:'ti-message-2', rfq:'ti-file-invoice', profil:'ti-eye' };
+  const aktIcon     = { wa:'ti-message-circle', msg:'ti-message-2', rfq:'ti-calendar-event', profil:'ti-eye' };
   const statusLabel = { belum:'Belum dihubungi', dihubungi:'Sudah dihubungi', followup:'Follow-up lanjutan', closed:'Closed / Deal' };
   const statusClass = { belum:'', dihubungi:'dihubungi', followup:'followup', closed:'closed' };
   const statusIcon  = { belum:'ti-circle', dihubungi:'ti-circle-check', followup:'ti-refresh', closed:'ti-check-circle-2' };
@@ -672,12 +668,13 @@ function openAiFollowup(id) {
   // Context pills
   const aiScore = AI_SCORES[id] || { score:'WARM', reason:'—' };
   const scoreIcon = { HOT:'🔥', WARM:'🌤', COLD:'🧊' };
+  const srcCfg = bizCfg().sumber;
   document.getElementById('lp-aifollowup-context').innerHTML = `
     <span class="lp-aifollowup-context-pill"><i class="ti ti-user"></i> ${lead.nama}</span>
     <span class="lp-aifollowup-context-pill"><i class="ti ti-building-store"></i> ${lead.perusahaan}</span>
     <span class="lp-aifollowup-context-pill"><i class="ti ti-map-pin"></i> ${lead.kota}</span>
     <span class="lp-aifollowup-context-pill">${scoreIcon[aiScore.score]} AI Score: ${aiScore.score}</span>
-    <span class="lp-aifollowup-context-pill"><i class="ti ti-brand-whatsapp" style="color:#16a34a"></i> ${lead.sumber.toUpperCase()}</span>
+    <span class="lp-aifollowup-context-pill"><i class="ti ti-antenna" style="color:#6b7280"></i> Sumber: ${srcCfg[lead.sumber]?.name || lead.sumber}</span>
   `;
 
   document.getElementById('lp-modal-ai-followup').style.display = 'flex';

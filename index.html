@@ -969,7 +969,7 @@
     <div class="lp-ai-pulse-badge">
       <span class="lp-pulse-dot"></span>
       <i class="ti ti-brain"></i>
-      AI sedang memantau 429 leads aktif
+      AI sedang memantau 429 kontak aktif
     </div>
   </div>
  
@@ -1128,9 +1128,9 @@
       </div>
       <div>
         <div class="lp-buy-badge"><i class="ti ti-sparkles"></i> AI RECOMMENDATION</div>
-        <div class="lp-buy-title">AI menemukan <span class="lp-ai-highlight">24 leads aktif</span> hari ini</div>
+        <div class="lp-buy-title">AI menemukan <span class="lp-ai-highlight">24 kontak aktif</span> hari ini</div>
         <div class="lp-buy-desc">
-          Berdasarkan riwayat interaksi dan perilaku pencarian, AI mengidentifikasi calon pelanggan dengan niat tinggi yang belum pernah menghubungi Anda. Akses sekarang sebelum competitor Anda duluan.
+          Berdasarkan riwayat interaksi dan perilaku kontak, AI mengidentifikasi prospek dengan niat tinggi yang belum sempat Anda follow-up. Hubungi sekarang selagi masih hot.
           <span class="lp-ai-refresh-info"><i class="ti ti-refresh"></i> Diperbarui 5 menit lalu</span>
         </div>
       </div>
@@ -1140,7 +1140,7 @@
         <i class="ti ti-sparkles"></i> Lihat Rekomendasi AI
       </button>
       <button class="lp-btn-buy-ghost" onclick="openHowBuyLeadsWorks()">
-        <i class="ti ti-info-circle"></i> Cara Kerja Buy Leads
+        <i class="ti ti-info-circle"></i> Cara Kerja AI Leads
       </button>
     </div>
   </div>
@@ -1173,8 +1173,8 @@
     <!-- NL Search Pills -->
     <div class="lp-nl-pills-wrap">
       <span class="lp-nl-label"><i class="ti ti-sparkles"></i> Coba tanya AI:</span>
-      <button class="lp-nl-pill" onclick="applyNlPill(this,'leads Jakarta belum dihubungi 3 hari')">
-        <i class="ti ti-map-pin"></i> Belum dihubungi 3 hari
+      <button class="lp-nl-pill" onclick="applyNlPill(this,'belum dihubungi 3 hari')">
+        <i class="ti ti-clock"></i> Belum dihubungi 3 hari
       </button>
       <button class="lp-nl-pill" onclick="applyNlPill(this,'real lead belum follow-up minggu ini')">
         <i class="ti ti-circle-check"></i> Real lead belum follow-up
@@ -1202,10 +1202,10 @@
       <div class="lp-fd-group">
         <div class="lp-fd-label">Sumber</div>
         <div class="lp-fd-checks">
-          <label><input type="checkbox" checked> Klik WA</label>
+          <label><input type="checkbox" checked> Kontak Langsung</label>
           <label><input type="checkbox" checked> Kirim Pesan</label>
-          <label><input type="checkbox" checked> RFQ</label>
-          <label><input type="checkbox" checked> Kunjungi Profil</label>
+          <label><input type="checkbox" checked> Permintaan/Booking</label>
+          <label><input type="checkbox" checked> Kunjungan Profil/Website</label>
         </div>
       </div>
       <div class="lp-fd-group">
@@ -1362,7 +1362,7 @@
     <div class="lp-modal-body">
       <div class="lp-airec-summary">
         <i class="ti ti-sparkles"></i>
-        <span>AI menemukan <strong id="lp-airec-count">0</strong> leads dengan niat beli tinggi yang belum sempat Anda follow-up.</span>
+        <span>AI menemukan <strong id="lp-airec-count">0</strong> kontak dengan potensi tinggi yang belum sempat Anda follow-up.</span>
       </div>
       <div class="lp-airec-list" id="lp-airec-list">
         <!-- dirender oleh JS: openAiRecommendation() -->
@@ -1374,11 +1374,11 @@
   </div>
 </div>
  
-<!-- Modal: Cara Kerja Buy Leads (AREA 3) -->
+<!-- Modal: Cara Kerja AI Leads (AREA 3) -->
 <div id="lp-modal-howit" class="lp-modal-overlay" style="display:none">
   <div class="lp-modal">
     <div class="lp-modal-header">
-      <div class="lp-modal-title"><i class="ti ti-info-circle" style="color:var(--red)"></i> Cara Kerja Buy Leads</div>
+      <div class="lp-modal-title"><i class="ti ti-info-circle" style="color:var(--red)"></i> Cara Kerja AI Leads</div>
       <button class="lp-modal-close" onclick="closeHowBuyLeadsWorks()"><i class="ti ti-x"></i></button>
     </div>
     <div class="lp-modal-body">
@@ -1386,35 +1386,35 @@
         <div class="lp-howit-step">
           <div class="lp-howit-num">1</div>
           <div class="lp-howit-text">
-            <div class="lp-howit-title">AI memantau aktivitas leads secara real-time</div>
-            <div class="lp-howit-desc">Klik WA, pesan masuk, permintaan/booking, dan kunjungan profil dianalisis otomatis untuk menilai niat tiap prospek.</div>
+            <div class="lp-howit-title">AI memantau semua interaksi kontak secara real-time</div>
+            <div class="lp-howit-desc">Kontak langsung, pesan masuk, permintaan/booking, dan kunjungan profil dianalisis otomatis untuk menilai niat setiap prospek.</div>
           </div>
         </div>
         <div class="lp-howit-step">
           <div class="lp-howit-num">2</div>
           <div class="lp-howit-text">
             <div class="lp-howit-title">AI memberi skor HOT / WARM / COLD</div>
-            <div class="lp-howit-desc">Setiap lead diberi skor berdasarkan kecocokan produk/layanan, kecepatan respons, dan riwayat interaksi serupa.</div>
+            <div class="lp-howit-desc">Setiap kontak diberi skor berdasarkan kecocokan produk/layanan, kecepatan respons, dan riwayat interaksi serupa.</div>
           </div>
         </div>
         <div class="lp-howit-step">
           <div class="lp-howit-num">3</div>
           <div class="lp-howit-text">
-            <div class="lp-howit-title">Leads bernilai tinggi direkomendasikan ke Anda</div>
-            <div class="lp-howit-desc">Lead dengan skor tertinggi muncul di banner "Rekomendasi AI" agar Anda bisa follow-up lebih dulu sebelum kompetitor.</div>
+            <div class="lp-howit-title">Kontak prioritas direkomendasikan ke Anda</div>
+            <div class="lp-howit-desc">Kontak dengan skor tertinggi muncul di banner "Rekomendasi AI" agar Anda bisa follow-up lebih dulu.</div>
           </div>
         </div>
         <div class="lp-howit-step">
           <div class="lp-howit-num">4</div>
           <div class="lp-howit-text">
-            <div class="lp-howit-title">Gunakan token untuk membuka kontak lengkap</div>
-            <div class="lp-howit-desc">Token gratis atau berbayar digunakan untuk mengakses detail kontak leads baru yang belum pernah Anda hubungi.</div>
+            <div class="lp-howit-title">AI menyusun pesan follow-up yang dipersonalisasi</div>
+            <div class="lp-howit-desc">Dengan satu klik, AI membuat draft pesan follow-up sesuai konteks kontak — nama, sumber interaksi, dan skor lead — siap Anda edit dan kirim.</div>
           </div>
         </div>
       </div>
       <div class="lp-howit-note">
         <i class="ti ti-bulb"></i>
-        <span>Tips: leads dengan skor 🔥 HOT punya kemungkinan tertinggi untuk merespons dalam 1 jam pertama — prioritaskan follow-up secepatnya.</span>
+        <span>Tips: kontak dengan skor 🔥 HOT punya kemungkinan tertinggi untuk merespons dalam 1 jam pertama — prioritaskan follow-up secepatnya.</span>
       </div>
     </div>
     <div class="lp-modal-footer">
