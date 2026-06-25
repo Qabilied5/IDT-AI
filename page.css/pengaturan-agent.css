@@ -1172,3 +1172,10 @@
 .ap-th-row, .ap-row {
     grid-template-columns: 22px 160px 120px 90px 140px 100px 70px 72px;
 }
+
+/* PGTRN AGNT */
+.pa-nav-item .pa-nav-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}

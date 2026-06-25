@@ -429,7 +429,13 @@
     btnDetail.title   = 'Lihat detail';
     btnDetail.className = 'ac-modal-close';
     btnDetail.style.cssText = 'background:var(--gray-100);color:var(--gray-600);font-size:12px';
-    btnDetail.innerHTML = '<i class="ti ti-info-circle"></i>';
+    btnDetail.innerHTML = `
+  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <circle cx="12" cy="12" r="10"/>
+    <line x1="12" y1="8" x2="12" y2="8"/>
+    <line x1="12" y1="12" x2="12" y2="16"/>
+  </svg>
+`;
     btnDetail.addEventListener('click', function(e){
       e.stopPropagation();
       var nameEl  = item.querySelector('.ac-live-name');
@@ -447,7 +453,12 @@
     btnTransfer.title   = 'Transfer ke agen';
     btnTransfer.className = 'ac-modal-close';
     btnTransfer.style.cssText = 'background:var(--amber-bg);color:var(--amber);font-size:12px';
-    btnTransfer.innerHTML = '<i class="ti ti-transfer"></i>';
+    btnTransfer.innerHTML = `
+  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M7 16V8m0 0L4 11m3-3l3 3"/>
+    <path d="M17 8v8m0 0l3-3m-3 3l-3-3"/>
+  </svg>
+`;
     btnTransfer.addEventListener('click', function(e){
       e.stopPropagation();
       var name = (item.querySelector('.ac-live-name') || {}).textContent || '';
@@ -462,7 +473,11 @@
     btnEnd.title   = 'Akhiri panggilan';
     btnEnd.className = 'ac-modal-close';
     btnEnd.style.cssText = 'background:var(--red-light);color:var(--red);font-size:12px';
-    btnEnd.innerHTML = '<i class="ti ti-phone-off"></i>';
+    btnEnd.innerHTML = `
+  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M3 5.5C3 14.06 9.94 21 18.5 21a1 1 0 0 0 1-1v-3a1 1 0 0 0-.88-1A12.3 12.3 0 0 1 15 15.16a1 1 0 0 0-1 .29l-1.5 1.5a14.2 14.2 0 0 1-5.45-5.45l1.5-1.5a1 1 0 0 0 .29-1A12.3 12.3 0 0 1 8 5.88 1 1 0 0 0 7 5H4a1 1 0 0 0-1 .5z"/>
+  </svg>
+`;
     btnEnd.addEventListener('click', function(e){
       e.stopPropagation();
       var name = (item.querySelector('.ac-live-name') || {}).textContent || '';
@@ -585,7 +600,11 @@
         var playBtn = document.createElement('button');
         playBtn.className = 'ac-log-play';
         playBtn.title = 'Putar rekaman';
-        playBtn.innerHTML = '<i class="ti ti-player-play"></i>';
+        playBtn.innerHTML = `
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <polygon points="6,4 20,12 6,20"/>
+          </svg>
+        `;
         playBtn.addEventListener('click', function(e){
           e.stopPropagation();
           var name = (item.querySelector('.ac-log-name') || {}).textContent || '';
@@ -890,21 +909,21 @@
     var existing = document.querySelector('.ac-inbound-alert');
     if (existing) existing.remove();
 
-    var alert = document.createElement('div');
-    alert.className = 'ac-inbound-alert';
-    alert.innerHTML = '<div class="ac-inbound-header">'
-        + '<div class="ac-inbound-icon"><i class="ti ti-phone-incoming"></i></div>'
-        + '<div>'
-          + '<div class="ac-inbound-name">' + pick.name + '</div>'
-          + '<div class="ac-inbound-sub"><i class="ti ti-phone"></i> ' + pick.phone + ' · Inbound</div>'
-        + '</div>'
-      + '</div>'
-      + '<div class="ac-inbound-btns">'
-        + '<button class="answer" onclick="acAnswerInbound(this,\'' + pick.name.replace(/'/g,"\\'") + '\')"><i class="ti ti-phone"></i> Angkat</button>'
-        + '<button class="reject" onclick="acRejectInbound(this,\'' + pick.name.replace(/'/g,"\\'") + '\')"><i class="ti ti-phone-off"></i> Tolak</button>'
-      + '</div>';
+    // var alert = document.createElement('div');
+    // alert.className = 'ac-inbound-alert';
+    // alert.innerHTML = '<div class="ac-inbound-header">'
+    //     + '<div class="ac-inbound-icon"><i class="ti ti-phone-incoming"></i></div>'
+    //     + '<div>'
+    //       + '<div class="ac-inbound-name">' + pick.name + '</div>'
+    //       + '<div class="ac-inbound-sub"><i class="ti ti-phone"></i> ' + pick.phone + ' · Inbound</div>'
+    //     + '</div>'
+    //   + '</div>'
+    //   + '<div class="ac-inbound-btns">'
+    //     + '<button class="answer" onclick="acAnswerInbound(this,\'' + pick.name.replace(/'/g,"\\'") + '\')"><i class="ti ti-phone"></i> Angkat</button>'
+    //     + '<button class="reject" onclick="acRejectInbound(this,\'' + pick.name.replace(/'/g,"\\'") + '\')"><i class="ti ti-phone-off"></i> Tolak</button>'
+    //   + '</div>';
 
-    document.body.appendChild(alert);
+    // document.body.appendChild(alert);
 
     // Auto-dismiss after 15s
     _simulInbound = setTimeout(function(){

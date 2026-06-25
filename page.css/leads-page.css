@@ -284,6 +284,8 @@
   transition: opacity .15s;
   font-family: inherit;
   margin-right: auto;
+
+  min-width: 100px;
 }
 .lp-btn-ai-followup:hover { opacity: .9; }
 
@@ -1080,6 +1082,8 @@
   gap: 5px;
   white-space: nowrap;
   transition: opacity .15s;
+
+  min-width: 100px;
 }
 .lp-btn-wa:hover { opacity: .85; }
 .lp-btn-more {

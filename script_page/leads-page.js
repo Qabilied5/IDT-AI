@@ -615,13 +615,21 @@ window.renderLeadRow = function(lead) {
           <i class="ti ti-brand-whatsapp"></i> Hubungi WA
         </button>
         <button class="lp-btn-more" onclick="openLeadModal(${lead.id})">
-          <i class="ti ti-dots-vertical"></i>
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <circle cx="12" cy="5" r="2"/>
+            <circle cx="12" cy="12" r="2"/>
+            <circle cx="12" cy="19" r="2"/>
+          </svg>
         </button>
       </div>
       <!-- Area 7 -->
+    
+      <div class="lp-aksi-row">
       <button class="lp-btn-ai-followup" onclick="openAiFollowup(${lead.id})">
         <i class="ti ti-brain"></i> Follow-up AI
       </button>
+      <button class="lp-btn-more" style="background-color: transparent; border-color: transparent;"> </button>
+      </div>
     </div>
 
   </div>`;
