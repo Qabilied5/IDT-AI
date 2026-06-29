@@ -280,12 +280,7 @@ function plRenderFlowBar() {
     const iconVBox = iconData ? iconData.viewBox : '0 0 24 24';
     const bg      = plColorToBg(s.color);
     const isWon   = (s.key === 'won') || (idx === plStages.length - 1 && s.key !== 'prospek');
-    const wonBadge = isWon ? `
-      <div class="pl-flow-won-badge">
-        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M5 13l4 4L19 7"/>
-        </svg>
-      </div>` : '';
+    const wonBadge = isWon ? `` : '';
 
     const stageHtml = `
       <div class="pl-flow-stage${isWon ? ' pl-flow-stage-won' : ''}" data-stage="${plEsc(s.key)}">
@@ -315,6 +310,12 @@ function plRenderColumns() {
   board.innerHTML = plStages.map(s => `
       <div class="pl-col" data-stage="${plEsc(s.key)}">
         <div class="pl-col-head">
+          <div class="pl-col-drag-handle" title="Drag untuk ubah urutan stage" onmousedown="plStartColDrag(event,'${plEsc(s.key)}')">
+            <svg width="20" height="8" viewBox="0 0 20 8" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <rect y="0"   width="20" height="1.8" rx="0.9" fill="currentColor"/>
+              <rect y="3.1" width="20" height="1.8" rx="0.9" fill="currentColor"/>
+            </svg>
+          </div>
           <div class="pl-col-title-row">
             <div class="pl-col-dot" style="background:${plEsc(s.color)}"></div>
             <div class="pl-col-name">${plEsc(s.label)}</div>
@@ -962,7 +963,13 @@ function plRebuildBoard() {
       const recurringTag = d.recurring ? `<span class="pl-tag pl-tag-recurring">Recurring</span>` : '';
 
       return `
-        <div class="pl-card" data-stage="${stage}" data-id="${d.id}" onclick="openDealDrawer(${d.id})">
+        <div class="pl-card" data-stage="${stage}" data-id="${d.id}" onclick="openDealDrawer(${d.id})" draggable="false">
+          <div class="pl-drag-handle" title="Drag untuk pindah stage" onmousedown="plStartDrag(event,${d.id})">
+            <svg width="16" height="10" viewBox="0 0 16 10" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <rect y="0" width="16" height="1.8" rx="0.9" fill="currentColor"/>
+              <rect y="4.1" width="16" height="1.8" rx="0.9" fill="currentColor"/>
+            </svg>
+          </div>
           <div class="pl-card-top">
             <div class="pl-card-company">${d.company}</div>
             <button class="pl-card-menu" onclick="openCardMenu(event,${d.id})" title="Opsi">
@@ -992,6 +999,252 @@ function plRebuildBoard() {
   plUpdateFlow();
   setTimeout(plUpdateScrollBtns, 50);
 }
+
+// ══ DRAG & DROP ENGINE ═══════════════════════════════════════
+// Drag state
+let plDrag = {
+  active:   false,
+  dealId:   null,
+  ghost:    null,        // clone element following cursor
+  srcStage: null,
+  overStage: null,
+  offX: 0, offY: 0,     // cursor offset inside card
+};
+
+/* Called on mousedown of the drag handle */
+function plStartDrag(e, dealId) {
+  e.stopPropagation();   // don't open drawer
+  e.preventDefault();
+
+  const card = e.currentTarget.closest('.pl-card');
+  if (!card) return;
+
+  const d     = plDeals.find(x => x.id === dealId);
+  if (!d) return;
+
+  const rect  = card.getBoundingClientRect();
+  plDrag.active   = true;
+  plDrag.dealId   = dealId;
+  plDrag.srcStage = d.stage;
+  plDrag.overStage = d.stage;
+  plDrag.offX     = e.clientX - rect.left;
+  plDrag.offY     = e.clientY - rect.top;
+
+  // Build ghost (visual clone)
+  const ghost = card.cloneNode(true);
+  ghost.classList.add('pl-card-ghost');
+  ghost.style.width  = rect.width + 'px';
+  ghost.style.left   = (e.clientX - plDrag.offX) + 'px';
+  ghost.style.top    = (e.clientY - plDrag.offY) + 'px';
+  document.body.appendChild(ghost);
+  plDrag.ghost = ghost;
+
+  // Mark original card as dragging (semi-transparent)
+  card.classList.add('pl-card-is-dragging');
+
+  // Highlight drop zones
+  document.querySelectorAll('.pl-cards').forEach(col => col.classList.add('pl-drop-zone'));
+
+  document.addEventListener('mousemove', plOnDragMove);
+  document.addEventListener('mouseup',   plOnDragEnd);
+}
+
+function plOnDragMove(e) {
+  if (!plDrag.active) return;
+
+  // Move ghost
+  plDrag.ghost.style.left = (e.clientX - plDrag.offX) + 'px';
+  plDrag.ghost.style.top  = (e.clientY - plDrag.offY) + 'px';
+
+  // Detect which column the cursor is over
+  plDrag.ghost.style.pointerEvents = 'none';
+  const target = document.elementFromPoint(e.clientX, e.clientY);
+  plDrag.ghost.style.pointerEvents = '';
+
+  const col = target ? target.closest('.pl-col[data-stage]') : null;
+  const newStage = col ? col.dataset.stage : null;
+
+  // Update column highlight
+  document.querySelectorAll('.pl-col[data-stage]').forEach(c => {
+    c.classList.toggle('pl-drop-active', c.dataset.stage === newStage);
+  });
+  plDrag.overStage = newStage;
+}
+
+function plOnDragEnd(e) {
+  if (!plDrag.active) return;
+
+  document.removeEventListener('mousemove', plOnDragMove);
+  document.removeEventListener('mouseup',   plOnDragEnd);
+
+  const destStage = plDrag.overStage;
+  const d         = plDeals.find(x => x.id === plDrag.dealId);
+
+  if (d && destStage && destStage !== d.stage) {
+    const oldLabel = plStages.find(s => s.key === d.stage)?.label || d.stage;
+    const newLabel = plStages.find(s => s.key === destStage)?.label || destStage;
+    d.stage = destStage;
+    d.activity.unshift({
+      text: `Dipindahkan dari ${oldLabel} ke ${newLabel}`,
+      time: 'Baru saja',
+      color: 'var(--green)',
+    });
+    plRebuildBoard();
+    plUpdateSummary();
+    plUpdateFlow();
+  }
+
+  // Clean up ghost & states
+  if (plDrag.ghost) { plDrag.ghost.remove(); plDrag.ghost = null; }
+  document.querySelectorAll('.pl-card-is-dragging').forEach(c => c.classList.remove('pl-card-is-dragging'));
+  document.querySelectorAll('.pl-drop-zone').forEach(c => c.classList.remove('pl-drop-zone'));
+  document.querySelectorAll('.pl-drop-active').forEach(c => c.classList.remove('pl-drop-active'));
+
+  plDrag.active   = false;
+  plDrag.dealId   = null;
+  plDrag.srcStage = null;
+  plDrag.overStage = null;
+}
+// ═════════════════════════════════════════════════════════════
+
+// ══ COLUMN DRAG ENGINE ═══════════════════════════════════════
+// Reorder stages by dragging the column header handle
+let plColDrag = {
+  active:    false,
+  stageKey:  null,
+  ghost:     null,
+  srcIndex:  -1,
+  dropKey:   null,   // key of the column being hovered over
+  dropSide:  null,   // 'before' | 'after'
+  offX: 0, offY: 0,
+};
+
+function plStartColDrag(e, stageKey) {
+  e.stopPropagation();
+  e.preventDefault();
+
+  const col = e.currentTarget.closest('.pl-col[data-stage]');
+  if (!col) return;
+
+  const srcIndex = plStages.findIndex(s => s.key === stageKey);
+  if (srcIndex === -1) return;
+
+  const rect = col.getBoundingClientRect();
+
+  plColDrag.active      = true;
+  plColDrag.stageKey    = stageKey;
+  plColDrag.srcIndex    = srcIndex;
+  plColDrag.dropKey     = null;
+  plColDrag.dropSide    = null;
+  plColDrag.offX        = e.clientX - rect.left;
+  plColDrag.offY        = e.clientY - rect.top;
+
+  // Ghost: shallow visual clone of the column header
+  const ghost = document.createElement('div');
+  ghost.className = 'pl-col-ghost';
+  ghost.style.width  = rect.width + 'px';
+  ghost.style.height = rect.height + 'px';
+  ghost.style.left   = (e.clientX - plColDrag.offX) + 'px';
+  ghost.style.top    = (e.clientY - plColDrag.offY) + 'px';
+
+  // Fill ghost with column header content only
+  const stageObj = plStages[srcIndex];
+  ghost.innerHTML = `
+    <div style="padding:10px 14px;display:flex;flex-direction:column;gap:6px;">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div style="width:9px;height:9px;border-radius:50%;background:${stageObj.color};flex-shrink:0"></div>
+        <div style="font-size:12px;font-weight:700;color:var(--gray-800);flex:1">${plEsc(stageObj.label)}</div>
+        <div style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:100px;background:var(--gray-100);color:var(--gray-600)">${plDeals.filter(d=>d.stage===stageObj.key).length}</div>
+      </div>
+      <div style="font-size:11px;font-weight:600;color:var(--gray-600)">${plFmt(plDeals.filter(d=>d.stage===stageObj.key).reduce((s,d)=>s+d.value,0))}</div>
+    </div>`;
+
+  document.body.appendChild(ghost);
+  plColDrag.ghost = ghost;
+
+  // Dim the source column
+  col.classList.add('pl-col-is-dragging');
+
+  document.addEventListener('mousemove', plOnColDragMove);
+  document.addEventListener('mouseup',   plOnColDragEnd);
+}
+
+function plOnColDragMove(e) {
+  if (!plColDrag.active) return;
+
+  // Move ghost
+  plColDrag.ghost.style.left = (e.clientX - plColDrag.offX) + 'px';
+  plColDrag.ghost.style.top  = (e.clientY - plColDrag.offY) + 'px';
+
+  // Hit-test under ghost
+  plColDrag.ghost.style.pointerEvents = 'none';
+  const target = document.elementFromPoint(e.clientX, e.clientY);
+  plColDrag.ghost.style.pointerEvents = '';
+
+  const overCol = target ? target.closest('.pl-col[data-stage]:not(.pl-col-addstage)') : null;
+  const overKey = overCol ? overCol.dataset.stage : null;
+
+  // Clear all indicators
+  document.querySelectorAll('.pl-col[data-stage]').forEach(c =>
+    c.classList.remove('pl-col-drop-before', 'pl-col-drop-after')
+  );
+
+  // Reset drop target
+  plColDrag.dropKey  = null;
+  plColDrag.dropSide = null;
+
+  if (overCol && overKey && overKey !== plColDrag.stageKey) {
+    const r    = overCol.getBoundingClientRect();
+    const side = e.clientX < r.left + r.width / 2 ? 'before' : 'after';
+    overCol.classList.add(side === 'before' ? 'pl-col-drop-before' : 'pl-col-drop-after');
+    plColDrag.dropKey  = overKey;
+    plColDrag.dropSide = side;
+  }
+}
+
+function plOnColDragEnd(e) {
+  if (!plColDrag.active) return;
+
+  document.removeEventListener('mousemove', plOnColDragMove);
+  document.removeEventListener('mouseup',   plOnColDragEnd);
+
+  const { stageKey, dropKey, dropSide } = plColDrag;
+
+  if (dropKey && dropSide) {
+    const src     = plStages.findIndex(s => s.key === stageKey);
+    const refIdx  = plStages.findIndex(s => s.key === dropKey);
+
+    if (src !== -1 && refIdx !== -1) {
+      // Remove the dragged stage first
+      const [moved] = plStages.splice(src, 1);
+
+      // Recalculate refIdx after removal
+      const newRef = plStages.findIndex(s => s.key === dropKey);
+      const insertAt = dropSide === 'before' ? newRef : newRef + 1;
+
+      plStages.splice(insertAt, 0, moved);
+      plSyncStageArrays();
+      plRenderColumns();
+      plRenderFlowBar();
+      plRebuildBoard();
+      plUpdateSummary();
+      plUpdateFlow();
+    }
+  }
+
+  // Cleanup
+  if (plColDrag.ghost) { plColDrag.ghost.remove(); plColDrag.ghost = null; }
+  document.querySelectorAll('.pl-col-is-dragging').forEach(c => c.classList.remove('pl-col-is-dragging'));
+  document.querySelectorAll('.pl-col-drop-before, .pl-col-drop-after').forEach(c =>
+    c.classList.remove('pl-col-drop-before', 'pl-col-drop-after')
+  );
+
+  plColDrag.active   = false;
+  plColDrag.stageKey = null;
+  plColDrag.dropKey  = null;
+  plColDrag.dropSide = null;
+}
+// ═════════════════════════════════════════════════════════════
 
 // ── Event Listeners ───────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
