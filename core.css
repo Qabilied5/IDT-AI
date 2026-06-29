@@ -21,6 +21,7 @@
   --amber-bg: #fff7e6;
   --font: "DM Sans", sans-serif;
 }
+
 body {
   font-family: var(--font);
   background: var(--gray-50);

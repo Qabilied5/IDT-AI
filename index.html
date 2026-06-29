@@ -14,6 +14,7 @@
   <link rel="stylesheet" href="page.css/pengaturan-agent.css">
   <link rel="stylesheet" href="page.css/knowledge-base.css">
   <link rel="stylesheet" href="page.css/aicall.css">
+  <link rel="stylesheet" href="page.css/pipeline.css">
   <link rel="stylesheet" href="desktopOnly.css">
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
@@ -155,6 +156,32 @@
       </span>
       <span class="sb-label">Appointment</span>
     </a>
+
+<a class="sb-item" href="#">
+  <span class="sb-icon" aria-hidden="true">
+    <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto-start-reverse">
+          <path d="M2 1L8 5L2 9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </marker>
+      </defs>
+      <!-- Source node -->
+      <circle cx="3.5" cy="10" r="2" fill="currentColor" fill-opacity=".5" stroke="currentColor" stroke-width="1.4"/>
+      <!-- Arrow to center -->
+      <line x1="5.6" y1="10" x2="8.2" y2="10" stroke="currentColor" stroke-width="1.3" marker-end="url(#arr)" stroke-linecap="round"/>
+      <!-- Center process box -->
+      <rect x="8.5" y="7" width="5" height="6" rx="1.2" stroke="currentColor" stroke-width="1.4" fill="currentColor" fill-opacity=".08"/>
+      <line x1="8.5" y1="9.5" x2="13.5" y2="9.5" stroke="currentColor" stroke-width="1" opacity=".5"/>
+      <!-- Arrows to outputs -->
+      <line x1="13.7" y1="8.5" x2="15.8" y2="6.5" stroke="currentColor" stroke-width="1.3" marker-end="url(#arr)" stroke-linecap="round"/>
+      <line x1="13.7" y1="11.5" x2="15.8" y2="13.5" stroke="currentColor" stroke-width="1.3" marker-end="url(#arr)" stroke-linecap="round"/>
+      <!-- Output nodes -->
+      <circle cx="17" cy="5.5" r="1.8" stroke="currentColor" stroke-width="1.4" fill="currentColor" fill-opacity=".6"/>
+      <circle cx="17" cy="14.5" r="1.8" stroke="currentColor" stroke-width="1.4" fill="currentColor" fill-opacity=".35"/>
+    </svg>
+  </span>
+  <span class="sb-label">Pipeline</span>
+</a>
 
     <div class="sb-section">Konfigurasi</div>
     <a class="sb-item" href="#">
@@ -2330,6 +2357,837 @@
 <!-- Ending appointment -->
 
 
+<!-- Pipeline Page -->
+<div id="pipeline-page" style="display: none;">
+
+  <!-- Topbar Pipeline -->
+  <div class="pl-topbar">
+    <div class="pl-topbar-left">
+      <div class="pl-page-title">Pipeline</div>
+      <div class="pl-summary-pills">
+        <span class="pl-sum-pill total">
+          <i class="ti ti-layers-intersect"></i>
+          <span id="pl-total-deals">14 Deal</span>
+        </span>
+        <span class="pl-sum-pill revenue">
+          <i class="ti ti-trending-up"></i>
+          <span id="pl-total-value">Rp 847 jt pipeline</span>
+        </span>
+        <span class="pl-sum-pill renewal">
+          <i class="ti ti-refresh"></i>
+          <span id="pl-renewal-count">3 renewal mendekati</span>
+        </span>
+      </div>
+    </div>
+    <div class="pl-topbar-right">
+      <div class="pl-search-wrap">
+        <i class="ti ti-search"></i>
+        <input type="text" id="pl-search-input" placeholder="Cari deal atau kontak..." />
+      </div>
+      <select class="pl-filter-select" id="pl-filter-pic">
+        <option value="">Semua PIC</option>
+        <option value="BW">Budi W.</option>
+        <option value="RS">Rina S.</option>
+        <option value="DK">Dika K.</option>
+      </select>
+      <select class="pl-filter-select" id="pl-filter-type">
+        <option value="">Semua Tipe</option>
+        <option value="baru">Baru</option>
+        <option value="upsell">Upsell</option>
+        <option value="renewal">Renewal</option>
+      </select>
+      <button class="pl-btn pl-btn-primary" id="pl-add-deal-btn">
+        <i class="ti ti-plus"></i> Tambah Deal
+      </button>
+    </div>
+  </div>
+
+  <!-- Pipeline Flow -->
+  <div class="pl-flow">
+    <div class="pl-flow-track">
+
+      <div class="pl-flow-stage" data-stage="prospek">
+        <div class="pl-flow-icon" style="--stage-color:#818cf8;--stage-bg:#eef2ff">
+          <i class="ti ti-user-search"></i>
+        </div>
+        <div class="pl-flow-info">
+          <div class="pl-flow-label">Prospek</div>
+          <div class="pl-flow-count" id="pf-count-prospek">3 deal</div>
+        </div>
+      </div>
+
+      <div class="pl-flow-arrow">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <path d="M5 10h10M12 7l3 3-3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+
+      <div class="pl-flow-stage" data-stage="kualifikasi">
+        <div class="pl-flow-icon" style="--stage-color:#60a5fa;--stage-bg:#eff6ff">
+          <i class="ti ti-filter-check"></i>
+        </div>
+        <div class="pl-flow-info">
+          <div class="pl-flow-label">Kualifikasi</div>
+          <div class="pl-flow-count" id="pf-count-kualifikasi">2 deal</div>
+        </div>
+      </div>
+
+      <div class="pl-flow-arrow">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <path d="M5 10h10M12 7l3 3-3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+
+      <div class="pl-flow-stage" data-stage="penawaran">
+        <div class="pl-flow-icon" style="--stage-color:#f59e0b;--stage-bg:#fffbeb">
+          <i class="ti ti-file-invoice"></i>
+        </div>
+        <div class="pl-flow-info">
+          <div class="pl-flow-label">Penawaran</div>
+          <div class="pl-flow-count" id="pf-count-penawaran">2 deal</div>
+        </div>
+      </div>
+
+      <div class="pl-flow-arrow">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <path d="M5 10h10M12 7l3 3-3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+
+      <div class="pl-flow-stage" data-stage="negosiasi">
+        <div class="pl-flow-icon" style="--stage-color:#f97316;--stage-bg:#fff7ed">
+          <i class="ti ti-message-bolt"></i>
+        </div>
+        <div class="pl-flow-info">
+          <div class="pl-flow-label">Negosiasi</div>
+          <div class="pl-flow-count" id="pf-count-negosiasi">2 deal</div>
+        </div>
+      </div>
+
+      <div class="pl-flow-arrow">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <path d="M5 10h10M12 7l3 3-3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+
+      <div class="pl-flow-stage" data-stage="closing">
+        <div class="pl-flow-icon" style="--stage-color:#ef4444;--stage-bg:#fef2f2">
+          <i class="ti ti-signature"></i>
+        </div>
+        <div class="pl-flow-info">
+          <div class="pl-flow-label">Closing</div>
+          <div class="pl-flow-count" id="pf-count-closing">2 deal</div>
+        </div>
+      </div>
+
+      <div class="pl-flow-arrow">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <path d="M5 10h10M12 7l3 3-3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+
+      <div class="pl-flow-stage pl-flow-stage-won" data-stage="won">
+        <div class="pl-flow-icon" style="--stage-color:#16a34a;--stage-bg:#f0fdf4">
+          <i class="ti ti-trophy"></i>
+        </div>
+        <div class="pl-flow-info">
+          <div class="pl-flow-label">Won / Aktif</div>
+          <div class="pl-flow-count" id="pf-count-won">3 deal</div>
+        </div>
+        <div class="pl-flow-won-badge">
+          <i class="ti ti-check"></i>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Board + Scroll Arrows -->
+  <div class="pl-board-outer">
+
+    <!-- Arrow kiri -->
+    <button class="pl-scroll-btn pl-scroll-left" id="pl-scroll-left" onclick="plScrollBoard(-1)" aria-label="Geser kiri">
+      <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" width="20" height="20" aria-hidden="true">
+        <path d="M12 5L7 10L12 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+
+    <!-- Kanban Board -->
+    <div class="pl-board-wrap" id="pl-board-wrap">
+      <div class="pl-board" id="pl-board">
+
+      <!-- Col 1: Prospek -->
+      <div class="pl-col" data-stage="prospek">
+        <div class="pl-col-head">
+          <div class="pl-col-title-row">
+            <div class="pl-col-dot" style="background:#818cf8"></div>
+            <div class="pl-col-name">Prospek</div>
+            <div class="pl-col-count" id="pl-count-prospek">3</div>
+          </div>
+          <div class="pl-col-meta">
+            <div class="pl-col-value" id="pl-val-prospek">Rp 185 jt</div>
+            <button class="pl-col-add" title="Tambah deal di Prospek" onclick="openAddDeal('prospek')">
+              <i class="ti ti-plus"></i>
+            </button>
+          </div>
+        </div>
+        <div class="pl-cards" id="pl-cards-prospek">
+
+          <div class="pl-card" data-stage="prospek" data-id="1" onclick="openDealDrawer(1)">
+            <div class="pl-card-top">
+              <div class="pl-card-company">PT Dinamika Makmur</div>
+              <button class="pl-card-menu" onclick="openCardMenu(event,1)" title="Opsi">
+                <i class="ti ti-dots"></i>
+              </button>
+            </div>
+            <div class="pl-card-product">Jasa Konsultasi ERP — SAP B1</div>
+            <div class="pl-card-value">Rp 85.000.000</div>
+            <div class="pl-card-tags">
+              <span class="pl-tag pl-tag-new">Baru</span>
+              <span class="pl-tag pl-tag-channel">WhatsApp</span>
+            </div>
+            <div class="pl-card-footer">
+              <div class="pl-card-pic">
+                <div class="pl-pic-avatar" style="background:#818cf8">BW</div>
+                <div class="pl-pic-name">Budi W.</div>
+              </div>
+              <div class="pl-card-date">12 Jun</div>
+            </div>
+          </div>
+
+          <div class="pl-card" data-stage="prospek" data-id="2" onclick="openDealDrawer(2)">
+            <div class="pl-card-top">
+              <div class="pl-card-company">CV Sejahtera Nusantara</div>
+              <button class="pl-card-menu" onclick="openCardMenu(event,2)" title="Opsi">
+                <i class="ti ti-dots"></i>
+              </button>
+            </div>
+            <div class="pl-card-product">Produk: Mesin Packing A200</div>
+            <div class="pl-card-value">Rp 42.000.000</div>
+            <div class="pl-card-tags">
+              <span class="pl-tag pl-tag-new">Baru</span>
+              <span class="pl-tag pl-tag-channel">Instagram</span>
+            </div>
+            <div class="pl-card-footer">
+              <div class="pl-card-pic">
+                <div class="pl-pic-avatar" style="background:#60a5fa">RS</div>
+                <div class="pl-pic-name">Rina S.</div>
+              </div>
+              <div class="pl-card-date">15 Jun</div>
+            </div>
+          </div>
+
+          <div class="pl-card" data-stage="prospek" data-id="3" onclick="openDealDrawer(3)">
+            <div class="pl-card-top">
+              <div class="pl-card-company">UD Berkah Jaya</div>
+              <button class="pl-card-menu" onclick="openCardMenu(event,3)" title="Opsi">
+                <i class="ti ti-dots"></i>
+              </button>
+            </div>
+            <div class="pl-card-product">Spare Part Mesin — Bulk 100 pcs</div>
+            <div class="pl-card-value">Rp 58.000.000</div>
+            <div class="pl-card-tags">
+              <span class="pl-tag pl-tag-upsell">Upsell</span>
+              <span class="pl-tag pl-tag-channel">Shopee</span>
+            </div>
+            <div class="pl-card-footer">
+              <div class="pl-card-pic">
+                <div class="pl-pic-avatar" style="background:#f97316">DK</div>
+                <div class="pl-pic-name">Dika K.</div>
+              </div>
+              <div class="pl-card-date">18 Jun</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Col 2: Kualifikasi -->
+      <div class="pl-col" data-stage="kualifikasi">
+        <div class="pl-col-head">
+          <div class="pl-col-title-row">
+            <div class="pl-col-dot" style="background:#60a5fa"></div>
+            <div class="pl-col-name">Kualifikasi</div>
+            <div class="pl-col-count" id="pl-count-kualifikasi">2</div>
+          </div>
+          <div class="pl-col-meta">
+            <div class="pl-col-value" id="pl-val-kualifikasi">Rp 134 jt</div>
+            <button class="pl-col-add" title="Tambah deal di Kualifikasi" onclick="openAddDeal('kualifikasi')">
+              <i class="ti ti-plus"></i>
+            </button>
+          </div>
+        </div>
+        <div class="pl-cards" id="pl-cards-kualifikasi">
+
+          <div class="pl-card" data-stage="kualifikasi" data-id="4" onclick="openDealDrawer(4)">
+            <div class="pl-card-top">
+              <div class="pl-card-company">PT Karya Bersama</div>
+              <button class="pl-card-menu" onclick="openCardMenu(event,4)" title="Opsi">
+                <i class="ti ti-dots"></i>
+              </button>
+            </div>
+            <div class="pl-card-product">Jasa Maintenance Tahunan</div>
+            <div class="pl-card-value">Rp 72.000.000</div>
+            <div class="pl-card-tags">
+              <span class="pl-tag pl-tag-new">Baru</span>
+              <span class="pl-tag pl-tag-recurring">Recurring</span>
+              <span class="pl-tag pl-tag-channel">WhatsApp</span>
+            </div>
+            <div class="pl-card-footer">
+              <div class="pl-card-pic">
+                <div class="pl-pic-avatar" style="background:#818cf8">BW</div>
+                <div class="pl-pic-name">Budi W.</div>
+              </div>
+              <div class="pl-card-date">10 Jun</div>
+            </div>
+          </div>
+
+          <div class="pl-card" data-stage="kualifikasi" data-id="5" onclick="openDealDrawer(5)">
+            <div class="pl-card-top">
+              <div class="pl-card-company">Toko Maju Sentosa</div>
+              <button class="pl-card-menu" onclick="openCardMenu(event,5)" title="Opsi">
+                <i class="ti ti-dots"></i>
+              </button>
+            </div>
+            <div class="pl-card-product">Produk: Kemasan Plastik — 500 pcs</div>
+            <div class="pl-card-value">Rp 62.000.000</div>
+            <div class="pl-card-tags">
+              <span class="pl-tag pl-tag-new">Baru</span>
+              <span class="pl-tag pl-tag-channel">Website</span>
+            </div>
+            <div class="pl-card-footer">
+              <div class="pl-card-pic">
+                <div class="pl-pic-avatar" style="background:#60a5fa">RS</div>
+                <div class="pl-pic-name">Rina S.</div>
+              </div>
+              <div class="pl-card-date">17 Jun</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Col 3: Penawaran -->
+      <div class="pl-col" data-stage="penawaran">
+        <div class="pl-col-head">
+          <div class="pl-col-title-row">
+            <div class="pl-col-dot" style="background:var(--amber)"></div>
+            <div class="pl-col-name">Penawaran</div>
+            <div class="pl-col-count" id="pl-count-penawaran">2</div>
+          </div>
+          <div class="pl-col-meta">
+            <div class="pl-col-value" id="pl-val-penawaran">Rp 155 jt</div>
+            <button class="pl-col-add" title="Tambah deal di Penawaran" onclick="openAddDeal('penawaran')">
+              <i class="ti ti-plus"></i>
+            </button>
+          </div>
+        </div>
+        <div class="pl-cards" id="pl-cards-penawaran">
+
+          <div class="pl-card" data-stage="penawaran" data-id="6" onclick="openDealDrawer(6)">
+            <div class="pl-card-top">
+              <div class="pl-card-company">PT Logistik Prima</div>
+              <button class="pl-card-menu" onclick="openCardMenu(event,6)" title="Opsi">
+                <i class="ti ti-dots"></i>
+              </button>
+            </div>
+            <div class="pl-card-product">Produk: Forklift Electric 3T</div>
+            <div class="pl-card-value">Rp 98.000.000</div>
+            <div class="pl-card-tags">
+              <span class="pl-tag pl-tag-new">Baru</span>
+              <span class="pl-tag pl-tag-channel">WhatsApp</span>
+            </div>
+            <div class="pl-card-footer">
+              <div class="pl-card-pic">
+                <div class="pl-pic-avatar" style="background:#f97316">DK</div>
+                <div class="pl-pic-name">Dika K.</div>
+              </div>
+              <div class="pl-card-date">8 Jun</div>
+            </div>
+          </div>
+
+          <div class="pl-card" data-stage="penawaran" data-id="7" onclick="openDealDrawer(7)">
+            <div class="pl-card-top">
+              <div class="pl-card-company">CV Mitra Teknik</div>
+              <button class="pl-card-menu" onclick="openCardMenu(event,7)" title="Opsi">
+                <i class="ti ti-dots"></i>
+              </button>
+            </div>
+            <div class="pl-card-product">Jasa Kalibrasi Alat — Kontrak</div>
+            <div class="pl-card-value">Rp 57.000.000</div>
+            <div class="pl-card-tags">
+              <span class="pl-tag pl-tag-new">Baru</span>
+              <span class="pl-tag pl-tag-recurring">Recurring</span>
+            </div>
+            <div class="pl-card-footer">
+              <div class="pl-card-pic">
+                <div class="pl-pic-avatar" style="background:#818cf8">BW</div>
+                <div class="pl-pic-name">Budi W.</div>
+              </div>
+              <div class="pl-card-date">20 Jun</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Col 4: Negosiasi -->
+      <div class="pl-col" data-stage="negosiasi">
+        <div class="pl-col-head">
+          <div class="pl-col-title-row">
+            <div class="pl-col-dot" style="background:#f97316"></div>
+            <div class="pl-col-name">Negosiasi</div>
+            <div class="pl-col-count" id="pl-count-negosiasi">2</div>
+          </div>
+          <div class="pl-col-meta">
+            <div class="pl-col-value" id="pl-val-negosiasi">Rp 193 jt</div>
+            <button class="pl-col-add" title="Tambah deal di Negosiasi" onclick="openAddDeal('negosiasi')">
+              <i class="ti ti-plus"></i>
+            </button>
+          </div>
+        </div>
+        <div class="pl-cards" id="pl-cards-negosiasi">
+
+          <div class="pl-card" data-stage="negosiasi" data-id="8" onclick="openDealDrawer(8)">
+            <div class="pl-card-top">
+              <div class="pl-card-company">PT Nusantara Abadi Group</div>
+              <button class="pl-card-menu" onclick="openCardMenu(event,8)" title="Opsi">
+                <i class="ti ti-dots"></i>
+              </button>
+            </div>
+            <div class="pl-card-product">Jasa IT Outsourcing — Tahunan</div>
+            <div class="pl-card-value">Rp 120.000.000</div>
+            <div class="pl-card-tags">
+              <span class="pl-tag pl-tag-renewal">Renewal</span>
+              <span class="pl-tag pl-tag-recurring">Recurring</span>
+            </div>
+            <div class="pl-card-footer">
+              <div class="pl-card-pic">
+                <div class="pl-pic-avatar" style="background:#60a5fa">RS</div>
+                <div class="pl-pic-name">Rina S.</div>
+              </div>
+              <div class="pl-card-date">22 Jun</div>
+            </div>
+          </div>
+
+          <div class="pl-card" data-stage="negosiasi" data-id="9" onclick="openDealDrawer(9)">
+            <div class="pl-card-top">
+              <div class="pl-card-company">PT Maju Bersama Tbk</div>
+              <button class="pl-card-menu" onclick="openCardMenu(event,9)" title="Opsi">
+                <i class="ti ti-dots"></i>
+              </button>
+            </div>
+            <div class="pl-card-product">Produk: Conveyor Belt X300</div>
+            <div class="pl-card-value">Rp 73.000.000</div>
+            <div class="pl-card-tags">
+              <span class="pl-tag pl-tag-new">Baru</span>
+              <span class="pl-tag pl-tag-channel">WhatsApp</span>
+            </div>
+            <div class="pl-card-footer">
+              <div class="pl-card-pic">
+                <div class="pl-pic-avatar" style="background:#f97316">DK</div>
+                <div class="pl-pic-name">Dika K.</div>
+              </div>
+              <div class="pl-card-date">23 Jun</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Col 5: Closing -->
+      <div class="pl-col" data-stage="closing">
+        <div class="pl-col-head">
+          <div class="pl-col-title-row">
+            <div class="pl-col-dot" style="background:var(--red)"></div>
+            <div class="pl-col-name">Closing</div>
+            <div class="pl-col-count" id="pl-count-closing">2</div>
+          </div>
+          <div class="pl-col-meta">
+            <div class="pl-col-value" id="pl-val-closing">Rp 180 jt</div>
+            <button class="pl-col-add" title="Tambah deal di Closing" onclick="openAddDeal('closing')">
+              <i class="ti ti-plus"></i>
+            </button>
+          </div>
+        </div>
+        <div class="pl-cards" id="pl-cards-closing">
+
+          <div class="pl-card" data-stage="closing" data-id="10" onclick="openDealDrawer(10)">
+            <div class="pl-card-top">
+              <div class="pl-card-company">PT Sumber Energi</div>
+              <button class="pl-card-menu" onclick="openCardMenu(event,10)" title="Opsi">
+                <i class="ti ti-dots"></i>
+              </button>
+            </div>
+            <div class="pl-card-product">Produk: Solar Panel 10kW Kit</div>
+            <div class="pl-card-value">Rp 112.000.000</div>
+            <div class="pl-card-tags">
+              <span class="pl-tag pl-tag-new">Baru</span>
+              <span class="pl-tag pl-tag-channel">Website</span>
+            </div>
+            <div class="pl-card-footer">
+              <div class="pl-card-pic">
+                <div class="pl-pic-avatar" style="background:#818cf8">BW</div>
+                <div class="pl-pic-name">Budi W.</div>
+              </div>
+              <div class="pl-card-date">24 Jun</div>
+            </div>
+          </div>
+
+          <div class="pl-card" data-stage="closing" data-id="11" onclick="openDealDrawer(11)">
+            <div class="pl-card-top">
+              <div class="pl-card-company">Koperasi Tani Mulya</div>
+              <button class="pl-card-menu" onclick="openCardMenu(event,11)" title="Opsi">
+                <i class="ti ti-dots"></i>
+              </button>
+            </div>
+            <div class="pl-card-product">Jasa Fumigasi — Kontrak Bulanan</div>
+            <div class="pl-card-value">Rp 68.000.000</div>
+            <div class="pl-card-tags">
+              <span class="pl-tag pl-tag-new">Baru</span>
+              <span class="pl-tag pl-tag-recurring">Recurring</span>
+            </div>
+            <div class="pl-card-footer">
+              <div class="pl-card-pic">
+                <div class="pl-pic-avatar" style="background:#60a5fa">RS</div>
+                <div class="pl-pic-name">Rina S.</div>
+              </div>
+              <div class="pl-card-date">25 Jun</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Col 6: Won / Aktif -->
+      <div class="pl-col" data-stage="won">
+        <div class="pl-col-head">
+          <div class="pl-col-title-row">
+            <div class="pl-col-dot" style="background:var(--green)"></div>
+            <div class="pl-col-name">Won / Aktif</div>
+            <div class="pl-col-count" id="pl-count-won">3</div>
+          </div>
+          <div class="pl-col-meta">
+            <div class="pl-col-value" id="pl-val-won">Rp 327 jt</div>
+            <button class="pl-col-add" title="Tambah deal di Won" onclick="openAddDeal('won')">
+              <i class="ti ti-plus"></i>
+            </button>
+          </div>
+        </div>
+        <div class="pl-cards" id="pl-cards-won">
+
+          <!-- Deal sekali-jual: masuk won, berhenti di sini -->
+          <div class="pl-card" data-stage="won" data-id="12" onclick="openDealDrawer(12)">
+            <div class="pl-card-top">
+              <div class="pl-card-company">PT Maju Bersama Tbk</div>
+              <button class="pl-card-menu" onclick="openCardMenu(event,12)" title="Opsi">
+                <i class="ti ti-dots"></i>
+              </button>
+            </div>
+            <div class="pl-card-product">Produk: Conveyor Belt X100 — 5 unit</div>
+            <div class="pl-card-value">Rp 87.500.000</div>
+            <div class="pl-card-tags">
+              <span class="pl-tag pl-tag-new">Baru</span>
+              <span class="pl-tag pl-tag-channel">WhatsApp</span>
+              <!-- Tidak ada tag recurring: deal selesai di sini -->
+            </div>
+            <div class="pl-card-footer">
+              <div class="pl-card-pic">
+                <div class="pl-pic-avatar" style="background:#f97316">DK</div>
+                <div class="pl-pic-name">Dika K.</div>
+              </div>
+              <div class="pl-card-date">20 Jun • Selesai</div>
+            </div>
+            <!-- Tidak ada renewal bar: ini deal sekali-jual -->
+          </div>
+
+          <!-- Deal recurring: sama-sama Won, tapi punya countdown renewal -->
+          <div class="pl-card" data-stage="won" data-id="13" onclick="openDealDrawer(13)">
+            <div class="pl-card-top">
+              <div class="pl-card-company">PT Sumber Abadi</div>
+              <button class="pl-card-menu" onclick="openCardMenu(event,13)" title="Opsi">
+                <i class="ti ti-dots"></i>
+              </button>
+            </div>
+            <div class="pl-card-product">Jasa Pemeliharaan HVAC — Tahunan</div>
+            <div class="pl-card-value">Rp 144.000.000 / thn</div>
+            <div class="pl-card-tags">
+              <span class="pl-tag pl-tag-renewal">Renewal</span>
+              <span class="pl-tag pl-tag-recurring">Recurring</span>
+            </div>
+            <div class="pl-card-footer">
+              <div class="pl-card-pic">
+                <div class="pl-pic-avatar" style="background:#818cf8">BW</div>
+                <div class="pl-pic-name">Budi W.</div>
+              </div>
+              <div class="pl-card-date">Aktif</div>
+            </div>
+            <!-- Renewal countdown — inilah perbedaannya -->
+            <div class="pl-renewal-bar">
+              <div class="pl-renewal-label">
+                <div class="pl-renewal-text">
+                  <i class="ti ti-refresh"></i> Kontrak berakhir
+                </div>
+                <div class="pl-renewal-days warn">32 hari lagi</div>
+              </div>
+              <div class="pl-renewal-progress">
+                <div class="pl-renewal-fill warn" style="width:82%"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="pl-card" data-stage="won" data-id="14" onclick="openDealDrawer(14)">
+            <div class="pl-card-top">
+              <div class="pl-card-company">Apotek Sehat Bersama</div>
+              <button class="pl-card-menu" onclick="openCardMenu(event,14)" title="Opsi">
+                <i class="ti ti-dots"></i>
+              </button>
+            </div>
+            <div class="pl-card-product">Jasa Software Apotek — SaaS Bulanan</div>
+            <div class="pl-card-value">Rp 95.500.000 / thn</div>
+            <div class="pl-card-tags">
+              <span class="pl-tag pl-tag-upsell">Upsell</span>
+              <span class="pl-tag pl-tag-recurring">Recurring</span>
+            </div>
+            <div class="pl-card-footer">
+              <div class="pl-card-pic">
+                <div class="pl-pic-avatar" style="background:#60a5fa">RS</div>
+                <div class="pl-pic-name">Rina S.</div>
+              </div>
+              <div class="pl-card-date">Aktif</div>
+            </div>
+            <div class="pl-renewal-bar">
+              <div class="pl-renewal-label">
+                <div class="pl-renewal-text">
+                  <i class="ti ti-refresh"></i> Kontrak berakhir
+                </div>
+                <div class="pl-renewal-days urgent">11 hari lagi</div>
+              </div>
+              <div class="pl-renewal-progress">
+                <div class="pl-renewal-fill urgent" style="width:97%"></div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </div><!-- /pl-board-wrap -->
+
+    <!-- Arrow kanan -->
+    <button class="pl-scroll-btn pl-scroll-right" id="pl-scroll-right" onclick="plScrollBoard(1)" aria-label="Geser kanan">
+      <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" width="20" height="20" aria-hidden="true">
+        <path d="M8 5L13 10L8 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+
+  </div><!-- /pl-board-outer -->
+
+</div>
+<!-- Ending Pipeline Page -->
+
+
+<!-- ══ MODAL: Tambah / Edit Deal ════════════════════════════════ -->
+<div id="pl-modal-overlay" class="pl-modal-overlay" style="display:none" onclick="if(event.target===this)closeDealModal()">
+  <div class="pl-modal">
+
+    <div class="pl-modal-head">
+      <div class="pl-modal-title">
+        <i class="ti ti-circle-plus"></i>
+        <span id="pl-modal-heading">Tambah Deal Baru</span>
+      </div>
+      <button class="pl-modal-close" onclick="closeDealModal()">
+        <i class="ti ti-x"></i>
+      </button>
+    </div>
+
+    <div class="pl-modal-body">
+
+      <!-- Field standar -->
+      <div class="pl-form-section-title">Informasi Deal</div>
+
+      <div class="pl-field">
+        <label for="pl-f-company">Nama Kontak / Perusahaan</label>
+        <input type="text" id="pl-f-company" placeholder="cth. PT Sumber Makmur" />
+      </div>
+
+      <div class="pl-field">
+        <label for="pl-f-product">Produk / Layanan</label>
+        <input type="text" id="pl-f-product" placeholder="cth. Jasa Maintenance, Mesin Packing X200" />
+      </div>
+
+      <div class="pl-form-row">
+        <div class="pl-field">
+          <label for="pl-f-value">Nilai Deal (Rp)</label>
+          <input type="number" id="pl-f-value" placeholder="0" min="0" />
+        </div>
+        <div class="pl-field">
+          <label for="pl-f-stage">Stage</label>
+          <select id="pl-f-stage">
+            <option value="prospek">Prospek</option>
+            <option value="kualifikasi">Kualifikasi</option>
+            <option value="penawaran">Penawaran</option>
+            <option value="negosiasi">Negosiasi</option>
+            <option value="closing">Closing</option>
+            <option value="won">Won / Aktif</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="pl-form-row">
+        <div class="pl-field">
+          <label for="pl-f-type">Tipe Deal</label>
+          <select id="pl-f-type">
+            <option value="baru">Baru</option>
+            <option value="upsell">Upsell</option>
+            <option value="renewal">Renewal</option>
+          </select>
+        </div>
+        <div class="pl-field">
+          <label for="pl-f-pic">PIC</label>
+          <select id="pl-f-pic">
+            <option value="BW">Budi Wicaksono</option>
+            <option value="RS">Rina Sari</option>
+            <option value="DK">Dika Kusuma</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="pl-field">
+        <label for="pl-f-channel">Channel</label>
+        <select id="pl-f-channel">
+          <option value="wa">WhatsApp</option>
+          <option value="ig">Instagram</option>
+          <option value="shopee">Shopee</option>
+          <option value="web">Website</option>
+          <option value="other">Lainnya</option>
+        </select>
+      </div>
+
+      <div class="pl-form-divider"></div>
+
+      <!-- Toggle recurring — field kondisional -->
+      <div class="pl-toggle-row" id="pl-recurring-toggle" onclick="toggleRecurring()">
+        <div class="pl-toggle-info">
+          <div class="pl-toggle-lbl">Ini kontrak berulang?</div>
+          <div class="pl-toggle-sub">Aktifkan untuk bisnis jasa, SaaS, atau subscription</div>
+        </div>
+        <div class="pl-toggle-sw" id="pl-toggle-sw"></div>
+      </div>
+
+      <!-- Field kondisional: muncul hanya jika toggle aktif -->
+      <div class="pl-recurring-fields" id="pl-recurring-fields">
+        <div class="pl-recurring-title">
+          <i class="ti ti-refresh"></i> Detail Kontrak Berulang
+        </div>
+        <div class="pl-form-row">
+          <div class="pl-field">
+            <label for="pl-f-interval">Interval</label>
+            <select id="pl-f-interval">
+              <option value="monthly">Bulanan</option>
+              <option value="quarterly">Kuartalan</option>
+              <option value="yearly">Tahunan</option>
+            </select>
+          </div>
+          <div class="pl-field">
+            <label for="pl-f-end-date">Tanggal Berakhir Kontrak</label>
+            <input type="date" id="pl-f-end-date" />
+          </div>
+        </div>
+        <div class="pl-toggle-row" id="pl-auto-renewal-toggle" onclick="toggleAutoRenewal()" style="background:var(--white)">
+          <div class="pl-toggle-info">
+            <div class="pl-toggle-lbl">Auto-create renewal deal</div>
+            <div class="pl-toggle-sub">Otomatis buat deal Renewal ke Negosiasi saat mendekati jatuh tempo</div>
+          </div>
+          <div class="pl-toggle-sw" id="pl-auto-renewal-sw"></div>
+        </div>
+        <div class="pl-field">
+          <label for="pl-f-notes">Catatan Kontrak</label>
+          <textarea id="pl-f-notes" rows="2" placeholder="cth. Termasuk 4x kunjungan, SLA 24 jam..."></textarea>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="pl-modal-foot">
+      <button class="pl-btn pl-btn-ghost" onclick="closeDealModal()">Batal</button>
+      <button class="pl-btn pl-btn-primary" onclick="saveDeal()">
+        <i class="ti ti-circle-check"></i> Simpan Deal
+      </button>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ══ DRAWER: Detail Deal ═══════════════════════════════════════ -->
+<div id="pl-drawer-overlay" class="pl-drawer-overlay" style="display:none" onclick="if(event.target===this)closeDealDrawer()">
+  <div class="pl-drawer">
+
+    <div class="pl-drawer-head">
+      <div class="pl-drawer-head-top">
+        <div id="pl-drawer-company" class="pl-drawer-company">PT Sumber Abadi</div>
+        <button class="pl-drawer-close" onclick="closeDealDrawer()">
+          <i class="ti ti-x"></i>
+        </button>
+      </div>
+      <div class="pl-drawer-stage-row" id="pl-drawer-tags"></div>
+    </div>
+
+    <!-- Stage progress bar -->
+    <div class="pl-stage-steps" id="pl-stage-steps">
+      <div class="pl-stage-step done"></div>
+      <div class="pl-stage-step done"></div>
+      <div class="pl-stage-step done"></div>
+      <div class="pl-stage-step current"></div>
+      <div class="pl-stage-step"></div>
+      <div class="pl-stage-step"></div>
+    </div>
+    <div class="pl-stage-step-labels">
+      <div class="pl-stage-step-label">Prospek</div>
+      <div class="pl-stage-step-label">Kualifikasi</div>
+      <div class="pl-stage-step-label">Penawaran</div>
+      <div class="pl-stage-step-label current">Negosiasi</div>
+      <div class="pl-stage-step-label">Closing</div>
+      <div class="pl-stage-step-label">Won</div>
+    </div>
+
+    <div class="pl-drawer-body" id="pl-drawer-body">
+      <!-- Diisi oleh JS -->
+    </div>
+
+    <div class="pl-drawer-foot">
+      <button class="pl-btn pl-btn-ghost" onclick="editDealFromDrawer()">
+        <i class="ti ti-edit"></i> Edit
+      </button>
+      <button class="pl-btn pl-btn-primary" onclick="moveToNextStage()">
+        <i class="ti ti-arrow-right"></i> Pindah Stage
+      </button>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ══ CONTEXT MENU ══════════════════════════════════════════════ -->
+<div id="pl-ctx-menu" class="pl-ctx-menu" style="display:none">
+  <div class="pl-ctx-item" onclick="ctxEdit()">
+    <i class="ti ti-edit"></i> Edit Deal
+  </div>
+  <div class="pl-ctx-item" onclick="ctxMove()">
+    <i class="ti ti-arrows-move"></i> Pindah Stage
+  </div>
+  <div class="pl-ctx-item" onclick="ctxCopy()">
+    <i class="ti ti-copy"></i> Duplikat Deal
+  </div>
+  <div class="pl-ctx-divider"></div>
+  <div class="pl-ctx-item danger" onclick="ctxDelete()">
+    <i class="ti ti-trash"></i> Hapus Deal
+  </div>
+</div>
+<!-- ENDING PIPELINE PAGE -->
+
 <div id="integrasi-page" style="display: none;">
  
   <!-- ── Inner layout: full col-left style (no right panel) ── -->
@@ -3837,10 +4695,21 @@
         <div class="kb-list-actions">
           <div class="kb-view-toggle">
             <button class="kb-view-btn active" id="btn-view-grid" onclick="kbSetView('grid')" title="Grid view">
-              <i class="ti ti-layout-grid"></i>
+              <!-- Grid 2×2 icon -->
+              <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <rect x="1"   y="1"   width="5.5" height="5.5" rx="1.2" fill="currentColor"/>
+                <rect x="8.5" y="1"   width="5.5" height="5.5" rx="1.2" fill="currentColor"/>
+                <rect x="1"   y="8.5" width="5.5" height="5.5" rx="1.2" fill="currentColor"/>
+                <rect x="8.5" y="8.5" width="5.5" height="5.5" rx="1.2" fill="currentColor"/>
+              </svg>
             </button>
             <button class="kb-view-btn" id="btn-view-list" onclick="kbSetView('list')" title="List view">
-              <i class="ti ti-list"></i>
+              <!-- List rows icon -->
+              <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <rect x="1" y="2"   width="13" height="2.8" rx="1.2" fill="currentColor"/>
+                <rect x="1" y="6.1" width="13" height="2.8" rx="1.2" fill="currentColor"/>
+                <rect x="1" y="10.2" width="13" height="2.8" rx="1.2" fill="currentColor"/>
+              </svg>
             </button>
           </div>
           <select class="kb-sort-select" onchange="kbSort(this.value)">
@@ -3876,11 +4745,7 @@
           </div>
           <div class="kb-card-footer">
             <span class="kb-card-date"><i class="ti ti-calendar"></i> Diperbarui 2 hari lalu</span>
-            <div class="kb-card-actions">
-              <button class="kb-icon-btn" title="Pratinjau" onclick="kbPreview(1)"><i class="ti ti-eye"></i></button>
-              <button class="kb-icon-btn" title="Edit" onclick="kbEdit(1)"><i class="ti ti-pencil"></i></button>
-              <button class="kb-icon-btn kb-icon-danger" title="Hapus" onclick="kbDelete(1)"><i class="ti ti-trash"></i></button>
-            </div>
+            <div class="kb-card-actions" data-doc-id="1"></div>
           </div>
         </div>
  
@@ -3905,11 +4770,7 @@
           </div>
           <div class="kb-card-footer">
             <span class="kb-card-date"><i class="ti ti-calendar"></i> Diperbarui hari ini</span>
-            <div class="kb-card-actions">
-              <button class="kb-icon-btn" title="Pratinjau" onclick="kbPreview(2)"><i class="ti ti-eye"></i></button>
-              <button class="kb-icon-btn" title="Edit" onclick="kbEdit(2)"><i class="ti ti-pencil"></i></button>
-              <button class="kb-icon-btn kb-icon-danger" title="Hapus" onclick="kbDelete(2)"><i class="ti ti-trash"></i></button>
-            </div>
+            <div class="kb-card-actions" data-doc-id="2"></div>
           </div>
         </div>
  
@@ -3934,11 +4795,7 @@
           </div>
           <div class="kb-card-footer">
             <span class="kb-card-date"><i class="ti ti-calendar"></i> Diperbarui 5 hari lalu</span>
-            <div class="kb-card-actions">
-              <button class="kb-icon-btn" title="Pratinjau" onclick="kbPreview(3)"><i class="ti ti-eye"></i></button>
-              <button class="kb-icon-btn" title="Edit" onclick="kbEdit(3)"><i class="ti ti-pencil"></i></button>
-              <button class="kb-icon-btn kb-icon-danger" title="Hapus" onclick="kbDelete(3)"><i class="ti ti-trash"></i></button>
-            </div>
+            <div class="kb-card-actions" data-doc-id="3"></div>
           </div>
         </div>
  
@@ -3963,11 +4820,7 @@
           </div>
           <div class="kb-card-footer">
             <span class="kb-card-date"><i class="ti ti-calendar"></i> Diperbarui 1 minggu lalu</span>
-            <div class="kb-card-actions">
-              <button class="kb-icon-btn" title="Pratinjau" onclick="kbPreview(4)"><i class="ti ti-eye"></i></button>
-              <button class="kb-icon-btn" title="Edit" onclick="kbEdit(4)"><i class="ti ti-pencil"></i></button>
-              <button class="kb-icon-btn kb-icon-danger" title="Hapus" onclick="kbDelete(4)"><i class="ti ti-trash"></i></button>
-            </div>
+            <div class="kb-card-actions" data-doc-id="4"></div>
           </div>
         </div>
  
@@ -3992,11 +4845,7 @@
           </div>
           <div class="kb-card-footer">
             <span class="kb-card-date"><i class="ti ti-calendar"></i> Dibuat 2 hari lalu</span>
-            <div class="kb-card-actions">
-              <button class="kb-icon-btn" title="Pratinjau" onclick="kbPreview(5)"><i class="ti ti-eye"></i></button>
-              <button class="kb-icon-btn" title="Edit" onclick="kbEdit(5)"><i class="ti ti-pencil"></i></button>
-              <button class="kb-icon-btn kb-icon-danger" title="Hapus" onclick="kbDelete(5)"><i class="ti ti-trash"></i></button>
-            </div>
+            <div class="kb-card-actions" data-doc-id="5"></div>
           </div>
         </div>
  
@@ -4021,11 +4870,7 @@
           </div>
           <div class="kb-card-footer">
             <span class="kb-card-date"><i class="ti ti-refresh"></i> Sync 1 jam lalu</span>
-            <div class="kb-card-actions">
-              <button class="kb-icon-btn" title="Sync Sekarang" onclick="kbSync(6)"><i class="ti ti-refresh"></i></button>
-              <button class="kb-icon-btn" title="Edit" onclick="kbEdit(6)"><i class="ti ti-pencil"></i></button>
-              <button class="kb-icon-btn kb-icon-danger" title="Hapus" onclick="kbDelete(6)"><i class="ti ti-trash"></i></button>
-            </div>
+            <div class="kb-card-actions" data-doc-id="6"></div>
           </div>
         </div>
  
@@ -4049,10 +4894,7 @@
           </div>
           <div class="kb-card-footer">
             <span class="kb-card-date" style="opacity:.5"><i class="ti ti-calendar"></i> Apr 2024</span>
-            <div class="kb-card-actions">
-              <button class="kb-icon-btn" title="Aktifkan kembali" onclick="kbActivate(7)"><i class="ti ti-player-play"></i></button>
-              <button class="kb-icon-btn kb-icon-danger" title="Hapus permanen" onclick="kbDelete(7)"><i class="ti ti-trash"></i></button>
-            </div>
+            <div class="kb-card-actions" data-doc-id="7" data-inactive="true"></div>
           </div>
         </div>
  
@@ -4077,11 +4919,7 @@
           </div>
           <div class="kb-card-footer">
             <span class="kb-card-date"><i class="ti ti-calendar"></i> Diperbarui 3 hari lalu</span>
-            <div class="kb-card-actions">
-              <button class="kb-icon-btn" title="Pratinjau" onclick="kbPreview(8)"><i class="ti ti-eye"></i></button>
-              <button class="kb-icon-btn" title="Edit" onclick="kbEdit(8)"><i class="ti ti-pencil"></i></button>
-              <button class="kb-icon-btn kb-icon-danger" title="Hapus" onclick="kbDelete(8)"><i class="ti ti-trash"></i></button>
-            </div>
+            <div class="kb-card-actions" data-doc-id="8"></div>
           </div>
         </div>
  
@@ -5166,6 +6004,7 @@
 <script src="script_page/pengaturan-agent.js"></script>
 <script src="script_page/knowledge-base.js"></script>
 <script src="script_page/aicall.js"></script>
+<script src="script_page/pipeline.js"></script>
 <script src="desktopOnly.js"></script>
 
 <script>

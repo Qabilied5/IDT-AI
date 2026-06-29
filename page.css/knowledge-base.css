@@ -897,3 +897,21 @@
   from { transform: translateY(12px); opacity: 0; }
   to   { transform: translateY(0);    opacity: 1; }
 }
+
+/* ── Card action: activate button ───────────────────────── */
+.kb-icon-btn.kb-icon-success {
+  color: var(--green);
+  border-color: rgba(26,122,74,0.2);
+}
+.kb-icon-btn.kb-icon-success:hover {
+  background: var(--green-bg);
+  border-color: var(--green);
+  color: var(--green);
+}
+
+/* Ensure SVG inside buttons inherits color cleanly */
+.kb-icon-btn svg {
+  pointer-events: none;
+  display: block;
+  flex-shrink: 0;
+}

@@ -12,8 +12,50 @@
   let currentView   = 'grid';
   let trainTimer    = null;
 
+
+  // ── SVG ICONS ──────────────────────────────────────────────────
+  const KB_ICONS = {
+    preview: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12S5 4 12 4s11 8 11 8-4 8-11 8S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>',
+    edit:    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>',
+    delete:  '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>',
+    activate:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>',
+    sync:    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/><path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14"/></svg>',
+  };
+
+  // ── CARD ACTION DEFINITIONS ────────────────────────────────────
+  const KB_ACTION_DEFS = {
+    normal: [
+      { key: 'preview',  label: 'Pratinjau',       cls: '',                fn: 'kbPreview'  },
+      { key: 'edit',     label: 'Edit',             cls: '',                fn: 'kbEdit'     },
+      { key: 'delete',   label: 'Hapus',            cls: 'kb-icon-danger',  fn: 'kbDelete'   },
+    ],
+    inactive: [
+      { key: 'activate', label: 'Aktifkan kembali', cls: 'kb-icon-success', fn: 'kbActivate' },
+      { key: 'delete',   label: 'Hapus permanen',   cls: 'kb-icon-danger',  fn: 'kbDelete'   },
+    ],
+  };
+
+  function renderCardActions(container) {
+    var id       = container.dataset.docId   || '0';
+    var inactive = container.dataset.inactive === 'true';
+    var defs     = inactive ? KB_ACTION_DEFS.inactive : KB_ACTION_DEFS.normal;
+    container.innerHTML = defs.map(function (def) {
+      return '<button class="kb-icon-btn' + (def.cls ? ' ' + def.cls : '') + '" ' +
+             'title="' + def.label + '" ' +
+             'onclick="' + def.fn + '(' + id + ')" ' +
+             'aria-label="' + def.label + '">' +
+             KB_ICONS[def.key] +
+             '</button>';
+    }).join('');
+  }
+
+  function renderAllCardActions() {
+    document.querySelectorAll('.kb-card-actions[data-doc-id]').forEach(renderCardActions);
+  }
+
   // ── INIT ───────────────────────────────────────────────────────
   function init() {
+    renderAllCardActions();
     bindSearch();
     updateDocCount();
   }
