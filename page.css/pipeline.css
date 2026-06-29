@@ -160,7 +160,7 @@
   background: var(--white);
   border-radius: 14px;
   border: 1px solid var(--gray-200);
-  max-height: calc(100vh - 168px);
+  max-height: calc(100vh - 220px);
   flex-shrink: 0;
   overflow: hidden;
   transition: box-shadow 0.2s;
@@ -1182,17 +1182,138 @@
 .pl-scroll-left  { left: 6px; }
 .pl-scroll-right { right: 6px; }
  
-/* Board wrap tetap sama, tapi sekarang di dalam .pl-board-outer */
+/* Board wrap — scroll horizontal & vertikal */
 .pl-board-outer .pl-board-wrap {
   flex: 1;
   overflow-x: auto;
-  overflow-y: hidden;
-  padding: 16px 16px 0;
+  overflow-y: auto;
+  padding: 16px 16px 16px;
   scrollbar-width: thin;
   scrollbar-color: var(--gray-200) transparent;
 }
-.pl-board-outer .pl-board-wrap::-webkit-scrollbar { height: 6px; }
+.pl-board-outer .pl-board-wrap::-webkit-scrollbar { height: 6px; width: 6px; }
 .pl-board-outer .pl-board-wrap::-webkit-scrollbar-thumb {
   background: var(--gray-200);
   border-radius: 3px;
+}
+
+/* Board inner — allow content to overflow vertically */
+.pl-board-outer .pl-board-wrap .pl-board {
+  align-items: flex-start;
+  min-height: min-content;
+}
+
+/* ══ CUSTOM STAGE: column menu, add-stage column, color picker ══ */
+
+/* 3-dot menu button on column header */
+.pl-col-menu {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: none;
+  /* border: 1px solid var(--gray-400); */
+  background: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--gray-400);
+  font-size: 14px;
+  flex-shrink: 0;
+  transition: background 0.12s, color 0.12s;
+}
+.pl-col-menu:hover { background: var(--gray-100); color: var(--gray-800); }
+
+/* "Tambah Stage" placeholder column at the end of the board */
+.pl-col-addstage {
+  width: 180px;
+  min-height: 92px;
+  padding: 14px;
+  border: 1.5px dashed var(--gray-200);
+  border-radius: 14px;
+  background: var(--gray-50);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: border-color 0.15s, background 0.15s;
+}
+.pl-col-addstage:hover {
+  border-color: var(--red-mid);
+  background: var(--red-light);
+}
+.pl-addstage-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  color: var(--gray-400);
+  transition: color 0.15s;
+}
+.pl-col-addstage:hover .pl-addstage-inner { color: var(--red); }
+.pl-addstage-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1.5px dashed var(--gray-300);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  transition: border-color 0.15s;
+}
+.pl-col-addstage:hover .pl-addstage-icon { border-color: var(--red-mid); }
+.pl-addstage-label {
+  font-size: 11.5px;
+  font-weight: 700;
+  text-align: center;
+}
+
+/* Color picker row in Add/Edit Stage modal */
+.pl-stage-color-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.pl-stage-color-row input[type="color"] {
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: 1px solid var(--gray-200);
+  border-radius: 4px;
+  cursor: pointer;
+  flex-shrink: 0;
+  background: none;
+}
+.pl-stage-color-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex: 1;
+}
+.pl-stage-swatch {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.06);
+  transition: transform 0.12s, border-color 0.12s;
+}
+.pl-stage-swatch:hover { transform: scale(1.12); }
+.pl-stage-swatch.active {
+  border-color: var(--gray-800);
+  transform: scale(1.12);
+}
+
+/* Danger ghost button (Hapus Stage di footer modal) */
+.pl-btn-ghost.danger-ghost {
+  color: var(--red);
+  border-color: var(--red-light);
+}
+.pl-btn-ghost.danger-ghost:hover {
+  background: var(--red-light);
+  border-color: var(--red-mid);
 }

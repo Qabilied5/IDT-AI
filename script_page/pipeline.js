@@ -139,12 +139,32 @@ const plDeals = [
   },
 ];
 
+// ── Stages (customizable) ───────────────────────────────────────
+// Stage bisa ditambah, diubah nama/warnanya, atau dihapus oleh user.
+let plStages = [
+  { key: 'prospek',     label: 'Prospek',      color: '#818cf8' },
+  { key: 'kualifikasi', label: 'Kualifikasi',  color: '#60a5fa' },
+  { key: 'penawaran',   label: 'Penawaran',    color: '#f59e0b' },
+  { key: 'negosiasi',   label: 'Negosiasi',    color: '#f97316' },
+  { key: 'closing',     label: 'Closing',      color: '#ef4444' },
+  { key: 'won',         label: 'Won / Aktif',  color: '#16a34a' },
+];
+
+const PL_STAGE_COLOR_PRESETS = [
+  '#818cf8', '#60a5fa', '#38bdf8', '#2dd4bf', '#34d399',
+  '#16a34a', '#facc15', '#f59e0b', '#f97316', '#fb7185',
+  '#ef4444', '#c8102e', '#a855f7', '#8b5cf6', '#64748b',
+];
+
 // ── State ─────────────────────────────────────────────────────
 let plCurrentDealId   = null;
 let plCurrentCtxId    = null;
+let plCurrentStageKey = null;
 let plRecurringOn     = false;
 let plAutoRenewalOn   = false;
 let plModalStage      = 'prospek';
+let plStageModalMode  = 'add'; // 'add' | 'edit'
+let plStageModalKey   = null;
 
 // ── Helpers ───────────────────────────────────────────────────
 function plFmt(n) {
@@ -176,8 +196,20 @@ function plRenewalWidth(days) {
   return Math.max(10, Math.min(99, pct));
 }
 
-const STAGE_LABELS = ['Prospek', 'Kualifikasi', 'Penawaran', 'Negosiasi', 'Closing', 'Won / Aktif'];
-const STAGE_KEYS   = ['prospek', 'kualifikasi', 'penawaran', 'negosiasi', 'closing', 'won'];
+function plEsc(str) {
+  return String(str).replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[c]));
+}
+
+let STAGE_LABELS = [];
+let STAGE_KEYS   = [];
+
+function plSyncStageArrays() {
+  STAGE_KEYS   = plStages.map(s => s.key);
+  STAGE_LABELS = plStages.map(s => s.label);
+}
+plSyncStageArrays();
 
 // ── Summary Topbar ────────────────────────────────────────────
 function plUpdateSummary() {
@@ -201,6 +233,316 @@ function plUpdateFlow() {
     const count = plDeals.filter(d => d.stage === stage).length;
     el.textContent = count + ' deal';
   });
+}
+
+// ── Pipeline Flow Bar: render dinamis dari plStages ──────────
+// Icon mapping per stage key (fallback ke ti-circle jika tidak ada)
+const PL_FLOW_ICONS = {
+  prospek:     { icon: 'M12 4a4 4 0 014 4 4 4 0 01-4 4 4 4 0 01-4-4 4 4 0 014-4m0 10c4.42 0 8 1.79 8 4v2H4v-2c0-2.21 3.58-4 8-4z', viewBox: '0 0 24 24' },
+  kualifikasi: { icon: 'M3 4h18v2.172a2 2 0 01-.586 1.414L14 14v5.764a1 1 0 01-.553.894l-4 2A1 1 0 018 21.764V14L3.586 7.586A2 2 0 013 6.172V4z', viewBox: '0 0 24 24' },
+  penawaran:   { icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z', viewBox: '0 0 24 24' },
+  negosiasi:   { icon: 'M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z', viewBox: '0 0 24 24' },
+  closing:     { icon: 'M9 12l2 2 4-4M7 2h10a2 2 0 012 2v18l-7-3-7 3V4a2 2 0 012-2z', viewBox: '0 0 24 24' },
+  won:         { icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z', viewBox: '0 0 24 24' },
+};
+const PL_FLOW_ICON_DEFAULT = 'M12 12c2.7 0 4-1.34 4-4s-1.3-4-4-4-4 1.34-4 4 1.3 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z';
+
+// Derive pale background from a hex color
+function plColorToBg(hex) {
+  // Parse #rrggbb or #rgb
+  let r, g, b;
+  hex = hex.replace('#', '');
+  if (hex.length === 3) {
+    r = parseInt(hex[0]+hex[0], 16);
+    g = parseInt(hex[1]+hex[1], 16);
+    b = parseInt(hex[2]+hex[2], 16);
+  } else {
+    r = parseInt(hex.substring(0,2), 16);
+    g = parseInt(hex.substring(2,4), 16);
+    b = parseInt(hex.substring(4,6), 16);
+  }
+  return `rgba(${r},${g},${b},0.12)`;
+}
+
+function plRenderFlowBar() {
+  const track = document.querySelector('.pl-flow-track');
+  if (!track) return;
+
+  const arrowSvg = `<div class="pl-flow-arrow">
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+      <path d="M5 10h10M12 7l3 3-3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </div>`;
+
+  const html = plStages.map((s, idx) => {
+    const iconData = PL_FLOW_ICONS[s.key];
+    const iconPath = iconData ? iconData.icon : PL_FLOW_ICON_DEFAULT;
+    const iconVBox = iconData ? iconData.viewBox : '0 0 24 24';
+    const bg      = plColorToBg(s.color);
+    const isWon   = (s.key === 'won') || (idx === plStages.length - 1 && s.key !== 'prospek');
+    const wonBadge = isWon ? `
+      <div class="pl-flow-won-badge">
+        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 13l4 4L19 7"/>
+        </svg>
+      </div>` : '';
+
+    const stageHtml = `
+      <div class="pl-flow-stage${isWon ? ' pl-flow-stage-won' : ''}" data-stage="${plEsc(s.key)}">
+        <div class="pl-flow-icon" style="--stage-color:${plEsc(s.color)};--stage-bg:${bg}">
+          <svg width="16" height="16" viewBox="${iconVBox}" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="${iconPath}"/>
+          </svg>
+        </div>
+        <div class="pl-flow-info">
+          <div class="pl-flow-label">${plEsc(s.label)}</div>
+          <div class="pl-flow-count" id="pf-count-${plEsc(s.key)}">0 deal</div>
+        </div>
+        ${wonBadge}
+      </div>`;
+
+    return idx < plStages.length - 1 ? stageHtml + arrowSvg : stageHtml;
+  }).join('');
+
+  track.innerHTML = html;
+}
+
+// ── Stage Columns: render (customizable stages) ──────────────
+function plRenderColumns() {
+  const board = document.getElementById('pl-board');
+  if (!board) return;
+
+  board.innerHTML = plStages.map(s => `
+      <div class="pl-col" data-stage="${plEsc(s.key)}">
+        <div class="pl-col-head">
+          <div class="pl-col-title-row">
+            <div class="pl-col-dot" style="background:${plEsc(s.color)}"></div>
+            <div class="pl-col-name">${plEsc(s.label)}</div>
+            <div class="pl-col-count" id="pl-count-${s.key}">0</div>
+              <button class="pl-col-menu" title="Opsi stage" onclick="openStageMenu(event,'${s.key}')">
+                <svg 
+                  width="16" 
+                  height="16" 
+                  viewBox="0 0 24 24" 
+                  fill="currentColor" 
+                  aria-hidden="true"
+                >
+                  <circle cx="12" cy="5" r="2" />
+                  <circle cx="12" cy="12" r="2" />
+                  <circle cx="12" cy="19" r="2" />
+                </svg>
+              </button>
+          </div>
+          <div class="pl-col-meta">
+            <div class="pl-col-value" id="pl-val-${s.key}">Rp 0</div>
+              <button class="pl-col-add" title="Tambah deal di ${plEsc(s.label)}" onclick="openAddDeal('${s.key}')">
+                <svg 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  width="16" 
+                  height="16" 
+                  viewBox="0 0 24 24" 
+                  fill="none" 
+                  stroke="var(--gray-600)" 
+                  stroke-width="2.5" 
+                  stroke-linecap="round" 
+                  stroke-linejoin="round"
+                >
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+              </button>
+          </div>
+        </div>
+        <div class="pl-cards" id="pl-cards-${s.key}"></div>
+      </div>
+  `).join('') + `
+      <div class="pl-col pl-col-addstage" onclick="openAddStageModal()" title="Tambah stage baru">
+        <div class="pl-addstage-inner">
+          <div class="pl-addstage-icon">
+  <svg 
+    xmlns="http://www.w3.org/2000/svg" 
+    width="22" 
+    height="22" 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor" 
+    stroke-width="2" 
+    stroke-linecap="round" 
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
+    <circle cx="12" cy="12" r="10"></circle>
+    <line x1="12" y1="8" x2="12" y2="16"></line>
+    <line x1="8" y1="12" x2="16" y2="12"></line>
+  </svg>
+</div>
+          <div class="pl-addstage-label">Tambah Stage</div>
+        </div>
+      </div>
+  `;
+
+  plPopulateStageSelect();
+}
+
+// ── Sync stage <select> di modal Tambah/Edit Deal ────────────
+function plPopulateStageSelect() {
+  const sel = document.getElementById('pl-f-stage');
+  if (!sel) return;
+  const current = sel.value;
+  sel.innerHTML = plStages.map(s => `<option value="${plEsc(s.key)}">${plEsc(s.label)}</option>`).join('');
+  if (plStages.some(s => s.key === current)) sel.value = current;
+}
+
+// ── Context Menu: Stage (kolom) ───────────────────────────────
+function openStageMenu(e, key) {
+  e.stopPropagation();
+  plCurrentStageKey = key;
+  const menu = document.getElementById('pl-stage-menu');
+  if (!menu) return;
+  menu.style.display = 'block';
+  const x = Math.min(e.clientX, window.innerWidth - 175);
+  const y = Math.min(e.clientY, window.innerHeight - 130);
+  menu.style.left = x + 'px';
+  menu.style.top  = y + 'px';
+}
+
+function closeStageMenu() {
+  const m = document.getElementById('pl-stage-menu');
+  if (m) m.style.display = 'none';
+}
+
+function stageMenuEdit()   { closeStageMenu(); if (plCurrentStageKey) openEditStageModal(plCurrentStageKey); }
+function stageMenuDelete() { closeStageMenu(); if (plCurrentStageKey) deleteStage(plCurrentStageKey); }
+
+// ── Modal: Tambah / Edit Stage ────────────────────────────────
+function plRenderStageSwatches(selectedColor) {
+  const wrap = document.getElementById('pl-stage-color-swatches');
+  if (!wrap) return;
+  wrap.innerHTML = PL_STAGE_COLOR_PRESETS.map(c => `
+    <button type="button" class="pl-stage-swatch ${c.toLowerCase() === (selectedColor || '').toLowerCase() ? 'active' : ''}"
+      style="background:${c}" onclick="plPickStageColor('${c}')" title="${c}"></button>
+  `).join('');
+}
+
+function plPickStageColor(color) {
+  const input = document.getElementById('pl-stage-f-color');
+  if (input) input.value = color;
+  plRenderStageSwatches(color);
+}
+
+function plSyncStageColorText() {
+  const input = document.getElementById('pl-stage-f-color');
+  plRenderStageSwatches(input ? input.value : null);
+}
+
+function openAddStageModal() {
+  plStageModalMode = 'add';
+  plStageModalKey  = null;
+
+  document.getElementById('pl-stage-modal-title').textContent = 'Tambah Stage Baru';
+  document.getElementById('pl-stage-f-name').value = '';
+  const randomColor = PL_STAGE_COLOR_PRESETS[Math.floor(Math.random() * PL_STAGE_COLOR_PRESETS.length)];
+  document.getElementById('pl-stage-f-color').value = randomColor;
+  plRenderStageSwatches(randomColor);
+  document.getElementById('pl-stage-delete-btn').style.display = 'none';
+
+  document.getElementById('pl-stage-modal-overlay').style.display = 'flex';
+}
+
+function openEditStageModal(key) {
+  const s = plStages.find(x => x.key === key);
+  if (!s) return;
+  plStageModalMode = 'edit';
+  plStageModalKey  = key;
+
+  document.getElementById('pl-stage-modal-title').textContent = 'Edit Stage';
+  document.getElementById('pl-stage-f-name').value  = s.label;
+  document.getElementById('pl-stage-f-color').value = s.color;
+  plRenderStageSwatches(s.color);
+  document.getElementById('pl-stage-delete-btn').style.display = plStages.length > 1 ? 'inline-flex' : 'none';
+
+  document.getElementById('pl-stage-modal-overlay').style.display = 'flex';
+}
+
+function closeStageModal() {
+  document.getElementById('pl-stage-modal-overlay').style.display = 'none';
+}
+
+function plSlugifyStage(label) {
+  const base = label.toLowerCase().trim().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || 'stage';
+  let key = base, n = 1;
+  while (plStages.some(s => s.key === key)) {
+    key = base + '_' + (++n);
+  }
+  return key;
+}
+
+function saveStage() {
+  const name  = document.getElementById('pl-stage-f-name').value.trim();
+  const color = document.getElementById('pl-stage-f-color').value || '#818cf8';
+
+  if (!name) {
+    alert('Nama stage wajib diisi.');
+    return;
+  }
+
+  if (plStageModalMode === 'add') {
+    const key = plSlugifyStage(name);
+    plStages.push({ key, label: name, color });
+  } else {
+    const s = plStages.find(x => x.key === plStageModalKey);
+    if (s) { s.label = name; s.color = color; }
+  }
+
+  closeStageModal();
+  plSyncStageArrays();
+  plRenderColumns();
+  plRenderFlowBar();
+  plRebuildBoard();
+  plUpdateSummary();
+}
+
+function deleteStageFromModal() {
+  if (plStageModalMode !== 'edit' || !plStageModalKey) return;
+  const key = plStageModalKey;
+  closeStageModal();
+  deleteStage(key);
+}
+
+function deleteStage(key) {
+  if (plStages.length <= 1) {
+    alert('Tidak bisa menghapus — minimal harus ada 1 stage.');
+    return;
+  }
+  const stageObj = plStages.find(s => s.key === key);
+  if (!stageObj) return;
+  const label = stageObj.label;
+  const dealsInStage = plDeals.filter(d => d.stage === key).length;
+
+  const fallback = plStages.find(s => s.key !== key);
+
+  let proceed;
+  if (dealsInStage > 0) {
+    proceed = confirm(
+      `Stage "${label}" masih memiliki ${dealsInStage} deal.\n` +
+      `Jika dilanjutkan, deal tersebut akan dipindahkan ke stage "${fallback.label}".\n\n` +
+      `Hapus stage ini?`
+    );
+  } else {
+    proceed = confirm(`Hapus stage "${label}"?`);
+  }
+  if (!proceed) return;
+
+  if (dealsInStage > 0) {
+    plDeals.forEach(d => { if (d.stage === key) d.stage = fallback.key; });
+  }
+
+  plStages = plStages.filter(s => s.key !== key);
+  plSyncStageArrays();
+  plRenderColumns();
+  plRenderFlowBar();
+  plRebuildBoard();
+  plUpdateSummary();
 }
 
 // ── Board Scroll Arrow Buttons ────────────────────────────────
@@ -653,6 +995,9 @@ function plRebuildBoard() {
 
 // ── Event Listeners ───────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
+  plRenderColumns();
+  plRenderFlowBar();
+  plRebuildBoard();
   plUpdateSummary();
   plUpdateFlow();
 
@@ -681,5 +1026,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('click', (e) => {
     const m = document.getElementById('pl-ctx-menu');
     if (m && !m.contains(e.target)) closeCtxMenu();
+    const sm = document.getElementById('pl-stage-menu');
+    if (sm && !sm.contains(e.target)) closeStageMenu();
   });
 });
