@@ -1097,6 +1097,9 @@
       <div class="lp-title">Kontak &amp; Leads</div>
       <div class="lp-subtitle">Pantau, kelola, dan follow-up semua kontak &amp; prospek Anda dalam satu tempat</div>
     </div>
+    <div class="lp-import-excel" onclick="openImportModal()">
+      <i class="ti ti-file-spreadsheet"></i> Import Excel / Spreadsheets
+    </div>
   </div>
  
   <!-- ── Info Bar ──────────────────────────────────────────────── -->
@@ -1118,11 +1121,6 @@
       <i class="ti ti-brain"></i>
       AI sedang memantau 429 kontak aktif
     </div>
-
-    <div class="lp-import-excel">
-      Import Excel / Spreadsheets
-    </div>
-
   </div>
  
   <!-- ── AREA 1: Kategori Leads + AI Auto-Qualify ──────────────── -->
@@ -1462,6 +1460,49 @@
   </div>
 </div>
  
+<!-- ── Modal: Import Excel / Spreadsheets ─────────────────────── -->
+<div id="lp-modal-import" class="lp-modal-overlay" style="display:none" onclick="if(event.target===this)closeImportModal()">
+  <div class="lp-modal lp-modal-sm">
+    <div class="lp-modal-header">
+      <div class="lp-modal-title"><i class="ti ti-file-spreadsheet"></i> Import Excel / Spreadsheets</div>
+      <button class="lp-modal-close" onclick="closeImportModal()"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="lp-modal-body">
+      <div class="lp-import-tabs">
+        <button class="lp-import-tab active" id="lp-import-tab-url" onclick="switchImportTab('url')">
+          <i class="ti ti-link"></i> Input URL
+        </button>
+        <button class="lp-import-tab" id="lp-import-tab-csv" onclick="switchImportTab('csv')">
+          <i class="ti ti-upload"></i> Import CSV
+        </button>
+      </div>
+
+      <div id="lp-import-panel-url">
+        <label class="lp-import-label">URL Web App Google Apps Script</label>
+        <input type="text" id="lp-import-url-input" class="lp-fd-input" placeholder="https://script.google.com/macros/s/xxx/exec">
+        <div class="lp-import-hint">
+          Tempel URL hasil deploy Apps Script (lihat panduan setup). Data akan dimuat otomatis dan perubahan status di dashboard akan tersinkron balik ke sheet.
+        </div>
+        <button class="lp-import-clear" onclick="clearImportConfig()">Hapus koneksi tersimpan &amp; kembali ke data contoh</button>
+      </div>
+
+      <div id="lp-import-panel-csv" style="display:none">
+        <label class="lp-import-label">Pilih file CSV</label>
+        <input type="file" id="lp-import-csv-input" accept=".csv" class="lp-fd-input">
+        <div class="lp-import-hint">
+          Format kolom harus sama seperti template (Nama, Perusahaan, Tanggal, Email, No. HP/WA, Kota, Kategori, Sumber, Aktivitas, Status). Mode ini hanya lokal di browser — perubahan status tidak tersinkron ke mana pun.
+        </div>
+      </div>
+
+      <div id="lp-import-error" class="lp-import-error" style="display:none"></div>
+    </div>
+    <div class="lp-modal-footer">
+      <button class="lp-btn-ghost" onclick="closeImportModal()">Batal</button>
+      <button class="lp-btn-primary-sm" id="lp-import-submit-btn" onclick="submitImport()"><i class="ti ti-check"></i> Muat Data</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── Modal: Update Status ───────────────────────────────────── -->
 <div id="lp-modal-status" class="lp-modal-overlay" style="display:none" onclick="if(event.target===this)closeStatusModal()">
   <div class="lp-modal lp-modal-sm">

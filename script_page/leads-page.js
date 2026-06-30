@@ -62,14 +62,27 @@ function bizCfg() {
 }
 
 // ── KONEKSI GOOGLE SHEETS (Apps Script Web App) ───────────────
-// 1. Buat Google Sheet baru, sheet/tab bernama "Leads" (lihat template CSV).
-// 2. Buka Extensions > Apps Script, paste isi file Code.gs yang disediakan.
-// 3. Deploy > New deployment > Web app > Execute as: Me, Who has access: Anyone.
-// 4. Copy URL Web App hasil deploy, ganti nilai di bawah ini.
-const LP_SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbz77sZFhchrky0cNu0fz0fz7Ix8WJ1EevaTtVkJSU75SQS_VpXdOmg9YTNGtAe-GVAB-A/exec';
+// URL bisa diisi lewat 2 cara:
+// 1. Hardcode di bawah ini (fallback default jika belum ada konfigurasi user), atau
+// 2. Diisi user lewat tombol "Import Excel / Spreadsheets" di UI → tersimpan
+//    di localStorage browser, jadi tidak perlu edit kode tiap ganti sheet.
+const LP_SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbyLWlrj6_qY8Osy3RdpQdyGHyAEYsyGOr22i2FXyJzuw_ZcibZgDvRI-ND9a32oYls3YA/exec';
+const LP_STORAGE_KEY   = 'lp_sheet_api_url';
+
+// Ambil URL aktif: prioritas localStorage (diisi via modal import), baru fallback ke konstanta di atas.
+function getConfiguredSheetUrl() {
+  try {
+    const saved = window.localStorage.getItem(LP_STORAGE_KEY);
+    if (saved) return saved;
+  } catch (e) { /* localStorage tidak tersedia (mode private browsing dsb) */ }
+  if (LP_SHEET_API_URL && !LP_SHEET_API_URL.includes('GANTI_DENGAN')) {
+    return LP_SHEET_API_URL;
+  }
+  return null;
+}
 
 function lpSheetConfigured() {
-  return LP_SHEET_API_URL && !LP_SHEET_API_URL.includes('GANTI_DENGAN');
+  return !!getConfiguredSheetUrl();
 }
 
 // ── Update seluruh UI yang berubah berdasarkan tipe bisnis ────
@@ -123,6 +136,7 @@ let lpState = {
   perPage: 10,
   statusTarget: null, // id lead yg sedang diupdate status
   biz: 'b2b',          // tipe bisnis aktif: b2b | b2c | saas | fnb | jasa
+  dataSource: 'fallback', // 'sheet' | 'csv' | 'fallback' — sumber LEADS_DATA saat ini
 };
 
 // ── Init ──────────────────────────────────────────────────────
@@ -135,25 +149,30 @@ async function initLeadsPage() {
 
 // ── Muat leads dari Google Sheets via Apps Script Web App ─────
 async function loadLeadsFromSheet() {
-  if (!lpSheetConfigured()) {
-    console.warn('LP_SHEET_API_URL belum diisi — pakai data contoh sementara.');
+  const url = getConfiguredSheetUrl();
+  if (!url) {
+    console.warn('Belum ada URL spreadsheet — pakai data contoh sementara.');
     LEADS_DATA = LEADS_DATA_FALLBACK;
+    lpState.dataSource = 'fallback';
     return;
   }
   try {
-    const res  = await fetch(LP_SHEET_API_URL);
+    const res  = await fetch(url);
     const data = await res.json();
     if (data.ok) {
       LEADS_DATA = data.leads;
+      lpState.dataSource = 'sheet';
     } else {
       console.error('Gagal memuat leads:', data.error);
       showLpToast('Gagal memuat data dari Google Sheets: ' + data.error, 'error');
       LEADS_DATA = [];
+      lpState.dataSource = 'fallback';
     }
   } catch (err) {
     console.error(err);
     showLpToast('Tidak bisa terhubung ke Google Sheets', 'error');
     LEADS_DATA = [];
+    lpState.dataSource = 'fallback';
   }
 }
 
@@ -170,9 +189,11 @@ function showLpLoadingState() {
 
 // ── Sinkronkan perubahan status balik ke Google Sheets ─────────
 async function syncStatusToSheet(id, status) {
-  if (!lpSheetConfigured()) return; // mode demo, tidak ada sheet untuk disinkronkan
+  if (lpState.dataSource !== 'sheet') return; // mode CSV/data contoh, tidak ada sheet utk disinkronkan
+  const url = getConfiguredSheetUrl();
+  if (!url) return;
   try {
-    const res = await fetch(LP_SHEET_API_URL, {
+    const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // hindari CORS preflight
       body: JSON.stringify({ action: 'updateStatus', id, status }),
@@ -186,6 +207,231 @@ async function syncStatusToSheet(id, status) {
     console.error(err);
     showLpToast('Status tersimpan lokal, tapi gagal sync ke Sheets', 'error');
   }
+}
+
+// ── Modal: Import Excel / Spreadsheets (URL Apps Script atau CSV) ─
+let _lpImportTab = 'url';
+
+function openImportModal() {
+  const modal = document.getElementById('lp-modal-import');
+  if (!modal) return;
+  const urlInput = document.getElementById('lp-import-url-input');
+  if (urlInput) urlInput.value = getConfiguredSheetUrl() || '';
+  const fileInput = document.getElementById('lp-import-csv-input');
+  if (fileInput) fileInput.value = '';
+  switchImportTab('url');
+  modal.style.display = 'flex';
+}
+
+function closeImportModal() {
+  const modal = document.getElementById('lp-modal-import');
+  if (modal) modal.style.display = 'none';
+}
+
+function switchImportTab(tab) {
+  _lpImportTab = tab;
+  const tabUrl = document.getElementById('lp-import-tab-url');
+  const tabCsv = document.getElementById('lp-import-tab-csv');
+  const panelUrl = document.getElementById('lp-import-panel-url');
+  const panelCsv = document.getElementById('lp-import-panel-csv');
+  if (tabUrl) tabUrl.classList.toggle('active', tab === 'url');
+  if (tabCsv) tabCsv.classList.toggle('active', tab === 'csv');
+  if (panelUrl) panelUrl.style.display = tab === 'url' ? 'block' : 'none';
+  if (panelCsv) panelCsv.style.display = tab === 'csv' ? 'block' : 'none';
+  hideImportError();
+}
+
+function showImportError(msg) {
+  const el = document.getElementById('lp-import-error');
+  if (!el) return;
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+function hideImportError() {
+  const el = document.getElementById('lp-import-error');
+  if (el) el.style.display = 'none';
+}
+
+async function submitImport() {
+  hideImportError();
+  if (_lpImportTab === 'url') {
+    await submitImportUrl();
+  } else {
+    await submitImportCsv();
+  }
+}
+
+// ── Import via URL Apps Script Web App ────────────────────────
+async function submitImportUrl() {
+  const input = document.getElementById('lp-import-url-input');
+  const url = (input.value || '').trim();
+
+  if (!url) {
+    showImportError('URL tidak boleh kosong.');
+    return;
+  }
+  if (!/^https?:\/\//i.test(url)) {
+    showImportError('URL tidak valid. Pastikan diawali https://');
+    return;
+  }
+
+  const btn = document.getElementById('lp-import-submit-btn');
+  const btnOriginal = btn ? btn.innerHTML : '';
+  if (btn) { btn.disabled = true; btn.textContent = 'Memuat…'; }
+
+  try {
+    const res  = await fetch(url);
+    const data = await res.json();
+    if (!data.ok) {
+      showImportError('Gagal memuat dari URL ini: ' + data.error);
+      return;
+    }
+    try { window.localStorage.setItem(LP_STORAGE_KEY, url); } catch (e) { /* ignore */ }
+    LEADS_DATA = data.leads;
+    lpState.dataSource = 'sheet';
+    lpState.page = 1;
+    renderLeadsTable();
+    updateKatCounts();
+    closeImportModal();
+    showLpToast('Data berhasil dimuat dari spreadsheet ✓', 'success');
+  } catch (err) {
+    console.error(err);
+    showImportError('Tidak bisa terhubung ke URL tersebut. Pastikan itu URL Web App Apps Script yang valid (diakhiri /exec) dan sudah di-deploy dengan akses "Anyone".');
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = btnOriginal; }
+  }
+}
+
+// ── Import via file CSV (lokal di browser, tidak tersinkron ke Sheets) ─
+function submitImportCsv() {
+  return new Promise((resolve) => {
+    const fileInput = document.getElementById('lp-import-csv-input');
+    const file = fileInput && fileInput.files && fileInput.files[0];
+    if (!file) {
+      showImportError('Pilih file CSV terlebih dahulu.');
+      resolve();
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const rows  = parseCsvText(String(reader.result));
+        const leads = leadsFromCsvRows(rows);
+        if (leads.length === 0) {
+          showImportError('Tidak ada data yang terbaca dari file ini. Cek format kolomnya sesuai template.');
+          resolve();
+          return;
+        }
+        LEADS_DATA = leads;
+        lpState.dataSource = 'csv';
+        lpState.page = 1;
+        renderLeadsTable();
+        updateKatCounts();
+        closeImportModal();
+        showLpToast(`${leads.length} leads berhasil diimport dari CSV ✓ (mode lokal, status tidak tersinkron ke Sheets)`, 'success');
+      } catch (err) {
+        console.error(err);
+        showImportError('Gagal membaca file CSV. Pastikan formatnya sesuai template.');
+      }
+      resolve();
+    };
+    reader.onerror = () => {
+      showImportError('Gagal membaca file.');
+      resolve();
+    };
+    reader.readAsText(file, 'utf-8');
+  });
+}
+
+function clearImportConfig() {
+  try { window.localStorage.removeItem(LP_STORAGE_KEY); } catch (e) { /* ignore */ }
+  closeImportModal();
+  initLeadsPage();
+  showLpToast('Koneksi spreadsheet dihapus, kembali ke data contoh', 'success');
+}
+
+// ── Parser CSV ringan (mendukung tanda kutip & koma di dalam field) ─
+function parseCsvText(text) {
+  const rows = [];
+  let row = [];
+  let field = '';
+  let inQuotes = false;
+  text = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQuotes) {
+      if (c === '"') {
+        if (text[i + 1] === '"') { field += '"'; i++; }
+        else { inQuotes = false; }
+      } else {
+        field += c;
+      }
+    } else if (c === '"') {
+      inQuotes = true;
+    } else if (c === ',') {
+      row.push(field); field = '';
+    } else if (c === '\n') {
+      row.push(field); field = '';
+      rows.push(row); row = [];
+    } else {
+      field += c;
+    }
+  }
+  if (field.length > 0 || row.length > 0) {
+    row.push(field);
+    rows.push(row);
+  }
+  return rows.filter(r => r.some(f => String(f).trim() !== ''));
+}
+
+// Mapping label sheet (Indonesia, human-readable) -> kode internal.
+// Harus sama persis dengan KATEGORI_MAP / SUMBER_MAP / STATUS_MAP di Code.gs.
+const LP_KATEGORI_MAP = {
+  'Real Lead': 'real',
+  'Potensi': 'potensi',
+  'Belum Dikualifikasi': 'belum',
+};
+const LP_SUMBER_MAP = {
+  'Kontak Langsung': 'wa',
+  'Kirim Pesan': 'msg',
+  'Kunjungan Profil/Website': 'profil',
+};
+const LP_STATUS_MAP = {
+  'Belum Dihubungi': 'belum',
+  'Sudah Dihubungi': 'dihubungi',
+  'Follow-up Lanjutan': 'followup',
+  'Closed / Deal': 'closed',
+};
+
+function leadsFromCsvRows(rows) {
+  const dataRows = rows.slice(1); // baris pertama = header, dibuang
+  return dataRows
+    .map((r, i) => {
+      const nama          = (r[0] || '').trim();
+      const perusahaan    = (r[1] || '').trim();
+      const tanggal       = (r[2] || '').trim();
+      const email         = (r[3] || '').trim();
+      const phone         = (r[4] || '').trim();
+      const kota          = (r[5] || '').trim();
+      const kategoriLabel = (r[6] || '').trim();
+      const sumberLabel   = (r[7] || '').trim();
+      const aktivitas     = (r[8] || '').trim();
+      const statusLabel   = (r[9] || '').trim();
+
+      if (!nama) return null; // skip baris kosong
+
+      return {
+        id: i + 1,
+        nama, perusahaan, tanggal, email, kota,
+        phone: phone.replace(/^0/, '').replace(/\D/g, ''),
+        kategori: LP_KATEGORI_MAP[kategoriLabel] || 'belum',
+        sumber: LP_SUMBER_MAP[sumberLabel] || 'wa',
+        aktivitas: aktivitas || sumberLabel || '',
+        status: LP_STATUS_MAP[statusLabel] || 'belum',
+      };
+    })
+    .filter(Boolean);
 }
 
 // ── Filter: Kategori ──────────────────────────────────────────
@@ -336,24 +582,26 @@ function renderPagination(total, pages) {
     : `Menampilkan ${start}–${end} dari ${total} leads`;
 
   // page numbers (show max 5)
-  nums.innerHTML = '';
-  let startP = Math.max(1, lpState.page - 2);
-  let endP   = Math.min(pages, startP + 4);
-  startP     = Math.max(1, endP - 4);
-  for (let i = startP; i <= endP; i++) {
-    const btn = document.createElement('button');
-    btn.className = 'lp-page-num' + (i === lpState.page ? ' active' : '');
-    btn.textContent = i;
-    btn.onclick = () => { lpState.page = i; renderLeadsTable(); };
-    nums.appendChild(btn);
+  if (nums) {
+    nums.innerHTML = '';
+    let startP = Math.max(1, lpState.page - 2);
+    let endP   = Math.min(pages, startP + 4);
+    startP     = Math.max(1, endP - 4);
+    for (let i = startP; i <= endP; i++) {
+      const btn = document.createElement('button');
+      btn.className = 'lp-page-num' + (i === lpState.page ? ' active' : '');
+      btn.textContent = i;
+      btn.onclick = () => { lpState.page = i; renderLeadsTable(); };
+      nums.appendChild(btn);
+    }
   }
 
-  prev.disabled = lpState.page <= 1;
-  next.disabled = lpState.page >= pages;
+  if (prev) prev.disabled = lpState.page <= 1;
+  if (next) next.disabled = lpState.page >= pages;
 }
 
 function changePage(dir) {
-  lpState.page += dir;
+  lpState.page = Math.max(1, lpState.page + dir);
   renderLeadsTable();
 }
 
