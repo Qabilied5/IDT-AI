@@ -66,7 +66,7 @@ function bizCfg() {
 // 1. Hardcode di bawah ini (fallback default jika belum ada konfigurasi user), atau
 // 2. Diisi user lewat tombol "Import Excel / Spreadsheets" di UI → tersimpan
 //    di localStorage browser, jadi tidak perlu edit kode tiap ganti sheet.
-const LP_SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbyLWlrj6_qY8Osy3RdpQdyGHyAEYsyGOr22i2FXyJzuw_ZcibZgDvRI-ND9a32oYls3YA/exec';
+const LP_SHEET_API_URL = 'Fill from import button';
 const LP_STORAGE_KEY   = 'lp_sheet_api_url';
 
 // Ambil URL aktif: prioritas localStorage (diisi via modal import), baru fallback ke konstanta di atas.
