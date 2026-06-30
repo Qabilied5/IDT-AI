@@ -1198,7 +1198,7 @@
   justify-content: center;
   width: 100%;
   padding: 3px 0 6px;
-  color: var(--gray-300);
+  color: var(--gray-200);
   cursor: grab;
   border-radius: 6px 6px 0 0;
   transition: color 0.15s, background 0.15s;
@@ -1376,7 +1376,7 @@
   justify-content: center;
   width: 100%;
   padding: 6px 0 4px;
-  color: var(--gray-300);
+  color: var(--gray-200);
   cursor: grab;
   border-radius: 14px 14px 0 0;
   transition: color 0.15s, background 0.15s;
