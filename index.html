@@ -1436,9 +1436,19 @@
   <div class="lp-pagination">
     <div class="lp-page-info" id="lp-page-info"></div>
     <div class="lp-page-btns">
-      <button class="lp-page-btn" id="lp-prev" onclick="changePage(-1)"><i class="ti ti-chevron-left"></i></button>
+      <button class="lp-page-btn" id="lp-prev" onclick="changePage(-1)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+      </button>
+      
       <div id="lp-page-nums" style="display:flex;gap:4px"></div>
-      <button class="lp-page-btn" id="lp-next" onclick="changePage(1)"><i class="ti ti-chevron-right"></i></button>
+      
+      <button class="lp-page-btn" id="lp-next" onclick="changePage(1)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="9 18 15 12 9 6"></polyline>
+        </svg>
+      </button>
     </div>
   </div>
  

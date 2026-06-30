@@ -1457,8 +1457,8 @@
   align-items: center;
   gap: 6px;
   border: 1px solid var(--gray-200, #e5e7eb);
-  background: #fff;
-  color: var(--gray-700, #374151);
+  background: var(--red);
+  color: var(--gray-100);
   border-radius: 8px;
   padding: 8px 14px;
   font-size: 12px;
