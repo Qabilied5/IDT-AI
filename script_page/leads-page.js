@@ -61,6 +61,17 @@ function bizCfg() {
   return LP_BIZ_TYPES[lpState.biz] || LP_BIZ_TYPES.b2b;
 }
 
+// ── KONEKSI GOOGLE SHEETS (Apps Script Web App) ───────────────
+// 1. Buat Google Sheet baru, sheet/tab bernama "Leads" (lihat template CSV).
+// 2. Buka Extensions > Apps Script, paste isi file Code.gs yang disediakan.
+// 3. Deploy > New deployment > Web app > Execute as: Me, Who has access: Anyone.
+// 4. Copy URL Web App hasil deploy, ganti nilai di bawah ini.
+const LP_SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbz77sZFhchrky0cNu0fz0fz7Ix8WJ1EevaTtVkJSU75SQS_VpXdOmg9YTNGtAe-GVAB-A/exec';
+
+function lpSheetConfigured() {
+  return LP_SHEET_API_URL && !LP_SHEET_API_URL.includes('GANTI_DENGAN');
+}
+
 // ── Update seluruh UI yang berubah berdasarkan tipe bisnis ────
 function applyBizType(type) {
   if (!LP_BIZ_TYPES[type]) return;
@@ -80,8 +91,11 @@ function applyBizType(type) {
   renderLeadsTable();
 }
 
-// ── Data dummy leads ──────────────────────────────────────────
-const LEADS_DATA = [
+// ── Data leads (diisi dari Google Sheets saat halaman dibuka) ──
+// LEADS_DATA_FALLBACK dipakai HANYA jika LP_SHEET_API_URL belum
+// dikonfigurasi, supaya tampilan tidak kosong/error saat development.
+let LEADS_DATA = [];
+const LEADS_DATA_FALLBACK = [
   { id:1,  nama:'Meli',          perusahaan:'Gudang Tenda Muhamad Almer', tanggal:'12 Jun 2026', email:'gudangtendamuhamadalmer12@gmail.com', phone:'82381272032', kota:'Jakarta', kategori:'real',    sumber:'wa',     aktivitas:'Kontak Langsung',      status:'belum' },
   { id:2,  nama:'Dina',          perusahaan:'PT. Cika Inti Karya',        tanggal:'11 Jun 2026', email:'dinadina@gmail.com',                  phone:'87797508972', kota:'Jakarta', kategori:'real',    sumber:'wa',     aktivitas:'Kontak Langsung',      status:'belum' },
   { id:3,  nama:'Adi Santoso',   perusahaan:'CV. Maju Bersama',           tanggal:'11 Jun 2026', email:'adi.santoso@majubersama.id',           phone:'81234567890', kota:'Surabaya',kategori:'potensi', sumber:'msg',    aktivitas:'Kirim Pesan',          status:'dihubungi' },
@@ -112,9 +126,66 @@ let lpState = {
 };
 
 // ── Init ──────────────────────────────────────────────────────
-function initLeadsPage() {
+async function initLeadsPage() {
+  showLpLoadingState();
+  await loadLeadsFromSheet();
   renderLeadsTable();
   updateKatCounts();
+}
+
+// ── Muat leads dari Google Sheets via Apps Script Web App ─────
+async function loadLeadsFromSheet() {
+  if (!lpSheetConfigured()) {
+    console.warn('LP_SHEET_API_URL belum diisi — pakai data contoh sementara.');
+    LEADS_DATA = LEADS_DATA_FALLBACK;
+    return;
+  }
+  try {
+    const res  = await fetch(LP_SHEET_API_URL);
+    const data = await res.json();
+    if (data.ok) {
+      LEADS_DATA = data.leads;
+    } else {
+      console.error('Gagal memuat leads:', data.error);
+      showLpToast('Gagal memuat data dari Google Sheets: ' + data.error, 'error');
+      LEADS_DATA = [];
+    }
+  } catch (err) {
+    console.error(err);
+    showLpToast('Tidak bisa terhubung ke Google Sheets', 'error');
+    LEADS_DATA = [];
+  }
+}
+
+function showLpLoadingState() {
+  const tbody = document.getElementById('lp-table-body');
+  if (tbody) {
+    tbody.innerHTML = `
+      <div style="padding:48px 16px;text-align:center;color:#9ca3af;font-size:13px">
+        <i class="ti ti-loader-2" style="font-size:20px;display:block;margin-bottom:8px"></i>
+        Memuat data leads dari Google Sheets…
+      </div>`;
+  }
+}
+
+// ── Sinkronkan perubahan status balik ke Google Sheets ─────────
+async function syncStatusToSheet(id, status) {
+  if (!lpSheetConfigured()) return; // mode demo, tidak ada sheet untuk disinkronkan
+  try {
+    const res = await fetch(LP_SHEET_API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // hindari CORS preflight
+      body: JSON.stringify({ action: 'updateStatus', id, status }),
+    });
+    const data = await res.json();
+    if (!data.ok) {
+      console.error('Gagal sync status ke Sheets:', data.error);
+      showLpToast('Status tersimpan lokal, tapi gagal sync ke Sheets', 'error');
+    }
+  } catch (err) {
+    console.error(err);
+    showLpToast('Status tersimpan lokal, tapi gagal sync ke Sheets', 'error');
+  }
 }
 
 // ── Filter: Kategori ──────────────────────────────────────────
@@ -354,10 +425,12 @@ function submitStatus() {
   const id = lpState.statusTarget;
   const lead = LEADS_DATA.find(l => l.id === id);
   if (!lead) return;
-  lead.status = document.getElementById('lp-status-select').value;
+  const newStatus = document.getElementById('lp-status-select').value;
+  lead.status = newStatus;
   closeStatusModal();
   renderLeadsTable();
   showLpToast('Status berhasil diperbarui', 'success');
+  syncStatusToSheet(id, newStatus);
 }
 
 // ── Aksi: Hubungi WA ─────────────────────────────────────────
@@ -368,6 +441,7 @@ function hubungiWA(id) {
   if (lead.status === 'belum') {
     lead.status = 'dihubungi';
     renderLeadsTable();
+    syncStatusToSheet(id, 'dihubungi');
   }
   showLpToast(`Membuka WhatsApp untuk ${lead.nama}…`, 'success');
   // Simulasi: buka WA
@@ -708,6 +782,7 @@ function sendAiFollowupWA() {
   if (lead.status === 'belum') {
     lead.status = 'dihubungi';
     renderLeadsTable();
+    syncStatusToSheet(lead.id, 'dihubungi');
   }
 
   // Build WhatsApp URL
@@ -718,12 +793,7 @@ function sendAiFollowupWA() {
   showLpToast(`Pesan AI untuk ${lead.nama} siap dikirim via WhatsApp ✓`, 'success');
 }
 
-// ── Re-init: override initLeadsPage to also re-render with AI ─
-const _origInitLeadsPage = window.initLeadsPage;
-window.initLeadsPage = function() {
-  renderLeadsTable();
-  updateKatCounts();
-};
+// (initLeadsPage sudah didefinisikan di atas dengan loadLeadsFromSheet)
 
 // Auto-init if page already active
 if (document.getElementById('leads-page') &&
