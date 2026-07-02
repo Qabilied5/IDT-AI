@@ -454,10 +454,9 @@
           <!-- TOOLBAR FILTER -->
           <div class="pc-toolbar">
             <div class="pc-filters">
-              <button class="pc-filter-btn active" data-filter="all">Semua <span class="pc-count">24</span></button>
-              <button class="pc-filter-btn" data-filter="ai">AI Agent <span class="pc-count">18</span></button>
-              <button class="pc-filter-btn" data-filter="human">Agen Manusia <span class="pc-count">4</span></button>
-              <button class="pc-filter-btn" data-filter="pending">Menunggu <span class="pc-count">2</span></button>
+              <button class="pc-filter-btn active" data-filter="all">Semua <span class="pc-count">0</span></button>
+              <button class="pc-filter-btn" data-filter="ai">AI Agent <span class="pc-count">0</span></button>
+              <button class="pc-filter-btn" data-filter="human">Agen Manusia <span class="pc-count">0</span></button>
             </div>
             <div class="pc-toolbar-right">
               <div class="pc-search-wrap">
@@ -467,9 +466,7 @@
               <div class="pc-channel-filter">
                 <select id="pc-channel-select">
                   <option value="all">Semua Channel</option>
-                  <option value="wa">WhatsApp</option>
-                  <option value="ig">Instagram</option>
-                  <option value="shopee">Shopee</option>
+                  <option value="telegram">Telegram</option>
                 </select>
               </div>
             </div>
@@ -477,25 +474,10 @@
 
           <!-- CHANNEL BADGES ROW -->
           <div class="pc-channel-row">
-            <div class="pc-channel-badge wa">
-              <i class="ti ti-brand-whatsapp" aria-hidden="true"></i>
-              <span>WhatsApp</span>
-              <strong>14</strong>
-            </div>
-            <div class="pc-channel-badge ig">
-              <i class="ti ti-brand-instagram" aria-hidden="true"></i>
-              <span>Instagram DM</span>
-              <strong>7</strong>
-            </div>
-            <div class="pc-channel-badge shopee">
-              <i class="ti ti-shopping-bag" aria-hidden="true"></i>
-              <span>Shopee Chat</span>
-              <strong>3</strong>
-            </div>
-            <div class="pc-channel-badge web">
-              <i class="ti ti-world" aria-hidden="true"></i>
-              <span>Website</span>
-              <strong>0</strong>
+            <div class="pc-channel-badge tg">
+              <i class="ti ti-brand-telegram" aria-hidden="true"></i>
+              <span>Telegram</span>
+              <strong id="pc-tg-badge-count">0</strong>
             </div>
           </div>
 
@@ -504,102 +486,11 @@
 
             <!-- KIRI: LIST PERCAKAPAN -->
             <div class="pc-list" id="pc-list">
-
-              <!-- Item percakapan -->
-              <div class="pc-item active" data-id="1" data-filter="ai" data-channel="wa" onclick="selectConv(this, 1)">
-                <div class="pc-item-av wa-av">BW</div>
-                <div class="pc-item-body">
-                  <div class="pc-item-top">
-                    <span class="pc-item-name">Budi Wicaksono</span>
-                    <span class="pc-item-time">10:29</span>
-                  </div>
-                  <div class="pc-item-preview">Oke mas, saya mau order 2 box dulu untuk sample...</div>
-                  <div class="pc-item-tags">
-                    <span class="pc-tag wa-tag"><i class="ti ti-brand-whatsapp"></i> WA</span>
-                    <span class="pc-tag ai-tag"><i class="ti ti-robot"></i> AI</span>
-                  </div>
-                </div>
-                <div class="pc-item-unread">2</div>
+              <!-- Diisi otomatis oleh script_page/percapakan.js dari data live Telegram -->
+              <div style="padding:28px 16px;text-align:center;color:var(--gray-400);font-size:12px">
+                <i class="ti ti-loader-2" style="font-size:22px;display:block;margin-bottom:8px"></i>
+                Memuat percakapan...
               </div>
-
-              <div class="pc-item" data-id="2" data-filter="ai" data-channel="ig" onclick="selectConv(this, 2)">
-                <div class="pc-item-av ig-av">RS</div>
-                <div class="pc-item-body">
-                  <div class="pc-item-top">
-                    <span class="pc-item-name">Rina Sari</span>
-                    <span class="pc-item-time">10:15</span>
-                  </div>
-                  <div class="pc-item-preview">Harga untuk 50 pcs berapa ya kak?</div>
-                  <div class="pc-item-tags">
-                    <span class="pc-tag ig-tag"><i class="ti ti-brand-instagram"></i> IG</span>
-                    <span class="pc-tag ai-tag"><i class="ti ti-robot"></i> AI</span>
-                  </div>
-                </div>
-              </div>
-
-              <div class="pc-item" data-id="3" data-filter="human" data-channel="wa" onclick="selectConv(this, 3)">
-                <div class="pc-item-av" style="background:#eef2ff;color:#4b5eaa">AN</div>
-                <div class="pc-item-body">
-                  <div class="pc-item-top">
-                    <span class="pc-item-name">Andi Nugroho</span>
-                    <span class="pc-item-time">09:58</span>
-                  </div>
-                  <div class="pc-item-preview">Saya ingin komplain soal pengiriman yang telat</div>
-                  <div class="pc-item-tags">
-                    <span class="pc-tag wa-tag"><i class="ti ti-brand-whatsapp"></i> WA</span>
-                    <span class="pc-tag human-tag"><i class="ti ti-user"></i> Agen</span>
-                    <span class="pc-tag ticket-tag"><i class="ti ti-ticket"></i> Tiket</span>
-                  </div>
-                </div>
-                <div class="pc-item-unread" style="background:var(--amber)">1</div>
-              </div>
-
-              <div class="pc-item" data-id="4" data-filter="ai" data-channel="shopee" onclick="selectConv(this, 4)">
-                <div class="pc-item-av shopee-av">DH</div>
-                <div class="pc-item-body">
-                  <div class="pc-item-top">
-                    <span class="pc-item-name">Dewi Hartanti</span>
-                    <span class="pc-item-time">09:44</span>
-                  </div>
-                  <div class="pc-item-preview">Produknya ready stock gak? Mau beli 10 pcs nih</div>
-                  <div class="pc-item-tags">
-                    <span class="pc-tag shopee-tag"><i class="ti ti-shopping-bag"></i> Shopee</span>
-                    <span class="pc-tag ai-tag"><i class="ti ti-robot"></i> AI</span>
-                  </div>
-                </div>
-              </div>
-
-              <div class="pc-item" data-id="5" data-filter="pending" data-channel="ig" onclick="selectConv(this, 5)">
-                <div class="pc-item-av ig-av">MF</div>
-                <div class="pc-item-body">
-                  <div class="pc-item-top">
-                    <span class="pc-item-name">M. Fauzi</span>
-                    <span class="pc-item-time">09:30</span>
-                  </div>
-                  <div class="pc-item-preview">Bisa dikirim ke luar kota? Ke Surabaya?</div>
-                  <div class="pc-item-tags">
-                    <span class="pc-tag ig-tag"><i class="ti ti-brand-instagram"></i> IG</span>
-                    <span class="pc-tag pending-tag"><i class="ti ti-clock"></i> Pending</span>
-                  </div>
-                </div>
-                <div class="pc-item-unread" style="background:#d97706">!</div>
-              </div>
-
-              <div class="pc-item" data-id="6" data-filter="ai" data-channel="wa" onclick="selectConv(this, 6)">
-                <div class="pc-item-av wa-av">SK</div>
-                <div class="pc-item-body">
-                  <div class="pc-item-top">
-                    <span class="pc-item-name">Siti Komala</span>
-                    <span class="pc-item-time">09:10</span>
-                  </div>
-                  <div class="pc-item-preview">Terima kasih, sudah selesai! Nanti order lagi ya</div>
-                  <div class="pc-item-tags">
-                    <span class="pc-tag wa-tag"><i class="ti ti-brand-whatsapp"></i> WA</span>
-                    <span class="pc-tag closed-tag"><i class="ti ti-circle-check"></i> Selesai</span>
-                  </div>
-                </div>
-              </div>
-
             </div>
 
             <!-- KANAN: DETAIL CHAT -->
@@ -608,12 +499,11 @@
               <!-- CHAT HEADER -->
               <div class="pc-detail-header">
                 <div class="pc-detail-contact">
-                  <div class="pc-detail-av wa-av">BW</div>
+                  <div class="pc-detail-av tg-av">—</div>
                   <div>
-                    <div class="pc-detail-name">Budi Wicaksono</div>
+                    <div class="pc-detail-name">Pilih percakapan</div>
                     <div class="pc-detail-meta">
-                      <span class="pc-tag wa-tag" style="font-size:10px"><i class="ti ti-brand-whatsapp"></i> WhatsApp</span>
-                      <span style="color:var(--gray-400);font-size:10px">· +62 812-3456-7890</span>
+                      <span style="color:var(--gray-400);font-size:10px">Klik salah satu chat di sebelah kiri</span>
                     </div>
                   </div>
                 </div>
@@ -642,8 +532,7 @@
               <!-- STATUS BAR -->
               <div class="pc-status-bar" id="pc-status-bar">
                 <div class="pc-status-info">
-                  <span class="pc-tag ai-tag"><i class="ti ti-robot"></i> Ditangani AI — Agent Sales</span>
-                  <span style="font-size:10px;color:var(--gray-400)">Aktif sejak 10:24 · 5 pesan</span>
+                  <span style="font-size:10px;color:var(--gray-400)">Belum ada percakapan dipilih</span>
                 </div>
                 <div id="takeover-indicator" style="display:none" class="pc-takeover-active">
                   <i class="ti ti-user-check"></i> Anda sedang menangani percakapan ini
@@ -655,31 +544,9 @@
 
               <!-- CHAT MESSAGES -->
               <div class="pc-chat-body" id="pc-chat-body">
-                <div class="pc-date-divider"><span>Hari ini — Rabu, 3 Juni 2025</span></div>
-
-                <div class="msg user">
-                  <div class="msg-bubble">Halo, saya mau tanya soal produk kalian</div>
-                  <div class="msg-meta">10:24</div>
-                </div>
-                <div class="msg bot">
-                  <div class="msg-bubble">Halo Pak Budi! Senang bisa membantu. Produk apa yang ingin Bapak ketahui? Kami memiliki berbagai kategori industri.</div>
-                  <div class="msg-meta"><span class="ai-label">AI</span> 10:24</div>
-                </div>
-                <div class="msg user">
-                  <div class="msg-bubble">Saya cari spare part mesin packing, butuh 50 pcs</div>
-                  <div class="msg-meta">10:26</div>
-                </div>
-                <div class="msg bot">
-                  <div class="msg-bubble">Baik Pak! Untuk spare part mesin packing 50 pcs, kami punya stok tersedia. Boleh tahu tipe mesinnya apa? Saya bisa langsung cekkan harga dan estimasi pengiriman.</div>
-                  <div class="msg-meta"><span class="ai-label">AI</span> 10:26</div>
-                </div>
-                <div class="msg user">
-                  <div class="msg-bubble">Oke mas, saya mau order 2 box dulu untuk sample. Bisa COD?</div>
-                  <div class="msg-meta">10:29</div>
-                </div>
-                <div class="msg bot">
-                  <div class="msg-bubble">Bisa Pak! Untuk sample 2 box, kami siapkan dengan pengiriman COD. Total Rp 1.240.000 termasuk ongkir Jakarta. Saya buatkan invoice sekarang ya?</div>
-                  <div class="msg-meta"><span class="ai-label">AI</span> 10:29</div>
+                <div style="padding:28px 16px;text-align:center;color:var(--gray-400);font-size:12px">
+                  <i class="ti ti-brand-telegram" style="font-size:24px;display:block;margin-bottom:8px"></i>
+                  Pilih percakapan di sebelah kiri untuk mulai chat.
                 </div>
               </div>
 
@@ -5246,8 +5113,8 @@
         </div>
         <div class="rp-chat-header">
           <div class="rp-contact">
-            <div class="rp-av">BW</div>
-            <div><div class="rp-nm">Budi Wicaksono</div><div class="rp-status">Online</div></div>
+            <div class="rp-av">—</div>
+            <div><div class="rp-nm">Pilih percakapan</div><div class="rp-status">—</div></div>
           </div>
           <div class="rp-actions">
             <div class="rp-act" title="Telepon"><i class="ti ti-phone" aria-label="Telepon"></i></div>
