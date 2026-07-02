@@ -547,6 +547,47 @@ function deleteStage(key) {
 }
 
 // ── Board Scroll Arrow Buttons ────────────────────────────────
+/* ══ TOGGLE AI INSIGHTS PANEL ═══════════════════════════════════
+   Menyembunyikan/menampilkan #pl-ai-panel agar #pl-board-wrap
+   punya ruang lebih besar untuk scrolling kanban.
+   State disimpan di localStorage supaya tidak reset tiap reload.
+═══════════════════════════════════════════════════════════════ */
+const PL_AI_PANEL_STORAGE_KEY = 'pl-ai-panel-hidden';
+
+function plApplyAIPanelState(hidden) {
+  const panel = document.getElementById('pl-ai-panel');
+  const btn   = document.getElementById('pl-ai-toggle-btn');
+  const label = document.getElementById('pl-ai-toggle-label');
+  if (!panel) return;
+
+  panel.classList.toggle('pl-ai-panel-hidden', hidden);
+  panel.setAttribute('aria-hidden', hidden ? 'true' : 'false');
+
+  if (btn) btn.classList.toggle('active', hidden);
+  if (label) label.textContent = hidden ? 'Tampilkan AI Insights' : 'Sembunyikan AI Insights';
+
+  // Board mungkin berubah tinggi, refresh status arrow scroll kiri/kanan
+  setTimeout(plUpdateScrollBtns, 260);
+}
+
+function plToggleAIPanel() {
+  const panel = document.getElementById('pl-ai-panel');
+  if (!panel) return;
+  const hidden = !panel.classList.contains('pl-ai-panel-hidden');
+  plApplyAIPanelState(hidden);
+  try {
+    localStorage.setItem(PL_AI_PANEL_STORAGE_KEY, hidden ? '1' : '0');
+  } catch (e) { /* localStorage tidak tersedia, abaikan */ }
+}
+
+function plInitAIPanelToggle() {
+  let hidden = false;
+  try {
+    hidden = localStorage.getItem(PL_AI_PANEL_STORAGE_KEY) === '1';
+  } catch (e) { /* localStorage tidak tersedia, default tampil */ }
+  plApplyAIPanelState(hidden);
+}
+
 function plScrollBoard(dir) {
   const wrap = document.getElementById('pl-board-wrap');
   if (!wrap) return;
@@ -973,7 +1014,12 @@ function plRebuildBoard() {
           <div class="pl-card-top">
             <div class="pl-card-company">${d.company}</div>
             <button class="pl-card-menu" onclick="openCardMenu(event,${d.id})" title="Opsi">
-              <i class="ti ti-dots"></i>
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-dots-vertical">
+  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+  <path d="M12 12m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />
+  <path d="M12 19m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />
+  <path d="M12 5m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />
+</svg>
             </button>
           </div>
           <div class="pl-card-product">${d.product}</div>
@@ -1009,6 +1055,8 @@ let plDrag = {
   srcStage: null,
   overStage: null,
   offX: 0, offY: 0,     // cursor offset inside card
+  lastClientX: null, lastClientY: null, // posisi kursor terakhir (dipakai loop auto-scroll)
+  autoScrollRAF: null,  // id requestAnimationFrame untuk auto-scroll
 };
 
 /* Called on mousedown of the drag handle */
@@ -1029,6 +1077,8 @@ function plStartDrag(e, dealId) {
   plDrag.overStage = d.stage;
   plDrag.offX     = e.clientX - rect.left;
   plDrag.offY     = e.clientY - rect.top;
+  plDrag.lastClientX = e.clientX;
+  plDrag.lastClientY = e.clientY;
 
   // Build ghost (visual clone)
   const ghost = card.cloneNode(true);
@@ -1047,18 +1097,34 @@ function plStartDrag(e, dealId) {
 
   document.addEventListener('mousemove', plOnDragMove);
   document.addEventListener('mouseup',   plOnDragEnd);
+
+  // Mulai loop auto-scroll (aktif hanya saat kursor dekat tepi board)
+  if (!plDrag.autoScrollRAF) {
+    plDrag.autoScrollRAF = requestAnimationFrame(plAutoScrollTick);
+  }
 }
 
 function plOnDragMove(e) {
   if (!plDrag.active) return;
 
+  plDrag.lastClientX = e.clientX;
+  plDrag.lastClientY = e.clientY;
+
   // Move ghost
   plDrag.ghost.style.left = (e.clientX - plDrag.offX) + 'px';
   plDrag.ghost.style.top  = (e.clientY - plDrag.offY) + 'px';
 
-  // Detect which column the cursor is over
+  plUpdateDragHoverTarget(e.clientX, e.clientY);
+}
+
+/* Deteksi kolom yang sedang dihover kursor + update highlight drop-zone.
+   Dipisah dari plOnDragMove supaya bisa dipanggil ulang oleh loop
+   auto-scroll (plAutoScrollTick) saat kursor diam tapi board ikut bergeser. */
+function plUpdateDragHoverTarget(clientX, clientY) {
+  if (!plDrag.active || !plDrag.ghost) return;
+
   plDrag.ghost.style.pointerEvents = 'none';
-  const target = document.elementFromPoint(e.clientX, e.clientY);
+  const target = document.elementFromPoint(clientX, clientY);
   plDrag.ghost.style.pointerEvents = '';
 
   const col = target ? target.closest('.pl-col[data-stage]') : null;
@@ -1069,6 +1135,67 @@ function plOnDragMove(e) {
     c.classList.toggle('pl-drop-active', c.dataset.stage === newStage);
   });
   plDrag.overStage = newStage;
+}
+
+/* ══ AUTO-SCROLL SAAT DRAG DEKAT UJUNG BOARD ══════════════════
+   Selama drag berlangsung, kalau kursor mendekati tepi atas/bawah/
+   kiri/kanan #pl-board-wrap, board akan auto-scroll ke arah itu
+   supaya user tidak perlu lepas drag untuk scroll manual. */
+const PL_AUTOSCROLL_EDGE      = 70; // px zona sensitif dari tepi
+const PL_AUTOSCROLL_MAX_SPEED = 18; // px per frame saat kursor tepat di ujung
+const PL_AUTOSCROLL_TOLERANCE = 40; // px toleransi kursor sedikit keluar dari wrap
+
+function plAutoScrollTick() {
+  if (!plDrag.active) { plDrag.autoScrollRAF = null; return; }
+
+  const wrap = document.getElementById('pl-board-wrap');
+  const x = plDrag.lastClientX;
+  const y = plDrag.lastClientY;
+
+  if (!wrap || x === null || y === null) {
+    plDrag.autoScrollRAF = requestAnimationFrame(plAutoScrollTick);
+    return;
+  }
+
+  const rect = wrap.getBoundingClientRect();
+  let scrolled = false;
+
+  const distTop    = y - rect.top;
+  const distBottom = rect.bottom - y;
+  const distLeft   = x - rect.left;
+  const distRight  = rect.right - x;
+
+  const speedFromDist = (dist) =>
+    Math.ceil((1 - Math.max(dist, 0) / PL_AUTOSCROLL_EDGE) * PL_AUTOSCROLL_MAX_SPEED);
+
+  // Vertikal — atas
+  if (distTop < PL_AUTOSCROLL_EDGE && distTop > -PL_AUTOSCROLL_TOLERANCE && wrap.scrollTop > 0) {
+    wrap.scrollTop -= speedFromDist(distTop);
+    scrolled = true;
+  }
+  // Vertikal — bawah
+  else if (distBottom < PL_AUTOSCROLL_EDGE && distBottom > -PL_AUTOSCROLL_TOLERANCE &&
+           wrap.scrollTop + wrap.clientHeight < wrap.scrollHeight) {
+    wrap.scrollTop += speedFromDist(distBottom);
+    scrolled = true;
+  }
+
+  // Horizontal — kiri
+  if (distLeft < PL_AUTOSCROLL_EDGE && distLeft > -PL_AUTOSCROLL_TOLERANCE && wrap.scrollLeft > 0) {
+    wrap.scrollLeft -= speedFromDist(distLeft);
+    scrolled = true;
+  }
+  // Horizontal — kanan
+  else if (distRight < PL_AUTOSCROLL_EDGE && distRight > -PL_AUTOSCROLL_TOLERANCE &&
+           wrap.scrollLeft + wrap.clientWidth < wrap.scrollWidth) {
+    wrap.scrollLeft += speedFromDist(distRight);
+    scrolled = true;
+  }
+
+  // Board ikut geser → posisi kolom di bawah kursor bisa berubah, refresh highlight
+  if (scrolled) plUpdateDragHoverTarget(x, y);
+
+  plDrag.autoScrollRAF = requestAnimationFrame(plAutoScrollTick);
 }
 
 function plOnDragEnd(e) {
@@ -1104,6 +1231,12 @@ function plOnDragEnd(e) {
   plDrag.dealId   = null;
   plDrag.srcStage = null;
   plDrag.overStage = null;
+  plDrag.lastClientX = null;
+  plDrag.lastClientY = null;
+  if (plDrag.autoScrollRAF) {
+    cancelAnimationFrame(plDrag.autoScrollRAF);
+    plDrag.autoScrollRAF = null;
+  }
 }
 // ═════════════════════════════════════════════════════════════
 
@@ -1253,6 +1386,7 @@ document.addEventListener('DOMContentLoaded', () => {
   plRebuildBoard();
   plUpdateSummary();
   plUpdateFlow();
+  plInitAIPanelToggle();
 
   const searchInput = document.getElementById('pl-search-input');
   const picFilter   = document.getElementById('pl-filter-pic');

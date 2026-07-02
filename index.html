@@ -15,6 +15,7 @@
   <link rel="stylesheet" href="page.css/knowledge-base.css">
   <link rel="stylesheet" href="page.css/aicall.css">
   <link rel="stylesheet" href="page.css/pipeline.css">
+  <link rel="stylesheet" href="page.css/pipeline-ai.css">
   <link rel="stylesheet" href="desktopOnly.css">
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
@@ -2448,6 +2449,10 @@
         <option value="upsell">Upsell</option>
         <option value="renewal">Renewal</option>
       </select>
+      <button class="pl-btn pl-btn-ghost pl-ai-toggle-btn" id="pl-ai-toggle-btn" onclick="plToggleAIPanel()" title="Sembunyikan/tampilkan AI Insights">
+        <i class="ti ti-sparkles"></i>
+        <span id="pl-ai-toggle-label">Hide AI Insights</span>
+      </button>
       <button class="pl-btn pl-btn-ghost" id="pl-add-stage-btn" onclick="openAddStageModal()">
         <i class="ti ti-layout-kanban"></i> Tambah Stage
       </button>
@@ -2462,6 +2467,11 @@
     <div class="pl-flow-track">
       <!-- Isi dirender dinamis oleh plRenderFlowBar() -->
     </div>
+  </div>
+
+  <!-- AI Pipeline Insights — dirender otomatis oleh JS (lihat script_page/pipeline-ai.js) -->
+  <div class="pl-ai-panel" id="pl-ai-panel">
+    <!-- Isi dirender dinamis oleh plLoadAIInsights() -->
   </div>
 
   <!-- Board + Scroll Arrows -->
@@ -5557,6 +5567,7 @@
   </div>
 </div>
 
+<!-- JS SETUP -->
 <script src="script.js"></script>
 <script src="script_page/percapakan.js"></script>
 <script src="script_page/ai_agent.js"></script>
@@ -5568,6 +5579,10 @@
 <script src="script_page/knowledge-base.js"></script>
 <script src="script_page/aicall.js"></script>
 <script src="script_page/pipeline.js"></script>
+
+<!-- AI SETUP -->
+<script src="SetupAI/pipeline-ai.js"></script>
+
 <script src="desktopOnly.js"></script>
 
 <script>
