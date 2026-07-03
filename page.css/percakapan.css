@@ -472,3 +472,29 @@
 .pc-inv-row.total { margin-top: 2px; }
 .pc-inv-row.total span { font-weight: 700; color: var(--gray-800); font-size: 13px; }
 .pc-inv-row.total strong { font-size: 14px; color: var(--red); }
+
+
+/* FIX ALIGNMENT BUBBLE CHAT */
+.pc-chat-body .msg.user,
+#rp-panel-live-chat .chat-body .msg.user {
+  align-self: flex-start;
+  align-items: flex-start;
+}
+.pc-chat-body .msg.user .msg-bubble,
+#rp-panel-live-chat .chat-body .msg.user .msg-bubble {
+  background: var(--gray-100);
+  color: var(--gray-800);
+  border-radius: 10px 10px 10px 2px;
+}
+
+.pc-chat-body .msg.bot,
+#rp-panel-live-chat .chat-body .msg.bot {
+  align-self: flex-end;
+  align-items: flex-end;
+}
+.pc-chat-body .msg.bot .msg-bubble,
+#rp-panel-live-chat .chat-body .msg.bot .msg-bubble {
+  background: var(--red);
+  color: #fff;
+  border-radius: 10px 10px 2px 10px;
+}

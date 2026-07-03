@@ -85,7 +85,7 @@ function updatePreviewBubble() {
   const nameEl = document.getElementById('pa-agent-name-val');
   const bubbleEl = document.getElementById('pa-preview-text');
   if (!bubbleEl) return;
-  const name = document.getElementById('pa-agent-name')?.value || 'Halo AI';
+  const name = document.getElementById('pa-agent-name')?.value || 'IndoTrading AI';
   if (nameEl) nameEl.textContent = name;
   bubbleEl.textContent = PREVIEW_MESSAGES[paState.selectedTone] || PREVIEW_MESSAGES.santai;
 }
