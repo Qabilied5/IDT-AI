@@ -400,26 +400,84 @@ const LP_SUMBER_MAP = {
 const LP_STATUS_MAP = {
   'Belum Dihubungi': 'belum',
   'Sudah Dihubungi': 'dihubungi',
-  'Follow-up Lanjutan': 'followup',
+  'Follow-up': 'follow-up',
   'Closed / Deal': 'closed',
 };
 
+// Peta field internal -> daftar kemungkinan nama header CSV (urutan =
+// prioritas pencarian). HARUS SAMA dengan COLUMN_MAP di Code.gs supaya
+// import CSV lokal dan koneksi live ke Sheets menghasilkan data yang
+// konsisten. Tambah alias di sini kalau nama header CSV berubah lagi —
+// tidak perlu ubah kode lain.
+const LP_COLUMN_MAP = {
+  tanggal:         ['Tanggal Masuk Lead', 'Tanggal'],
+  perusahaan:      ['Nama Perusahaan', 'Perusahaan'],
+  nama:            ['Nama Kontak / PIC', 'Nama Kontak/PIC', 'Nama Kontak', 'PIC', 'Nama'],
+  jabatan:         ['Jabatan'],
+  phone:           ['Nomor HP', 'No. HP', 'No HP', 'Phone'],
+  sumber:          ['Sumber Lead', 'Sumber'],
+  status:          ['Status'],                                   // progres follow-up
+  jumlahFollowup:  ['Jumlah Follow-up', 'Jumlah Follow Up', 'Jumlah Followup'],
+  aksiSelanjutnya: ['Aksi Selanjutnya'],
+  pipelineStage:   ['Pipeline Stage'],
+  kategori:        ['Status Lead', 'Kategori Lead', 'Kategori'], // kualifikasi lead
+  estimasi:        ['Estimasi Nominal (Opsional)', 'Estimasi Nominal', 'Nominal'],
+
+  // Kolom lama yang sudah tidak ada di template baru — kalau suatu saat
+  // ditambah lagi ke CSV, otomatis langsung kepakai (kalau tidak ada,
+  // default ke '' saja, tidak error).
+  email:           ['Email'],
+  kota:            ['Kota'],
+  aktivitas:       ['Aktivitas'],
+};
+
+function lpNormalizeHeader_(s) {
+  return String(s || '').replace(/\s+/g, ' ').trim().toLowerCase();
+}
+
+// Baca baris header CSV, hasilkan map: field internal -> index kolom
+// (0-based). Kalau kolom tidak ditemukan, nilainya -1.
+function lpBuildHeaderIndex_(headerRow) {
+  const normalized = headerRow.map(lpNormalizeHeader_);
+  const colIndex = {};
+  for (const field in LP_COLUMN_MAP) {
+    const aliases = LP_COLUMN_MAP[field];
+    let found = -1;
+    for (let a = 0; a < aliases.length; a++) {
+      const idx = normalized.indexOf(lpNormalizeHeader_(aliases[a]));
+      if (idx !== -1) { found = idx; break; }
+    }
+    colIndex[field] = found;
+  }
+  return colIndex;
+}
+
+function lpCell_(row, colIndex, field) {
+  const idx = colIndex[field];
+  if (idx === undefined || idx === -1) return '';
+  const v = row[idx];
+  return v === null || v === undefined ? '' : String(v).trim();
+}
+
 function leadsFromCsvRows(rows) {
+  if (rows.length < 1) return [];
+  const colIndex = lpBuildHeaderIndex_(rows[0]);
   const dataRows = rows.slice(1); // baris pertama = header, dibuang
+
   return dataRows
     .map((r, i) => {
-      const nama          = (r[0] || '').trim();
-      const perusahaan    = (r[1] || '').trim();
-      const tanggal       = (r[2] || '').trim();
-      const email         = (r[3] || '').trim();
-      const phone         = (r[4] || '').trim();
-      const kota          = (r[5] || '').trim();
-      const kategoriLabel = (r[6] || '').trim();
-      const sumberLabel   = (r[7] || '').trim();
-      const aktivitas     = (r[8] || '').trim();
-      const statusLabel   = (r[9] || '').trim();
-
+      const nama = lpCell_(r, colIndex, 'nama');
       if (!nama) return null; // skip baris kosong
+
+      const perusahaan    = lpCell_(r, colIndex, 'perusahaan');
+      const tanggal       = lpCell_(r, colIndex, 'tanggal');
+      const email         = lpCell_(r, colIndex, 'email');
+      const phone         = lpCell_(r, colIndex, 'phone');
+      const kota          = lpCell_(r, colIndex, 'kota');
+      const kategoriLabel = lpCell_(r, colIndex, 'kategori');
+      const sumberLabel   = lpCell_(r, colIndex, 'sumber');
+      const aktivitas     = lpCell_(r, colIndex, 'aktivitas');
+      const statusLabel   = lpCell_(r, colIndex, 'status');
 
       return {
         id: i + 1,
@@ -429,6 +487,14 @@ function leadsFromCsvRows(rows) {
         sumber: LP_SUMBER_MAP[sumberLabel] || 'wa',
         aktivitas: aktivitas || sumberLabel || '',
         status: LP_STATUS_MAP[statusLabel] || 'belum',
+
+        // Field tambahan dari template baru (belum dipakai UI Kontak/Leads
+        // saat ini, disiapkan untuk modul lain seperti Pipeline):
+        jabatan: lpCell_(r, colIndex, 'jabatan'),
+        jumlahFollowup: lpCell_(r, colIndex, 'jumlahFollowup') || 0,
+        aksiSelanjutnya: lpCell_(r, colIndex, 'aksiSelanjutnya'),
+        pipelineStage: lpCell_(r, colIndex, 'pipelineStage'),
+        estimasiNominal: lpCell_(r, colIndex, 'estimasi') || '',
       };
     })
     .filter(Boolean);
@@ -527,7 +593,7 @@ function renderLeadRow(lead) {
   const srcClass = { wa:'src-wa', msg:'src-msg', rfq:'src-rfq', profil:'src-profil' };
   const aktClass = { wa:'wa', msg:'msg', rfq:'rfq', profil:'profil' };
   const aktIcon  = { wa:'ti-message-circle', msg:'ti-message-2', rfq:'ti-calendar-event', profil:'ti-eye' };
-  const statusLabel = { belum:'Belum dihubungi', dihubungi:'Sudah dihubungi', followup:'Follow-up lanjutan', closed:'Closed / Deal' };
+  const statusLabel = { belum:'Belum dihubungi', dihubungi:'Sudah dihubungi', followup:'Follow-up', closed:'Closed / Deal' };
   const statusClass = { belum:'', dihubungi:'dihubungi', followup:'followup', closed:'closed' };
   const statusIcon  = { belum:'ti-circle', dihubungi:'ti-circle-check', followup:'ti-refresh', closed:'ti-check-circle-2' };
 
@@ -633,7 +699,7 @@ function openLeadModal(id) {
 
   const catLabel = { real:'Real Lead', potensi:'Potensi', belum:'Belum Dikualifikasi' };
   const srcCfg = bizCfg().sumber;
-  const statusLabel = { belum:'Belum dihubungi', dihubungi:'Sudah dihubungi', followup:'Follow-up lanjutan', closed:'Closed / Deal' };
+  const statusLabel = { belum:'Belum dihubungi', dihubungi:'Sudah dihubungi', followup:'Follow-up', closed:'Closed' };
 
   document.getElementById('lp-modal-body').innerHTML = `
     <div class="lp-detail-row"><span class="lp-detail-label">Perusahaan</span><span class="lp-detail-val">${lead.perusahaan}</span></div>
@@ -859,7 +925,7 @@ window.renderLeadRow = function(lead) {
   const srcClass    = { wa:'src-wa', msg:'src-msg', rfq:'src-rfq', profil:'src-profil' };
   const aktClass    = { wa:'wa', msg:'msg', rfq:'rfq', profil:'profil' };
   const aktIcon     = { wa:'ti-message-circle', msg:'ti-message-2', rfq:'ti-calendar-event', profil:'ti-eye' };
-  const statusLabel = { belum:'Belum dihubungi', dihubungi:'Sudah dihubungi', followup:'Follow-up lanjutan', closed:'Closed / Deal' };
+  const statusLabel = { belum:'Belum dihubungi', dihubungi:'Sudah dihubungi', followup:'Follow-up', closed:'Closed' };
   const statusClass = { belum:'', dihubungi:'dihubungi', followup:'followup', closed:'closed' };
   const statusIcon  = { belum:'ti-circle', dihubungi:'ti-circle-check', followup:'ti-refresh', closed:'ti-check-circle-2' };
   const scoreIcon   = { HOT:'🔥', WARM:'🌤', COLD:'🧊' };

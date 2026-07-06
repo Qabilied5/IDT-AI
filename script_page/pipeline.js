@@ -156,6 +156,102 @@ const PL_STAGE_COLOR_PRESETS = [
   '#ef4444', '#c8102e', '#a855f7', '#8b5cf6', '#64748b',
 ];
 
+// ── KONEKSI GOOGLE SHEETS (pakai URL yang sama dengan Kontak/Leads) ──
+// Sengaja pakai string key yang SAMA dengan LP_STORAGE_KEY di
+// leads-page.js. Begitu URL Apps Script diisi sekali lewat modal
+// "Import Excel/Spreadsheets" di halaman Kontak/Leads, Pipeline
+// otomatis ikut kebaca — tidak perlu setup URL terpisah di sini.
+const PL_SHEET_STORAGE_KEY = 'lp_sheet_api_url';
+
+function getConfiguredLeadsUrl_() {
+  try {
+    const saved = window.localStorage.getItem(PL_SHEET_STORAGE_KEY);
+    if (saved) return saved;
+  } catch (e) { /* localStorage tidak tersedia (mis. private browsing) */ }
+  return null;
+}
+
+// plDeals di atas dipakai sebagai data contoh/fallback SAAT BELUM ada
+// URL spreadsheet yang dikonfigurasi (supaya tampilan tidak kosong).
+let plDataSource = 'fallback'; // 'sheet' | 'fallback'
+
+// Lead belum punya kolom channel sedetail Pipeline (wa/ig/shopee/web),
+// jadi "Sumber Lead" dipetakan ke channel yang paling mendekati.
+const PL_CHANNEL_FROM_SUMBER = { wa: 'wa', msg: 'other', profil: 'web' };
+// PIC/sales belum ada datanya di sheet Leads, jadi disamakan dulu ke
+// satu PIC default (bisa diedit manual per-deal dari kartu pipeline).
+const PL_DEFAULT_PIC = 'BW';
+
+function plSlugForStage_(label) {
+  return String(label || '').toLowerCase().trim()
+    .replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+}
+
+// Cocokkan teks kolom "Pipeline Stage" dari sheet ke salah satu stage
+// yang ada di board (dicoba by key dulu, lalu by label), case/format-insensitive.
+function plResolveStageKey_(rawStage) {
+  if (!rawStage) return null;
+  const norm = plSlugForStage_(rawStage);
+  const bySlugKey = plStages.find(s => s.key === norm);
+  if (bySlugKey) return bySlugKey.key;
+  const byLabel = plStages.find(s => plSlugForStage_(s.label) === norm);
+  return byLabel ? byLabel.key : null;
+}
+
+// Ubah 1 baris lead (dari Code.gs) jadi 1 objek deal sesuai format pl Deals.
+// CATATAN: value (nilai deal) sengaja BELUM disinkronkan dari sheet —
+// diisi 0 dulu, supaya tidak salah tampil sebelum datanya benar-benar siap.
+// Bisa diisi manual lewat "Edit Deal" di kartu, atau disambungkan nanti
+// dari kolom "Estimasi Nominal (Opsional)" kalau datanya sudah reliable.
+function plLeadToDeal_(lead) {
+  return {
+    id: lead.id,
+    company: lead.perusahaan || lead.nama || '',
+    product: '',
+    value: 0,
+    stage: plResolveStageKey_(lead.pipelineStage) || plStages[0].key,
+    type: 'baru',
+    pic: PL_DEFAULT_PIC,
+    channel: PL_CHANNEL_FROM_SUMBER[lead.sumber] || 'other',
+    recurring: false,
+    date: lead.tanggal || '',
+    activity: [
+      { text: 'Deal disinkronkan dari data Kontak/Leads', time: 'Baru saja', color: '#818cf8' },
+    ],
+  };
+}
+
+// Muat deal dari Google Sheets (URL yang sama dengan Kontak/Leads).
+// Hanya lead yang kolom "Pipeline Stage"-nya sudah diisi yang dianggap
+// deal aktif di board — lead lain tetap hanya tampil di Kontak/Leads.
+async function loadDealsFromLeadsSheet() {
+  const url = getConfiguredLeadsUrl_();
+  if (!url) {
+    console.warn('Belum ada URL spreadsheet — Pipeline pakai data contoh sementara.');
+    plDataSource = 'fallback';
+    return;
+  }
+  try {
+    const res  = await fetch(url);
+    const data = await res.json();
+    if (!data.ok) {
+      console.error('Gagal memuat deals dari Google Sheets:', data.error);
+      plDataSource = 'fallback';
+      return;
+    }
+    const synced = data.leads
+      .filter(l => (l.pipelineStage || '').trim() !== '')
+      .map(plLeadToDeal_);
+
+    plDeals.length = 0;
+    plDeals.push(...synced);
+    plDataSource = 'sheet';
+  } catch (err) {
+    console.error(err);
+    plDataSource = 'fallback';
+  }
+}
+
 // ── State ─────────────────────────────────────────────────────
 let plCurrentDealId   = null;
 let plCurrentCtxId    = null;
@@ -564,7 +660,7 @@ function plApplyAIPanelState(hidden) {
   panel.setAttribute('aria-hidden', hidden ? 'true' : 'false');
 
   if (btn) btn.classList.toggle('active', hidden);
-  if (label) label.textContent = hidden ? 'Tampilkan AI Insights' : 'Sembunyikan AI Insights';
+  if (label) label.textContent = hidden ? 'Show AI Insights' : 'Hide AI Insights';
 
   // Board mungkin berubah tinggi, refresh status arrow scroll kiri/kanan
   setTimeout(plUpdateScrollBtns, 260);
@@ -1380,7 +1476,9 @@ function plOnColDragEnd(e) {
 // ═════════════════════════════════════════════════════════════
 
 // ── Event Listeners ───────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  await loadDealsFromLeadsSheet();
+
   plRenderColumns();
   plRenderFlowBar();
   plRebuildBoard();
