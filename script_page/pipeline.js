@@ -11,133 +11,133 @@
 ═══════════════════════════════════════════════════════════════ */
 
 // ── Data Store ────────────────────────────────────────────────
-const plDeals = [
-  {
-    id: 1, company: 'PT Dinamika Makmur', product: 'Jasa Konsultasi ERP — SAP B1',
-    value: 85000000, stage: 'prospek', type: 'baru', pic: 'BW', channel: 'wa',
-    recurring: false, date: '2025-06-12',
-    activity: [
-      { text: 'Deal dibuat dari percakapan WhatsApp', time: '12 Jun, 09:14', color: 'var(--red)' },
-      { text: 'AI Agent kualifikasi kebutuhan ERP', time: '12 Jun, 09:20', color: '#818cf8' },
-    ]
-  },
-  {
-    id: 2, company: 'CV Sejahtera Nusantara', product: 'Produk: Mesin Packing A200',
-    value: 42000000, stage: 'prospek', type: 'baru', pic: 'RS', channel: 'ig',
-    recurring: false, date: '2025-06-15',
-    activity: [
-      { text: 'Lead masuk dari Instagram DM', time: '15 Jun, 13:40', color: '#f97316' },
-    ]
-  },
-  {
-    id: 3, company: 'UD Berkah Jaya', product: 'Spare Part Mesin — Bulk 100 pcs',
-    value: 58000000, stage: 'prospek', type: 'upsell', pic: 'DK', channel: 'shopee',
-    recurring: false, date: '2025-06-18',
-    activity: [
-      { text: 'Upsell dari order sebelumnya', time: '18 Jun, 10:05', color: 'var(--amber)' },
-    ]
-  },
-  {
-    id: 4, company: 'PT Karya Bersama', product: 'Jasa Maintenance Tahunan',
-    value: 72000000, stage: 'kualifikasi', type: 'baru', pic: 'BW', channel: 'wa',
-    recurring: true, interval: 'yearly', endDate: '2026-06-10', autoRenewal: true,
-    date: '2025-06-10',
-    activity: [
-      { text: 'Leads dikualifikasi — budget & authority confirmed', time: '11 Jun, 14:22', color: '#60a5fa' },
-      { text: 'Jadwal demo dikirim via WhatsApp', time: '12 Jun, 08:00', color: 'var(--green)' },
-    ]
-  },
-  {
-    id: 5, company: 'Toko Maju Sentosa', product: 'Produk: Kemasan Plastik — 500 pcs',
-    value: 62000000, stage: 'kualifikasi', type: 'baru', pic: 'RS', channel: 'web',
-    recurring: false, date: '2025-06-17',
-    activity: [
-      { text: 'Form website diisi, kontak via email', time: '17 Jun, 16:30', color: '#818cf8' },
-    ]
-  },
-  {
-    id: 6, company: 'PT Logistik Prima', product: 'Produk: Forklift Electric 3T',
-    value: 98000000, stage: 'penawaran', type: 'baru', pic: 'DK', channel: 'wa',
-    recurring: false, date: '2025-06-08',
-    activity: [
-      { text: 'SPH dikirim ke procurement', time: '9 Jun, 11:00', color: 'var(--amber)' },
-      { text: 'Customer minta revisi harga spare part', time: '14 Jun, 15:45', color: 'var(--red)' },
-    ]
-  },
-  {
-    id: 7, company: 'CV Mitra Teknik', product: 'Jasa Kalibrasi Alat — Kontrak',
-    value: 57000000, stage: 'penawaran', type: 'baru', pic: 'BW', channel: 'wa',
-    recurring: true, interval: 'yearly', endDate: '2026-06-20', autoRenewal: true,
-    date: '2025-06-20',
-    activity: [
-      { text: 'Penawaran kontrak tahunan dikirim', time: '20 Jun, 09:30', color: 'var(--amber)' },
-    ]
-  },
-  {
-    id: 8, company: 'PT Nusantara Abadi Group', product: 'Jasa IT Outsourcing — Tahunan',
-    value: 120000000, stage: 'negosiasi', type: 'renewal', pic: 'RS', channel: 'wa',
-    recurring: true, interval: 'yearly', endDate: '2026-08-22', autoRenewal: true,
-    date: '2025-06-22',
-    activity: [
-      { text: 'Renewal deal otomatis dibuat dari kontrak sebelumnya', time: '22 Jun, 08:00', color: 'var(--green)' },
-      { text: 'Negosiasi kenaikan harga 8% dibahas', time: '23 Jun, 14:10', color: 'var(--red)' },
-    ]
-  },
-  {
-    id: 9, company: 'PT Maju Bersama Tbk', product: 'Produk: Conveyor Belt X300',
-    value: 73000000, stage: 'negosiasi', type: 'baru', pic: 'DK', channel: 'wa',
-    recurring: false, date: '2025-06-23',
-    activity: [
-      { text: 'Negosiasi diskon 5% untuk pembayaran DP penuh', time: '23 Jun, 16:00', color: 'var(--amber)' },
-    ]
-  },
-  {
-    id: 10, company: 'PT Sumber Energi', product: 'Produk: Solar Panel 10kW Kit',
-    value: 112000000, stage: 'closing', type: 'baru', pic: 'BW', channel: 'web',
-    recurring: false, date: '2025-06-24',
-    activity: [
-      { text: 'Draft kontrak dikirim ke legal', time: '24 Jun, 10:00', color: 'var(--red)' },
-    ]
-  },
-  {
-    id: 11, company: 'Koperasi Tani Mulya', product: 'Jasa Fumigasi — Kontrak Bulanan',
-    value: 68000000, stage: 'closing', type: 'baru', pic: 'RS', channel: 'wa',
-    recurring: true, interval: 'monthly', endDate: '2026-06-25', autoRenewal: true,
-    date: '2025-06-25',
-    activity: [
-      { text: 'Kontrak bulanan disetujui secara lisan', time: '25 Jun, 09:00', color: 'var(--green)' },
-    ]
-  },
-  {
-    id: 12, company: 'PT Maju Bersama Tbk', product: 'Produk: Conveyor Belt X100 — 5 unit',
-    value: 87500000, stage: 'won', type: 'baru', pic: 'DK', channel: 'wa',
-    recurring: false, date: '2025-06-20', wonDate: '2025-06-20',
-    activity: [
-      { text: 'Deal won — pembayaran lunas diterima', time: '20 Jun, 14:00', color: 'var(--green)' },
-    ]
-  },
-  {
-    id: 13, company: 'PT Sumber Abadi', product: 'Jasa Pemeliharaan HVAC — Tahunan',
-    value: 144000000, stage: 'won', type: 'renewal', pic: 'BW', channel: 'wa',
-    recurring: true, interval: 'yearly', endDate: '2025-07-28', autoRenewal: true,
-    date: '2025-01-10', wonDate: '2025-01-10',
-    activity: [
-      { text: 'Kontrak ditandatangani dan aktif', time: '10 Jan, 10:00', color: 'var(--green)' },
-      { text: 'Kunjungan rutin Q1 selesai', time: '15 Mar, 14:00', color: '#818cf8' },
-      { text: 'Notifikasi renewal dikirim ke customer', time: '27 Jun, 08:00', color: 'var(--amber)' },
-    ]
-  },
-  {
-    id: 14, company: 'Apotek Sehat Bersama', product: 'Jasa Software Apotek — SaaS Bulanan',
-    value: 95500000, stage: 'won', type: 'upsell', pic: 'RS', channel: 'web',
-    recurring: true, interval: 'monthly', endDate: '2025-07-06', autoRenewal: true,
-    date: '2025-06-06', wonDate: '2025-06-06',
-    activity: [
-      { text: 'Upsell paket premium berhasil', time: '6 Jun, 11:30', color: 'var(--green)' },
-      { text: 'Onboarding fitur baru selesai', time: '10 Jun, 15:00', color: '#818cf8' },
-    ]
-  },
-];
+// const plDeals = [
+//   {
+//     id: 1, company: 'PT Dinamika Makmur', product: 'Jasa Konsultasi ERP — SAP B1',
+//     value: 85000000, stage: 'prospek', type: 'baru', pic: 'BW', channel: 'wa',
+//     recurring: false, date: '2025-06-12',
+//     activity: [
+//       { text: 'Deal dibuat dari percakapan WhatsApp', time: '12 Jun, 09:14', color: 'var(--red)' },
+//       { text: 'AI Agent kualifikasi kebutuhan ERP', time: '12 Jun, 09:20', color: '#818cf8' },
+//     ]
+//   },
+//   {
+//     id: 2, company: 'CV Sejahtera Nusantara', product: 'Produk: Mesin Packing A200',
+//     value: 42000000, stage: 'prospek', type: 'baru', pic: 'RS', channel: 'ig',
+//     recurring: false, date: '2025-06-15',
+//     activity: [
+//       { text: 'Lead masuk dari Instagram DM', time: '15 Jun, 13:40', color: '#f97316' },
+//     ]
+//   },
+//   {
+//     id: 3, company: 'UD Berkah Jaya', product: 'Spare Part Mesin — Bulk 100 pcs',
+//     value: 58000000, stage: 'prospek', type: 'upsell', pic: 'DK', channel: 'shopee',
+//     recurring: false, date: '2025-06-18',
+//     activity: [
+//       { text: 'Upsell dari order sebelumnya', time: '18 Jun, 10:05', color: 'var(--amber)' },
+//     ]
+//   },
+//   {
+//     id: 4, company: 'PT Karya Bersama', product: 'Jasa Maintenance Tahunan',
+//     value: 72000000, stage: 'kualifikasi', type: 'baru', pic: 'BW', channel: 'wa',
+//     recurring: true, interval: 'yearly', endDate: '2026-06-10', autoRenewal: true,
+//     date: '2025-06-10',
+//     activity: [
+//       { text: 'Leads dikualifikasi — budget & authority confirmed', time: '11 Jun, 14:22', color: '#60a5fa' },
+//       { text: 'Jadwal demo dikirim via WhatsApp', time: '12 Jun, 08:00', color: 'var(--green)' },
+//     ]
+//   },
+//   {
+//     id: 5, company: 'Toko Maju Sentosa', product: 'Produk: Kemasan Plastik — 500 pcs',
+//     value: 62000000, stage: 'kualifikasi', type: 'baru', pic: 'RS', channel: 'web',
+//     recurring: false, date: '2025-06-17',
+//     activity: [
+//       { text: 'Form website diisi, kontak via email', time: '17 Jun, 16:30', color: '#818cf8' },
+//     ]
+//   },
+//   {
+//     id: 6, company: 'PT Logistik Prima', product: 'Produk: Forklift Electric 3T',
+//     value: 98000000, stage: 'penawaran', type: 'baru', pic: 'DK', channel: 'wa',
+//     recurring: false, date: '2025-06-08',
+//     activity: [
+//       { text: 'SPH dikirim ke procurement', time: '9 Jun, 11:00', color: 'var(--amber)' },
+//       { text: 'Customer minta revisi harga spare part', time: '14 Jun, 15:45', color: 'var(--red)' },
+//     ]
+//   },
+//   {
+//     id: 7, company: 'CV Mitra Teknik', product: 'Jasa Kalibrasi Alat — Kontrak',
+//     value: 57000000, stage: 'penawaran', type: 'baru', pic: 'BW', channel: 'wa',
+//     recurring: true, interval: 'yearly', endDate: '2026-06-20', autoRenewal: true,
+//     date: '2025-06-20',
+//     activity: [
+//       { text: 'Penawaran kontrak tahunan dikirim', time: '20 Jun, 09:30', color: 'var(--amber)' },
+//     ]
+//   },
+//   {
+//     id: 8, company: 'PT Nusantara Abadi Group', product: 'Jasa IT Outsourcing — Tahunan',
+//     value: 120000000, stage: 'negosiasi', type: 'renewal', pic: 'RS', channel: 'wa',
+//     recurring: true, interval: 'yearly', endDate: '2026-08-22', autoRenewal: true,
+//     date: '2025-06-22',
+//     activity: [
+//       { text: 'Renewal deal otomatis dibuat dari kontrak sebelumnya', time: '22 Jun, 08:00', color: 'var(--green)' },
+//       { text: 'Negosiasi kenaikan harga 8% dibahas', time: '23 Jun, 14:10', color: 'var(--red)' },
+//     ]
+//   },
+//   {
+//     id: 9, company: 'PT Maju Bersama Tbk', product: 'Produk: Conveyor Belt X300',
+//     value: 73000000, stage: 'negosiasi', type: 'baru', pic: 'DK', channel: 'wa',
+//     recurring: false, date: '2025-06-23',
+//     activity: [
+//       { text: 'Negosiasi diskon 5% untuk pembayaran DP penuh', time: '23 Jun, 16:00', color: 'var(--amber)' },
+//     ]
+//   },
+//   {
+//     id: 10, company: 'PT Sumber Energi', product: 'Produk: Solar Panel 10kW Kit',
+//     value: 112000000, stage: 'closing', type: 'baru', pic: 'BW', channel: 'web',
+//     recurring: false, date: '2025-06-24',
+//     activity: [
+//       { text: 'Draft kontrak dikirim ke legal', time: '24 Jun, 10:00', color: 'var(--red)' },
+//     ]
+//   },
+//   {
+//     id: 11, company: 'Koperasi Tani Mulya', product: 'Jasa Fumigasi — Kontrak Bulanan',
+//     value: 68000000, stage: 'closing', type: 'baru', pic: 'RS', channel: 'wa',
+//     recurring: true, interval: 'monthly', endDate: '2026-06-25', autoRenewal: true,
+//     date: '2025-06-25',
+//     activity: [
+//       { text: 'Kontrak bulanan disetujui secara lisan', time: '25 Jun, 09:00', color: 'var(--green)' },
+//     ]
+//   },
+//   {
+//     id: 12, company: 'PT Maju Bersama Tbk', product: 'Produk: Conveyor Belt X100 — 5 unit',
+//     value: 87500000, stage: 'won', type: 'baru', pic: 'DK', channel: 'wa',
+//     recurring: false, date: '2025-06-20', wonDate: '2025-06-20',
+//     activity: [
+//       { text: 'Deal won — pembayaran lunas diterima', time: '20 Jun, 14:00', color: 'var(--green)' },
+//     ]
+//   },
+//   {
+//     id: 13, company: 'PT Sumber Abadi', product: 'Jasa Pemeliharaan HVAC — Tahunan',
+//     value: 144000000, stage: 'won', type: 'renewal', pic: 'BW', channel: 'wa',
+//     recurring: true, interval: 'yearly', endDate: '2025-07-28', autoRenewal: true,
+//     date: '2025-01-10', wonDate: '2025-01-10',
+//     activity: [
+//       { text: 'Kontrak ditandatangani dan aktif', time: '10 Jan, 10:00', color: 'var(--green)' },
+//       { text: 'Kunjungan rutin Q1 selesai', time: '15 Mar, 14:00', color: '#818cf8' },
+//       { text: 'Notifikasi renewal dikirim ke customer', time: '27 Jun, 08:00', color: 'var(--amber)' },
+//     ]
+//   },
+//   {
+//     id: 14, company: 'Apotek Sehat Bersama', product: 'Jasa Software Apotek — SaaS Bulanan',
+//     value: 95500000, stage: 'won', type: 'upsell', pic: 'RS', channel: 'web',
+//     recurring: true, interval: 'monthly', endDate: '2025-07-06', autoRenewal: true,
+//     date: '2025-06-06', wonDate: '2025-06-06',
+//     activity: [
+//       { text: 'Upsell paket premium berhasil', time: '6 Jun, 11:30', color: 'var(--green)' },
+//       { text: 'Onboarding fitur baru selesai', time: '10 Jun, 15:00', color: '#818cf8' },
+//     ]
+//   },
+// ];
 
 // ── Stages (customizable) ───────────────────────────────────────
 // Stage bisa ditambah, diubah nama/warnanya, atau dihapus oleh user.

@@ -422,7 +422,7 @@ const LP_COLUMN_MAP = {
   pipelineStage:   ['Pipeline Stage'],
   kategori:        ['Status Lead', 'Kategori Lead', 'Kategori'], // kualifikasi lead
   estimasi:        ['Estimasi Nominal (Opsional)', 'Estimasi Nominal', 'Nominal'],
-
+  tipeLayanan:     ['Tipe Layanan', 'Jenis Layanan', 'Layanan / Produk', 'Produk', 'Layanan'],
   // Kolom lama yang sudah tidak ada di template baru — kalau suatu saat
   // ditambah lagi ke CSV, otomatis langsung kepakai (kalau tidak ada,
   // default ke '' saja, tidak error).
