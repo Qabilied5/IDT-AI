@@ -1334,7 +1334,85 @@
     <div class="lp-modal-body" id="lp-modal-body"></div>
     <div class="lp-modal-footer">
       <button class="lp-btn-ghost" onclick="closeLeadModal()">Tutup</button>
+      <button class="lp-btn-primary-sm" id="lp-modal-edit-btn"><i class="ti ti-pencil"></i> Edit</button>
       <button class="lp-btn-primary-sm" id="lp-modal-wa-btn"><i class="ti ti-brand-whatsapp"></i> Hubungi via WA</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal: Edit Lead (semua field, auto-sync ke Google Sheets) ─ -->
+<div id="lp-modal-edit-lead" class="lp-modal-overlay" style="display:none" onclick="if(event.target===this)closeEditLeadModal()">
+  <div class="lp-modal lp-modal-sm">
+    <div class="lp-modal-header">
+      <div class="lp-modal-title"><i class="ti ti-pencil"></i> Edit Lead</div>
+      <button class="lp-modal-close" onclick="closeEditLeadModal()"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="lp-modal-body">
+      <input type="hidden" id="lp-edit-lead-id">
+
+      <label class="lp-import-label">Nama Kontak / PIC</label>
+      <input type="text" id="lp-edit-nama" class="lp-fd-input" placeholder="Nama kontak">
+
+      <label class="lp-import-label" style="margin-top:10px">Perusahaan</label>
+      <input type="text" id="lp-edit-perusahaan" class="lp-fd-input" placeholder="Nama perusahaan">
+
+      <label class="lp-import-label" style="margin-top:10px">Jabatan</label>
+      <input type="text" id="lp-edit-jabatan" class="lp-fd-input" placeholder="Jabatan">
+
+      <div style="display:flex;gap:10px;margin-top:10px">
+        <div style="flex:1">
+          <label class="lp-import-label">Email</label>
+          <input type="text" id="lp-edit-email" class="lp-fd-input" placeholder="Email">
+        </div>
+        <div style="flex:1">
+          <label class="lp-import-label">No. HP / WA</label>
+          <input type="text" id="lp-edit-phone" class="lp-fd-input" placeholder="8123xxxxxxx">
+        </div>
+      </div>
+
+      <label class="lp-import-label" style="margin-top:10px">Kota</label>
+      <input type="text" id="lp-edit-kota" class="lp-fd-input" placeholder="Kota">
+
+      <div style="display:flex;gap:10px;margin-top:10px">
+        <div style="flex:1">
+          <label class="lp-import-label">Status Lead (Kategori)</label>
+          <select id="lp-edit-kategori" class="lp-fd-select">
+            <option value="real">Real Lead</option>
+            <option value="potensi">Potensi</option>
+            <option value="belum">Belum Dikualifikasi</option>
+          </select>
+        </div>
+        <div style="flex:1">
+          <label class="lp-import-label">Sumber Lead</label>
+          <select id="lp-edit-sumber" class="lp-fd-select">
+            <option value="wa">Kontak Langsung</option>
+            <option value="msg">Kirim Pesan</option>
+            <option value="profil">Kunjungan Profil/Website</option>
+          </select>
+        </div>
+      </div>
+
+      <label class="lp-import-label" style="margin-top:10px">Aksi Selanjutnya</label>
+      <input type="text" id="lp-edit-aksi" class="lp-fd-input" placeholder="Mis. Kirim penawaran harga">
+
+      <div style="display:flex;gap:10px;margin-top:10px">
+        <div style="flex:1">
+          <label class="lp-import-label">Produk / Layanan</label>
+          <input type="text" id="lp-edit-tipe-layanan" class="lp-fd-input" placeholder="Produk/layanan yang diminati">
+        </div>
+        <div style="flex:1">
+          <label class="lp-import-label">Estimasi Nominal</label>
+          <input type="number" id="lp-edit-estimasi" class="lp-fd-input" placeholder="0">
+        </div>
+      </div>
+
+      <div class="lp-import-hint" style="margin-top:10px">
+        Perubahan di sini otomatis tersinkron ke baris yang sama di spreadsheet (kalau sudah terhubung ke Google Sheets).
+      </div>
+    </div>
+    <div class="lp-modal-footer">
+      <button class="lp-btn-ghost" onclick="closeEditLeadModal()">Batal</button>
+      <button class="lp-btn-primary-sm" onclick="submitEditLead()"><i class="ti ti-check"></i> Simpan Perubahan</button>
     </div>
   </div>
 </div>

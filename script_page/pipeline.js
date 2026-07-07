@@ -11,133 +11,133 @@
 ═══════════════════════════════════════════════════════════════ */
 
 // ── Data Store ────────────────────────────────────────────────
-// const plDeals = [
-//   {
-//     id: 1, company: 'PT Dinamika Makmur', product: 'Jasa Konsultasi ERP — SAP B1',
-//     value: 85000000, stage: 'prospek', type: 'baru', pic: 'BW', channel: 'wa',
-//     recurring: false, date: '2025-06-12',
-//     activity: [
-//       { text: 'Deal dibuat dari percakapan WhatsApp', time: '12 Jun, 09:14', color: 'var(--red)' },
-//       { text: 'AI Agent kualifikasi kebutuhan ERP', time: '12 Jun, 09:20', color: '#818cf8' },
-//     ]
-//   },
-//   {
-//     id: 2, company: 'CV Sejahtera Nusantara', product: 'Produk: Mesin Packing A200',
-//     value: 42000000, stage: 'prospek', type: 'baru', pic: 'RS', channel: 'ig',
-//     recurring: false, date: '2025-06-15',
-//     activity: [
-//       { text: 'Lead masuk dari Instagram DM', time: '15 Jun, 13:40', color: '#f97316' },
-//     ]
-//   },
-//   {
-//     id: 3, company: 'UD Berkah Jaya', product: 'Spare Part Mesin — Bulk 100 pcs',
-//     value: 58000000, stage: 'prospek', type: 'upsell', pic: 'DK', channel: 'shopee',
-//     recurring: false, date: '2025-06-18',
-//     activity: [
-//       { text: 'Upsell dari order sebelumnya', time: '18 Jun, 10:05', color: 'var(--amber)' },
-//     ]
-//   },
-//   {
-//     id: 4, company: 'PT Karya Bersama', product: 'Jasa Maintenance Tahunan',
-//     value: 72000000, stage: 'kualifikasi', type: 'baru', pic: 'BW', channel: 'wa',
-//     recurring: true, interval: 'yearly', endDate: '2026-06-10', autoRenewal: true,
-//     date: '2025-06-10',
-//     activity: [
-//       { text: 'Leads dikualifikasi — budget & authority confirmed', time: '11 Jun, 14:22', color: '#60a5fa' },
-//       { text: 'Jadwal demo dikirim via WhatsApp', time: '12 Jun, 08:00', color: 'var(--green)' },
-//     ]
-//   },
-//   {
-//     id: 5, company: 'Toko Maju Sentosa', product: 'Produk: Kemasan Plastik — 500 pcs',
-//     value: 62000000, stage: 'kualifikasi', type: 'baru', pic: 'RS', channel: 'web',
-//     recurring: false, date: '2025-06-17',
-//     activity: [
-//       { text: 'Form website diisi, kontak via email', time: '17 Jun, 16:30', color: '#818cf8' },
-//     ]
-//   },
-//   {
-//     id: 6, company: 'PT Logistik Prima', product: 'Produk: Forklift Electric 3T',
-//     value: 98000000, stage: 'penawaran', type: 'baru', pic: 'DK', channel: 'wa',
-//     recurring: false, date: '2025-06-08',
-//     activity: [
-//       { text: 'SPH dikirim ke procurement', time: '9 Jun, 11:00', color: 'var(--amber)' },
-//       { text: 'Customer minta revisi harga spare part', time: '14 Jun, 15:45', color: 'var(--red)' },
-//     ]
-//   },
-//   {
-//     id: 7, company: 'CV Mitra Teknik', product: 'Jasa Kalibrasi Alat — Kontrak',
-//     value: 57000000, stage: 'penawaran', type: 'baru', pic: 'BW', channel: 'wa',
-//     recurring: true, interval: 'yearly', endDate: '2026-06-20', autoRenewal: true,
-//     date: '2025-06-20',
-//     activity: [
-//       { text: 'Penawaran kontrak tahunan dikirim', time: '20 Jun, 09:30', color: 'var(--amber)' },
-//     ]
-//   },
-//   {
-//     id: 8, company: 'PT Nusantara Abadi Group', product: 'Jasa IT Outsourcing — Tahunan',
-//     value: 120000000, stage: 'negosiasi', type: 'renewal', pic: 'RS', channel: 'wa',
-//     recurring: true, interval: 'yearly', endDate: '2026-08-22', autoRenewal: true,
-//     date: '2025-06-22',
-//     activity: [
-//       { text: 'Renewal deal otomatis dibuat dari kontrak sebelumnya', time: '22 Jun, 08:00', color: 'var(--green)' },
-//       { text: 'Negosiasi kenaikan harga 8% dibahas', time: '23 Jun, 14:10', color: 'var(--red)' },
-//     ]
-//   },
-//   {
-//     id: 9, company: 'PT Maju Bersama Tbk', product: 'Produk: Conveyor Belt X300',
-//     value: 73000000, stage: 'negosiasi', type: 'baru', pic: 'DK', channel: 'wa',
-//     recurring: false, date: '2025-06-23',
-//     activity: [
-//       { text: 'Negosiasi diskon 5% untuk pembayaran DP penuh', time: '23 Jun, 16:00', color: 'var(--amber)' },
-//     ]
-//   },
-//   {
-//     id: 10, company: 'PT Sumber Energi', product: 'Produk: Solar Panel 10kW Kit',
-//     value: 112000000, stage: 'closing', type: 'baru', pic: 'BW', channel: 'web',
-//     recurring: false, date: '2025-06-24',
-//     activity: [
-//       { text: 'Draft kontrak dikirim ke legal', time: '24 Jun, 10:00', color: 'var(--red)' },
-//     ]
-//   },
-//   {
-//     id: 11, company: 'Koperasi Tani Mulya', product: 'Jasa Fumigasi — Kontrak Bulanan',
-//     value: 68000000, stage: 'closing', type: 'baru', pic: 'RS', channel: 'wa',
-//     recurring: true, interval: 'monthly', endDate: '2026-06-25', autoRenewal: true,
-//     date: '2025-06-25',
-//     activity: [
-//       { text: 'Kontrak bulanan disetujui secara lisan', time: '25 Jun, 09:00', color: 'var(--green)' },
-//     ]
-//   },
-//   {
-//     id: 12, company: 'PT Maju Bersama Tbk', product: 'Produk: Conveyor Belt X100 — 5 unit',
-//     value: 87500000, stage: 'won', type: 'baru', pic: 'DK', channel: 'wa',
-//     recurring: false, date: '2025-06-20', wonDate: '2025-06-20',
-//     activity: [
-//       { text: 'Deal won — pembayaran lunas diterima', time: '20 Jun, 14:00', color: 'var(--green)' },
-//     ]
-//   },
-//   {
-//     id: 13, company: 'PT Sumber Abadi', product: 'Jasa Pemeliharaan HVAC — Tahunan',
-//     value: 144000000, stage: 'won', type: 'renewal', pic: 'BW', channel: 'wa',
-//     recurring: true, interval: 'yearly', endDate: '2025-07-28', autoRenewal: true,
-//     date: '2025-01-10', wonDate: '2025-01-10',
-//     activity: [
-//       { text: 'Kontrak ditandatangani dan aktif', time: '10 Jan, 10:00', color: 'var(--green)' },
-//       { text: 'Kunjungan rutin Q1 selesai', time: '15 Mar, 14:00', color: '#818cf8' },
-//       { text: 'Notifikasi renewal dikirim ke customer', time: '27 Jun, 08:00', color: 'var(--amber)' },
-//     ]
-//   },
-//   {
-//     id: 14, company: 'Apotek Sehat Bersama', product: 'Jasa Software Apotek — SaaS Bulanan',
-//     value: 95500000, stage: 'won', type: 'upsell', pic: 'RS', channel: 'web',
-//     recurring: true, interval: 'monthly', endDate: '2025-07-06', autoRenewal: true,
-//     date: '2025-06-06', wonDate: '2025-06-06',
-//     activity: [
-//       { text: 'Upsell paket premium berhasil', time: '6 Jun, 11:30', color: 'var(--green)' },
-//       { text: 'Onboarding fitur baru selesai', time: '10 Jun, 15:00', color: '#818cf8' },
-//     ]
-//   },
-// ];
+const plDeals = [
+  {
+    id: 1, company: 'PT Dinamika Makmur', product: 'Jasa Konsultasi ERP — SAP B1',
+    value: 85000000, stage: 'prospek', type: 'baru', pic: 'BW', channel: 'wa',
+    recurring: false, date: '2025-06-12',
+    activity: [
+      { text: 'Deal dibuat dari percakapan WhatsApp', time: '12 Jun, 09:14', color: 'var(--red)' },
+      { text: 'AI Agent kualifikasi kebutuhan ERP', time: '12 Jun, 09:20', color: '#818cf8' },
+    ]
+  },
+  {
+    id: 2, company: 'CV Sejahtera Nusantara', product: 'Produk: Mesin Packing A200',
+    value: 42000000, stage: 'prospek', type: 'baru', pic: 'RS', channel: 'ig',
+    recurring: false, date: '2025-06-15',
+    activity: [
+      { text: 'Lead masuk dari Instagram DM', time: '15 Jun, 13:40', color: '#f97316' },
+    ]
+  },
+  {
+    id: 3, company: 'UD Berkah Jaya', product: 'Spare Part Mesin — Bulk 100 pcs',
+    value: 58000000, stage: 'prospek', type: 'upsell', pic: 'DK', channel: 'shopee',
+    recurring: false, date: '2025-06-18',
+    activity: [
+      { text: 'Upsell dari order sebelumnya', time: '18 Jun, 10:05', color: 'var(--amber)' },
+    ]
+  },
+  {
+    id: 4, company: 'PT Karya Bersama', product: 'Jasa Maintenance Tahunan',
+    value: 72000000, stage: 'kualifikasi', type: 'baru', pic: 'BW', channel: 'wa',
+    recurring: true, interval: 'yearly', endDate: '2026-06-10', autoRenewal: true,
+    date: '2025-06-10',
+    activity: [
+      { text: 'Leads dikualifikasi — budget & authority confirmed', time: '11 Jun, 14:22', color: '#60a5fa' },
+      { text: 'Jadwal demo dikirim via WhatsApp', time: '12 Jun, 08:00', color: 'var(--green)' },
+    ]
+  },
+  {
+    id: 5, company: 'Toko Maju Sentosa', product: 'Produk: Kemasan Plastik — 500 pcs',
+    value: 62000000, stage: 'kualifikasi', type: 'baru', pic: 'RS', channel: 'web',
+    recurring: false, date: '2025-06-17',
+    activity: [
+      { text: 'Form website diisi, kontak via email', time: '17 Jun, 16:30', color: '#818cf8' },
+    ]
+  },
+  {
+    id: 6, company: 'PT Logistik Prima', product: 'Produk: Forklift Electric 3T',
+    value: 98000000, stage: 'penawaran', type: 'baru', pic: 'DK', channel: 'wa',
+    recurring: false, date: '2025-06-08',
+    activity: [
+      { text: 'SPH dikirim ke procurement', time: '9 Jun, 11:00', color: 'var(--amber)' },
+      { text: 'Customer minta revisi harga spare part', time: '14 Jun, 15:45', color: 'var(--red)' },
+    ]
+  },
+  {
+    id: 7, company: 'CV Mitra Teknik', product: 'Jasa Kalibrasi Alat — Kontrak',
+    value: 57000000, stage: 'penawaran', type: 'baru', pic: 'BW', channel: 'wa',
+    recurring: true, interval: 'yearly', endDate: '2026-06-20', autoRenewal: true,
+    date: '2025-06-20',
+    activity: [
+      { text: 'Penawaran kontrak tahunan dikirim', time: '20 Jun, 09:30', color: 'var(--amber)' },
+    ]
+  },
+  {
+    id: 8, company: 'PT Nusantara Abadi Group', product: 'Jasa IT Outsourcing — Tahunan',
+    value: 120000000, stage: 'negosiasi', type: 'renewal', pic: 'RS', channel: 'wa',
+    recurring: true, interval: 'yearly', endDate: '2026-08-22', autoRenewal: true,
+    date: '2025-06-22',
+    activity: [
+      { text: 'Renewal deal otomatis dibuat dari kontrak sebelumnya', time: '22 Jun, 08:00', color: 'var(--green)' },
+      { text: 'Negosiasi kenaikan harga 8% dibahas', time: '23 Jun, 14:10', color: 'var(--red)' },
+    ]
+  },
+  {
+    id: 9, company: 'PT Maju Bersama Tbk', product: 'Produk: Conveyor Belt X300',
+    value: 73000000, stage: 'negosiasi', type: 'baru', pic: 'DK', channel: 'wa',
+    recurring: false, date: '2025-06-23',
+    activity: [
+      { text: 'Negosiasi diskon 5% untuk pembayaran DP penuh', time: '23 Jun, 16:00', color: 'var(--amber)' },
+    ]
+  },
+  {
+    id: 10, company: 'PT Sumber Energi', product: 'Produk: Solar Panel 10kW Kit',
+    value: 112000000, stage: 'closing', type: 'baru', pic: 'BW', channel: 'web',
+    recurring: false, date: '2025-06-24',
+    activity: [
+      { text: 'Draft kontrak dikirim ke legal', time: '24 Jun, 10:00', color: 'var(--red)' },
+    ]
+  },
+  {
+    id: 11, company: 'Koperasi Tani Mulya', product: 'Jasa Fumigasi — Kontrak Bulanan',
+    value: 68000000, stage: 'closing', type: 'baru', pic: 'RS', channel: 'wa',
+    recurring: true, interval: 'monthly', endDate: '2026-06-25', autoRenewal: true,
+    date: '2025-06-25',
+    activity: [
+      { text: 'Kontrak bulanan disetujui secara lisan', time: '25 Jun, 09:00', color: 'var(--green)' },
+    ]
+  },
+  {
+    id: 12, company: 'PT Maju Bersama Tbk', product: 'Produk: Conveyor Belt X100 — 5 unit',
+    value: 87500000, stage: 'won', type: 'baru', pic: 'DK', channel: 'wa',
+    recurring: false, date: '2025-06-20', wonDate: '2025-06-20',
+    activity: [
+      { text: 'Deal won — pembayaran lunas diterima', time: '20 Jun, 14:00', color: 'var(--green)' },
+    ]
+  },
+  {
+    id: 13, company: 'PT Sumber Abadi', product: 'Jasa Pemeliharaan HVAC — Tahunan',
+    value: 144000000, stage: 'won', type: 'renewal', pic: 'BW', channel: 'wa',
+    recurring: true, interval: 'yearly', endDate: '2025-07-28', autoRenewal: true,
+    date: '2025-01-10', wonDate: '2025-01-10',
+    activity: [
+      { text: 'Kontrak ditandatangani dan aktif', time: '10 Jan, 10:00', color: 'var(--green)' },
+      { text: 'Kunjungan rutin Q1 selesai', time: '15 Mar, 14:00', color: '#818cf8' },
+      { text: 'Notifikasi renewal dikirim ke customer', time: '27 Jun, 08:00', color: 'var(--amber)' },
+    ]
+  },
+  {
+    id: 14, company: 'Apotek Sehat Bersama', product: 'Jasa Software Apotek — SaaS Bulanan',
+    value: 95500000, stage: 'won', type: 'upsell', pic: 'RS', channel: 'web',
+    recurring: true, interval: 'monthly', endDate: '2025-07-06', autoRenewal: true,
+    date: '2025-06-06', wonDate: '2025-06-06',
+    activity: [
+      { text: 'Upsell paket premium berhasil', time: '6 Jun, 11:30', color: 'var(--green)' },
+      { text: 'Onboarding fitur baru selesai', time: '10 Jun, 15:00', color: '#818cf8' },
+    ]
+  },
+];
 
 // ── Stages (customizable) ───────────────────────────────────────
 // Stage bisa ditambah, diubah nama/warnanya, atau dihapus oleh user.
@@ -249,6 +249,73 @@ async function loadDealsFromLeadsSheet() {
   } catch (err) {
     console.error(err);
     plDataSource = 'fallback';
+  }
+}
+
+// ── Sinkronisasi balik ke Google Sheets (sheet "Leads") ────────
+// PENTING: 1 deal di Pipeline = 1 baris di sheet "Leads" (baris yang
+// kolom "Pipeline Stage"-nya terisi). Jadi id deal SAMA dengan id
+// lead di Kontak/Leads, dan setiap perubahan pada kartu deal (pindah
+// stage lewat drag, edit, tambah, hapus, duplikat) ditulis balik ke
+// baris lead yang sama lewat action "updateLead" / "createLead" —
+// endpoint yang sama persis dipakai oleh leads-page.js.
+function plStageLabel_(key) {
+  const s = plStages.find(x => x.key === key);
+  return s ? s.label : (key || '');
+}
+
+// Toast dipakai bareng dengan leads-page.js (elemen #lp-toast global di
+// index.html), tapi dibungkus aman kalau-kalau file itu belum dimuat.
+function plToast_(msg, type) {
+  if (typeof showLpToast === 'function') showLpToast(msg, type);
+  else console.log('[pipeline]', type || '', msg);
+}
+
+async function plSyncFieldsToSheet_(id, fields) {
+  if (plDataSource !== 'sheet') return; // mode contoh/fallback, tidak ada sheet utk disinkronkan
+  const url = getConfiguredLeadsUrl_();
+  if (!url) return;
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // hindari CORS preflight
+      body: JSON.stringify({ action: 'updateLead', id, fields }),
+    });
+    const data = await res.json();
+    if (!data.ok) {
+      console.error('Gagal sync deal ke Sheets:', data.error);
+      plToast_('Perubahan tersimpan lokal, tapi gagal sync ke Sheets', 'error');
+    }
+  } catch (err) {
+    console.error(err);
+    plToast_('Perubahan tersimpan lokal, tapi gagal sync ke Sheets', 'error');
+  }
+}
+
+// Buat baris lead BARU di sheet untuk deal yang belum punya baris sama
+// sekali (mis. "Tambah Deal Baru" / duplikat kartu). Mengembalikan id
+// baris baru kalau berhasil, null kalau gagal / mode tidak tersambung.
+async function plCreateLeadInSheet_(fields) {
+  if (plDataSource !== 'sheet') return null;
+  const url = getConfiguredLeadsUrl_();
+  if (!url) return null;
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'createLead', fields }),
+    });
+    const data = await res.json();
+    if (!data.ok) {
+      console.error('Gagal membuat lead baru di Sheets:', data.error);
+      plToast_('Deal tersimpan lokal, tapi gagal dibuat di Sheets', 'error');
+      return null;
+    }
+    return data.id;
+  } catch (err) {
+    console.error(err);
+    plToast_('Deal tersimpan lokal, tapi gagal dibuat di Sheets', 'error');
+    return null;
   }
 }
 
@@ -780,7 +847,7 @@ function toggleAutoRenewal() {
   setAutoRenewal(!plAutoRenewalOn);
 }
 
-function saveDeal() {
+async function saveDeal() {
   const company  = document.getElementById('pl-f-company').value.trim();
   const product  = document.getElementById('pl-f-product').value.trim();
   const value    = parseInt(document.getElementById('pl-f-value').value, 10) || 0;
@@ -799,6 +866,16 @@ function saveDeal() {
 
   const today = new Date().toISOString().split('T')[0];
 
+  // Field yang punya kolom yang sama di sheet "Leads" (dipakai untuk
+  // sync ke sheet). Field lain (pic, channel, type, recurring, dst)
+  // murni lokal di Pipeline karena belum ada kolomnya di sheet.
+  const sheetFields = {
+    perusahaan: company,
+    tipeLayanan: product,
+    estimasiNominal: value,
+    pipelineStage: plStageLabel_(stage),
+  };
+
   if (plCurrentDealId) {
     // Edit
     const d = plDeals.find(x => x.id === plCurrentDealId);
@@ -808,18 +885,30 @@ function saveDeal() {
       d.recurring = plRecurringOn;
       d.endDate = endDate; d.interval = interval; d.notes = notes;
       d.autoRenewal = plAutoRenewalOn;
+
+      // Sync perubahan balik ke baris lead yang sama di sheet
+      plSyncFieldsToSheet_(d.id, sheetFields);
     }
-  } else {
-    // Add
-    const newId = plDeals.length ? Math.max(...plDeals.map(x => x.id)) + 1 : 1;
-    plDeals.push({
-      id: newId, company, product, value, stage, type, pic, channel,
-      recurring: plRecurringOn, interval, endDate, autoRenewal: plAutoRenewalOn,
-      notes, date: today, activity: [
-        { text: 'Deal dibuat secara manual', time: 'Baru saja', color: 'var(--red)' }
-      ]
-    });
+    closeDealModal();
+    plRebuildBoard();
+    plUpdateSummary();
+    return; // mode edit selalu berhenti di sini, tidak pernah lanjut ke Add
   }
+
+  // Add — deal baru belum punya baris lead di sheet, jadi buat baris
+  // baru dulu (kalau sedang tersambung ke sheet) supaya id-nya konsisten
+  // dan bisa disinkronkan lagi nanti (drag, edit, dsb).
+  let newId = plDeals.length ? Math.max(...plDeals.map(x => x.id)) + 1 : 1;
+  const createdId = await plCreateLeadInSheet_(Object.assign({ nama: company }, sheetFields));
+  if (createdId) newId = createdId;
+
+  plDeals.push({
+    id: newId, company, product, value, stage, type, pic, channel,
+    recurring: plRecurringOn, interval, endDate, autoRenewal: plAutoRenewalOn,
+    notes, date: today, activity: [
+      { text: 'Deal dibuat secara manual', time: 'Baru saja', color: 'var(--red)' }
+    ]
+  });
 
   closeDealModal();
   plRebuildBoard();
@@ -999,6 +1088,9 @@ function moveToNextStage() {
     closeDealDrawer();
     plRebuildBoard();
     plUpdateSummary();
+
+    // Sync stage baru balik ke sheet "Leads"
+    plSyncFieldsToSheet_(d.id, { pipelineStage: STAGE_LABELS[idx + 1] });
   }
 }
 
@@ -1021,23 +1113,44 @@ function closeCtxMenu() {
 }
 
 function ctxEdit()   { closeCtxMenu(); if (plCurrentCtxId) openEditDeal(plCurrentCtxId); }
-function ctxCopy() {
+async function ctxCopy() {
   const d = plDeals.find(x => x.id === plCurrentCtxId);
   if (!d) return;
   const copy = JSON.parse(JSON.stringify(d));
-  copy.id = Math.max(...plDeals.map(x => x.id)) + 1;
+  let newId = Math.max(...plDeals.map(x => x.id)) + 1;
   copy.company += ' (Salinan)';
   copy.date = new Date().toISOString().split('T')[0];
   copy.activity = [{ text: 'Deal diduplikat', time: 'Baru saja', color: 'var(--gray-400)' }];
-  plDeals.push(copy);
   closeCtxMenu();
+
+  // Duplikat = baris lead baru di sheet (bukan menimpa baris asal)
+  const createdId = await plCreateLeadInSheet_({
+    nama: copy.company,
+    perusahaan: copy.company,
+    tipeLayanan: copy.product,
+    estimasiNominal: copy.value,
+    pipelineStage: plStageLabel_(copy.stage),
+  });
+  if (createdId) newId = createdId;
+
+  copy.id = newId;
+  plDeals.push(copy);
   plRebuildBoard();
   plUpdateSummary();
 }
 function ctxDelete() {
   if (!confirm('Hapus deal ini?')) return;
   const idx = plDeals.findIndex(x => x.id === plCurrentCtxId);
-  if (idx !== -1) plDeals.splice(idx, 1);
+  if (idx !== -1) {
+    const removedId = plDeals[idx].id;
+    plDeals.splice(idx, 1);
+
+    // "Hapus" di board Pipeline hanya mengosongkan kolom "Pipeline
+    // Stage" di sheet Leads — baris & data kontaknya tetap ada, cuma
+    // tidak lagi dianggap deal aktif di Pipeline (konsisten dengan
+    // logika filter di loadDealsFromLeadsSheet).
+    plSyncFieldsToSheet_(removedId, { pipelineStage: '' });
+  }
   closeCtxMenu();
   plRebuildBoard();
   plUpdateSummary();
@@ -1315,6 +1428,9 @@ function plOnDragEnd(e) {
     plRebuildBoard();
     plUpdateSummary();
     plUpdateFlow();
+
+    // Sync stage baru balik ke sheet "Leads" (kolom "Pipeline Stage")
+    plSyncFieldsToSheet_(d.id, { pipelineStage: newLabel });
   }
 
   // Clean up ghost & states

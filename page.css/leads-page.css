@@ -1191,7 +1191,7 @@
   overflow: hidden;
   animation: lpSlideUp .2s ease;
 }
-.lp-modal-sm { max-width: 360px; }
+.lp-modal-sm { max-width: 450px; }
 .lp-modal-header {
   display: flex;
   align-items: center;

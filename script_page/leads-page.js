@@ -209,6 +209,61 @@ async function syncStatusToSheet(id, status) {
   }
 }
 
+// ── Sinkronkan perubahan field APAPUN pada lead balik ke Sheets ─
+// Dipakai oleh form "Edit Lead" di halaman ini, dan juga dipakai
+// dari Pipeline (pipeline.js) saat kartu deal — yang sebenarnya
+// adalah baris lead yang sama — diedit atau dipindah stage.
+// `fields` contoh: { perusahaan:'PT X', kategori:'real', pipelineStage:'Penawaran' }
+async function syncLeadFieldsToSheet(id, fields) {
+  if (lpState.dataSource !== 'sheet') return; // mode CSV/data contoh, tidak ada sheet utk disinkronkan
+  const url = getConfiguredSheetUrl();
+  if (!url) return;
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // hindari CORS preflight
+      body: JSON.stringify({ action: 'updateLead', id, fields }),
+    });
+    const data = await res.json();
+    if (!data.ok) {
+      console.error('Gagal sync lead ke Sheets:', data.error);
+      showLpToast('Perubahan tersimpan lokal, tapi gagal sync ke Sheets', 'error');
+    }
+  } catch (err) {
+    console.error(err);
+    showLpToast('Perubahan tersimpan lokal, tapi gagal sync ke Sheets', 'error');
+  }
+}
+
+// ── Buat baris lead BARU langsung di Google Sheets ──────────────
+// Dipakai Pipeline saat "Tambah Deal Baru" / duplikat deal yang
+// belum punya baris lead sama sekali di sheet. Mengembalikan id
+// baris baru (angka) kalau berhasil, atau null kalau gagal/mode
+// tidak tersambung ke sheet.
+async function createLeadInSheet(fields) {
+  if (lpState.dataSource !== 'sheet') return null;
+  const url = getConfiguredSheetUrl();
+  if (!url) return null;
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'createLead', fields }),
+    });
+    const data = await res.json();
+    if (!data.ok) {
+      console.error('Gagal membuat lead baru di Sheets:', data.error);
+      showLpToast('Data tersimpan lokal, tapi gagal dibuat di Sheets', 'error');
+      return null;
+    }
+    return data.id;
+  } catch (err) {
+    console.error(err);
+    showLpToast('Data tersimpan lokal, tapi gagal dibuat di Sheets', 'error');
+    return null;
+  }
+}
+
 // ── Modal: Import Excel / Spreadsheets (URL Apps Script atau CSV) ─
 let _lpImportTab = 'url';
 
@@ -716,10 +771,98 @@ function openLeadModal(id) {
   const waBtn = document.getElementById('lp-modal-wa-btn');
   waBtn.onclick = () => hubungiWA(id);
 
+  const editBtn = document.getElementById('lp-modal-edit-btn');
+  if (editBtn) editBtn.onclick = () => openEditLeadModal(id);
+
   document.getElementById('lp-modal-lead').style.display = 'flex';
 }
 function closeLeadModal() {
   document.getElementById('lp-modal-lead').style.display = 'none';
+}
+
+// ── Modal: Edit Lead (semua field bisa diedit, auto-sync ke Sheets) ─
+function openEditLeadModal(id) {
+  const lead = LEADS_DATA.find(l => l.id === id);
+  if (!lead) return;
+
+  document.getElementById('lp-edit-lead-id').value      = lead.id;
+  document.getElementById('lp-edit-nama').value          = lead.nama || '';
+  document.getElementById('lp-edit-perusahaan').value    = lead.perusahaan || '';
+  document.getElementById('lp-edit-jabatan').value       = lead.jabatan || '';
+  document.getElementById('lp-edit-email').value         = lead.email || '';
+  document.getElementById('lp-edit-phone').value         = lead.phone || '';
+  document.getElementById('lp-edit-kota').value          = lead.kota || '';
+  document.getElementById('lp-edit-kategori').value      = lead.kategori || 'belum';
+  document.getElementById('lp-edit-sumber').value        = lead.sumber || 'wa';
+  document.getElementById('lp-edit-aksi').value          = lead.aksiSelanjutnya || '';
+  document.getElementById('lp-edit-tipe-layanan').value  = lead.tipeLayanan || '';
+  document.getElementById('lp-edit-estimasi').value      = lead.estimasiNominal || '';
+
+  closeLeadModal();
+  document.getElementById('lp-modal-edit-lead').style.display = 'flex';
+}
+function closeEditLeadModal() {
+  document.getElementById('lp-modal-edit-lead').style.display = 'none';
+}
+
+// Nama tampilan sumber lead, dipakai untuk mengisi ulang label "Aktivitas"
+// setelah sumber diubah lewat form edit. Coba pakai label sesuai tipe
+// bisnis aktif dulu (bizCfg), fallback ke label default kalau belum siap.
+function lpSumberDisplayName_(sumberCode) {
+  const fallbackNames = { wa: 'Kontak Langsung', msg: 'Kirim Pesan', profil: 'Kunjungan Profil/Website' };
+  try {
+    const cfg = bizCfg();
+    if (cfg && cfg.sumber && cfg.sumber[sumberCode]) return cfg.sumber[sumberCode].name;
+  } catch (e) { /* bizCfg belum siap, pakai fallback */ }
+  return fallbackNames[sumberCode] || '';
+}
+
+function submitEditLead() {
+  const id = Number(document.getElementById('lp-edit-lead-id').value);
+  const lead = LEADS_DATA.find(l => l.id === id);
+  if (!lead) return;
+
+  const nama            = document.getElementById('lp-edit-nama').value.trim();
+  const perusahaan      = document.getElementById('lp-edit-perusahaan').value.trim();
+  const jabatan         = document.getElementById('lp-edit-jabatan').value.trim();
+  const email           = document.getElementById('lp-edit-email').value.trim();
+  const phone           = document.getElementById('lp-edit-phone').value.trim();
+  const kota            = document.getElementById('lp-edit-kota').value.trim();
+  const kategori        = document.getElementById('lp-edit-kategori').value;
+  const sumber          = document.getElementById('lp-edit-sumber').value;
+  const aksiSelanjutnya = document.getElementById('lp-edit-aksi').value.trim();
+  const tipeLayanan     = document.getElementById('lp-edit-tipe-layanan').value.trim();
+  const estimasiNominal = document.getElementById('lp-edit-estimasi').value.trim();
+
+  if (!nama) {
+    showLpToast('Nama kontak wajib diisi', 'error');
+    return;
+  }
+
+  // Update data lokal dulu supaya tabel langsung berubah tanpa reload
+  lead.nama = nama;
+  lead.perusahaan = perusahaan;
+  lead.jabatan = jabatan;
+  lead.email = email;
+  lead.phone = phone;
+  lead.kota = kota;
+  lead.kategori = kategori;
+  lead.sumber = sumber;
+  lead.aksiSelanjutnya = aksiSelanjutnya;
+  lead.tipeLayanan = tipeLayanan;
+  lead.estimasiNominal = estimasiNominal;
+  lead.aktivitas = lpSumberDisplayName_(sumber);
+
+  closeEditLeadModal();
+  renderLeadsTable();
+  updateKatCounts();
+  showLpToast('Data lead berhasil diperbarui', 'success');
+
+  // Sync semua field yang diedit balik ke Google Sheets (baris yang sama)
+  syncLeadFieldsToSheet(id, {
+    nama, perusahaan, jabatan, email, phone, kota,
+    kategori, sumber, aksiSelanjutnya, tipeLayanan, estimasiNominal,
+  });
 }
 
 // ── Modal: Update Status ──────────────────────────────────────
