@@ -4,9 +4,6 @@
    yang polling pesan Telegram lewat getUpdates.
    ============================================ */
 
-// Ganti kalau backend jalan di host/port lain.
-// Bisa juga di-override dari index.html: <script>window.PC_API_BASE='http://x:3001'</script>
-// sebelum tag <script src="script_page/percapakan.js">.
 const PC_API_BASE = window.PC_API_BASE || 'http://localhost:3001';
 
 // ── STATE ────────────────────────────────────────────────────────
