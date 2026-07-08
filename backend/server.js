@@ -3,12 +3,18 @@
    Backend testing: Ollama (generate pesan) + Telegram (kirim pesan)
    Pengganti sementara WhatsApp Business API selagi WABA diproses.
 
+   Konfigurasi Telegram Bot Token TIDAK diisi lewat .env lagi — token
+   diatur dari halaman Integrasi di dashboard (disimpan di localStorage
+   browser lalu dikirim ke server lewat POST /api/telegram/config).
+
    Cara pakai cepat:
-     1) cp .env.example .env   lalu isi TELEGRAM_BOT_TOKEN dkk
+     1) cp .env.example .env   (isi OLLAMA_* dkk; TELEGRAM_BOT_TOKEN opsional/fallback)
      2) npm install
      3) ollama serve           (terminal lain, biarkan jalan)
      4) ollama pull llama3.1   (sekali saja, sesuaikan OLLAMA_MODEL)
      5) npm start
+     6) Buka halaman Integrasi di dashboard → hubungkan Telegram Bot
+        (token akan otomatis dikirim & dipakai server tanpa perlu .env)
    ============================================================= */
 
 require('dotenv').config();
@@ -27,8 +33,12 @@ const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'llama3.1';
 // biasanya lebih stabil di model yang lebih besar/instruction-tuned baik;
 // kalau tidak diisi, pakai OLLAMA_MODEL yang sama dengan follow-up.
 const PIPELINE_OLLAMA_MODEL = process.env.PIPELINE_OLLAMA_MODEL || OLLAMA_MODEL;
-const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
-const TELEGRAM_DEFAULT_CHAT_ID = process.env.TELEGRAM_DEFAULT_CHAT_ID || '';
+// Token Telegram TIDAK LAGI diambil dari .env secara permanen — sekarang diatur
+// secara runtime lewat halaman Integrasi (POST/DELETE /api/telegram/config).
+// .env cuma dipakai sebagai fallback awal kalau server baru pertama kali start
+// dan belum ada token yang dikirim dari frontend.
+let TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
+let TELEGRAM_DEFAULT_CHAT_ID = process.env.TELEGRAM_DEFAULT_CHAT_ID || '';
 const SEND_MODE = process.env.SEND_MODE || 'mock'; // mock | telegram | whatsapp
 
 // ── Riwayat pengiriman sementara (in-memory, hilang saat restart) ──
@@ -131,6 +141,9 @@ const tgConversations = new Map();
 let tgOffset = 0;
 let tgPollingActive = false;
 let tgBotInfo = null;
+// Epoch counter — dipakai supaya loop polling lama otomatis berhenti begitu
+// token diganti/dihapus lewat /api/telegram/config, tanpa dua loop jalan bareng.
+let tgPollEpoch = 0;
 
 function tgInitials(name) {
   return (name || '')
@@ -265,11 +278,21 @@ async function tgFetchBotInfo() {
   return tgBotInfo;
 }
 
+function stopTelegramPolling() {
+  // Menaikkan epoch membuat loop while di bawah (kalau masih jalan) keluar
+  // dengan sendirinya di iterasi berikutnya.
+  tgPollEpoch++;
+  tgPollingActive = false;
+}
+
 async function startTelegramPolling() {
   if (!TELEGRAM_BOT_TOKEN) {
-    console.log('[Telegram] TELEGRAM_BOT_TOKEN kosong — polling tidak dijalankan. Isi .env untuk mengaktifkan halaman Percakapan.');
+    console.log('[Telegram] Token belum dikonfigurasi — polling tidak dijalankan. Atur token di halaman Integrasi (Percakapan).');
     return;
   }
+
+  const myEpoch = ++tgPollEpoch;
+  tgOffset = 0; // mulai getUpdates dari awal setiap kali polling di-(re)start dengan token baru
 
   try {
     // Webhook & polling tidak bisa jalan bersamaan — pastikan webhook nonaktif dulu.
@@ -281,8 +304,9 @@ async function startTelegramPolling() {
     console.error('[Telegram] Gagal inisialisasi polling:', err.message);
   }
 
-  // Long-polling loop — berjalan terus selama server hidup.
-  while (TELEGRAM_BOT_TOKEN) {
+  // Long-polling loop — berjalan sampai token dihapus atau epoch berubah
+  // (yaitu saat token baru dipasang lewat halaman Integrasi).
+  while (TELEGRAM_BOT_TOKEN && myEpoch === tgPollEpoch) {
     try {
       await tgPollOnce();
     } catch (err) {
@@ -290,6 +314,8 @@ async function startTelegramPolling() {
       await new Promise((r) => setTimeout(r, 3000));
     }
   }
+
+  if (myEpoch === tgPollEpoch) tgPollingActive = false;
 }
 
 // =============================================================
@@ -367,6 +393,67 @@ app.get('/api/telegram/status', async (req, res) => {
     polling: tgPollingActive,
     bot: tgBotInfo,
   });
+});
+
+// =============================================================
+// 2d) KONFIGURASI TOKEN TELEGRAM — diatur dari halaman Integrasi
+//     (script_page/integrasi.js + telegram-token.js), BUKAN dari .env lagi.
+// =============================================================
+
+// Cek konfigurasi saat ini (token tidak pernah dikirim balik utuh, hanya preview).
+app.get('/api/telegram/config', (req, res) => {
+  res.json({
+    ok: true,
+    configured: !!TELEGRAM_BOT_TOKEN,
+    tokenPreview: TELEGRAM_BOT_TOKEN
+      ? `${TELEGRAM_BOT_TOKEN.slice(0, 6)}••••${TELEGRAM_BOT_TOKEN.slice(-4)}`
+      : '',
+    chatId: TELEGRAM_DEFAULT_CHAT_ID,
+    polling: tgPollingActive,
+    bot: tgBotInfo,
+  });
+});
+
+// Pasang / ganti token Telegram Bot secara runtime. Dipanggil oleh halaman
+// Integrasi saat user klik "Simpan Token" pada modal konfigurasi Telegram.
+app.post('/api/telegram/config', async (req, res) => {
+  try {
+    const newToken = String(req.body.token || '').trim();
+    const newChatId = String(req.body.chatId || '').trim();
+
+    if (!newToken) {
+      return res.status(400).json({ ok: false, error: 'Token tidak boleh kosong' });
+    }
+
+    // Validasi token ke Telegram dulu sebelum dipakai menggantikan token lama.
+    const testRes = await fetch(`https://api.telegram.org/bot${newToken}/getMe`);
+    const testData = await testRes.json();
+    if (!testData.ok) {
+      return res.status(400).json({ ok: false, error: testData.description || 'Token tidak valid' });
+    }
+
+    TELEGRAM_BOT_TOKEN = newToken;
+    TELEGRAM_DEFAULT_CHAT_ID = newChatId;
+    tgBotInfo = testData.result;
+
+    // Restart polling dengan token baru (loop lama otomatis berhenti via epoch guard).
+    stopTelegramPolling();
+    startTelegramPolling();
+
+    res.json({ ok: true, bot: tgBotInfo });
+  } catch (err) {
+    console.error('[Telegram] Gagal menyimpan konfigurasi:', err.message);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// Hapus token Telegram Bot (saat user klik "Putuskan Koneksi" / "Hapus Token").
+app.delete('/api/telegram/config', (req, res) => {
+  TELEGRAM_BOT_TOKEN = '';
+  TELEGRAM_DEFAULT_CHAT_ID = '';
+  tgBotInfo = null;
+  stopTelegramPolling();
+  res.json({ ok: true });
 });
 
 async function sendMessage({ mode, chatId, message, lead }) {

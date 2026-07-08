@@ -630,3 +630,29 @@ function rpAddNote() {
   });
 
 })();
+
+
+// TELEGRAM INPUT MODAL
+(function() {
+  const _origTgOpen = window.tgOpenModal;
+  window.tgOpenModal = function() {
+    _origTgOpen && _origTgOpen();
+    // Show masked stored token in preview
+    const token  = localStorage.getItem('idt_telegram_bot_token') || '';
+    const previewEl = document.getElementById('tg-stored-val');
+    if (previewEl) {
+      if (token) {
+        // Mask tengah token: 1234567890:AAGkVBnr...lXI
+        const parts = token.split(':');
+        const masked = parts.length === 2
+          ? parts[0] + ':' + parts[1].slice(0,4) + '••••••••••••••••' + parts[1].slice(-3)
+          : token.slice(0,6) + '••••••••••' + token.slice(-4);
+        previewEl.textContent = masked;
+      } else {
+        previewEl.textContent = 'Belum ada token tersimpan';
+      }
+    }
+    const stored = document.getElementById('tg-stored-preview');
+    if (stored) stored.style.display = 'block';
+  };
+})();

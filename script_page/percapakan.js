@@ -155,8 +155,14 @@ function _showBotWarning(show) {
     if (list) {
       list.insertAdjacentHTML(
         'afterbegin',
-        `<div id="pc-bot-warning" style="padding:10px 14px;background:var(--amber-bg);color:var(--amber);font-size:11px;font-weight:600;display:flex;align-items:center;gap:6px">
-          <i class="ti ti-alert-triangle"></i> TELEGRAM_BOT_TOKEN belum diisi di server .env — halaman ini butuh backend aktif.
+        `<div id="pc-bot-warning" style="padding:10px 14px;background:var(--amber-bg);color:var(--amber);font-size:11px;font-weight:600;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <i class="ti ti-alert-triangle"></i>
+          <span>Bot Telegram belum terhubung.</span>
+          <button type="button"
+                  onclick="if(typeof showPage==='function'){showPage('integrasi-page');} else if(typeof tgOpenModal==='function'){tgOpenModal();}"
+                  style="margin-left:auto;background:none;border:1px solid currentColor;color:inherit;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:600;cursor:pointer">
+            Atur di halaman Integrasi
+          </button>
         </div>`
       );
     }

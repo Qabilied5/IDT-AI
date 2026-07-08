@@ -99,6 +99,11 @@ const IG_DATA = [
       { key: 'bot_token', label: 'Bot Token (dari @BotFather)', placeholder: '110201543:AAHdqTcvCH1vGWJxfSeofSAs0K5PALDsaw', type: 'text' },
       { key: 'webhook_url', label: 'Webhook URL (opsional)', placeholder: 'https://api.indotrading.com/webhook/tg', type: 'text' },
     ],
+    stats: [
+      { val: 'Undef', label: 'DM' },
+      { val: 'Undef', label: 'AI Handle' },
+      { val: 'Undef', label: 'Avg Respons' },
+    ],
   },
   {
     id: 'livechat',
@@ -329,7 +334,32 @@ function igGetFiltered() {
 }
 
 // ── RENDER ─────────────────────────────────────────────────────
+// Selaraskan status kartu Telegram dengan token yang tersimpan di browser
+// (diatur lewat telegram-token.js). Server.js tidak lagi jadi sumber .env,
+// jadi status "connected" di kartu ini mengikuti ada/tidaknya token lokal.
+function igSyncTelegramStatus() {
+  const item = IG_DATA.find(i => i.id === 'telegram');
+  if (!item) return;
+  const token = (typeof tgGetToken === 'function') ? tgGetToken() : '';
+  if (token) {
+    item.status = 'connected';
+    if (!item.connectedInfo) {
+      item.connectedInfo = {
+        account: 'Bot Telegram (token tersimpan di browser ini)',
+        since: '—',
+        msgs: '—',
+        lastStatus: '✅ Token aktif',
+      };
+    }
+  } else {
+    item.status = 'disconnected';
+    delete item.connectedInfo;
+    delete item.stats;
+  }
+}
+
 function igRender() {
+  igSyncTelegramStatus();
   igState.query = (document.getElementById('ig-search')?.value || '').trim();
 
   const filtered = igGetFiltered();
@@ -466,7 +496,23 @@ function igOpenModal(id) {
   // Config fields
   const configWrap = document.getElementById('ig-modal-config');
   const fieldsEl   = document.getElementById('ig-modal-fields');
-  if (item.status !== 'connected' && item.configFields?.length) {
+  if (item.id === 'telegram') {
+    // Telegram punya modal konfigurasi token khusus (tg-token-modal, lihat
+    // telegram-token.js) dengan test koneksi & penyimpanan ke backend —
+    // jadi tidak pakai field generic di sini.
+    configWrap.style.display = 'flex';
+    fieldsEl.innerHTML = `
+      <div class="ig-field-group">
+        <div class="ig-field-label" style="margin-bottom:6px">
+          ${item.status === 'connected' ? 'Token Bot tersimpan di browser ini.' : 'Belum ada token Bot yang terhubung.'}
+        </div>
+        <button type="button" class="ig-btn-primary" style="width:100%;justify-content:center"
+                onclick="igCloseModal(); if(typeof tgOpenModal==='function') tgOpenModal();">
+          <i class="ti ti-brand-telegram"></i> ${item.status === 'connected' ? 'Kelola Token Telegram' : 'Atur Token Telegram'}
+        </button>
+      </div>
+    `;
+  } else if (item.status !== 'connected' && item.configFields?.length) {
     configWrap.style.display = 'flex';
     fieldsEl.innerHTML = item.configFields.map(f => `
       <div class="ig-field-group">
@@ -521,6 +567,13 @@ function igModalAction() {
   const id   = igState.activeModal;
   const item = IG_DATA.find(i => i.id === id);
   if (!item) return;
+
+  if (id === 'telegram' && item.status !== 'connected') {
+    // Belum konek: langsung buka modal token khusus, bukan simulasi connect generic.
+    igCloseModal();
+    if (typeof tgOpenModal === 'function') tgOpenModal();
+    return;
+  }
 
   if (item.status === 'connected') {
     // Open disconnect confirmation
@@ -596,6 +649,14 @@ function igConfirmDisconnect() {
   const id   = igState.disconnectTarget;
   const item = IG_DATA.find(i => i.id === id);
   if (!item) return;
+
+  if (id === 'telegram') {
+    // Hapus token dari browser ini sekaligus dari backend (server.js),
+    // supaya polling Telegram di server ikut berhenti.
+    if (typeof tgClearToken === 'function') tgClearToken();
+    const base = (typeof TG_API_BASE !== 'undefined') ? TG_API_BASE : (window.PC_API_BASE || 'http://localhost:3001');
+    fetch(`${base}/api/telegram/config`, { method: 'DELETE' }).catch(() => {});
+  }
 
   item.status = 'disconnected';
   delete item.connectedInfo;
