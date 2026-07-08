@@ -1062,3 +1062,39 @@
   from { transform: translateY(12px); opacity: 0; }
   to   { transform: translateY(0);    opacity: 1; }
 }
+
+/*  */
+.ap-row-actions {
+  display: flex;
+  gap: 6px; /* Jarak antar tombol */
+}
+
+.ap-row-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  background-color: #ffffff;
+  
+  /* Borderline tipis */
+  border: 1px solid #e2e8f0; 
+  border-radius: 6px;
+  
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+/* Efek sedikit menggelap saat hover */
+.ap-row-btn:hover {
+  background-color: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+/* Memastikan warna SVG mengikuti teks/tema */
+.ap-row-btn svg {
+  color: #64748b; /* Warna abu-abu lembut default ikon */
+}
+
+.ap-row-btn:hover svg {
+  color: #334155;
+}

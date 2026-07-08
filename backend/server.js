@@ -221,6 +221,11 @@ async function tgProcessMessage(message) {
   if (!message.text) return; // sementara lewati pesan non-teks (foto, stiker, dll)
 
   const conv = tgGetOrCreateConversation(message.chat, message.from);
+  // State penjadwalan per-percakapan — dipakai fitur "AI tawarkan slot kosong"
+  // di bawah (lihat blok 2e). idle = belum ada tawaran aktif, offered = AI baru
+  // saja menawarkan slot dan sedang menunggu customer memilih salah satunya.
+  if (!conv.scheduling) conv.scheduling = { stage: 'idle', offeredSlots: [], meetingType: null };
+
   const incomingTime = message.date ? message.date * 1000 : Date.now();
   const incomingMsg = {
     id: conv.messages.length + 1,
@@ -234,25 +239,25 @@ async function tgProcessMessage(message) {
   conv.lastMessageTime = incomingTime;
   conv.unread += 1;
 
-  if (conv.handledBy === 'ai') {
-    try {
-      const replyText = await tgGenerateReplyWithOllama(conv, message.text);
-      if (replyText) {
-        await sendViaTelegram(conv.chatId, replyText);
-        const outMsg = {
-          id: conv.messages.length + 1,
-          dir: 'out',
-          from: 'ai',
-          text: replyText,
-          time: Date.now(),
-        };
-        conv.messages.push(outMsg);
-        conv.lastMessageText = replyText;
-        conv.lastMessageTime = outMsg.time;
-      }
-    } catch (err) {
-      console.error('[Telegram] Gagal auto-reply AI:', err.message);
+  if (conv.handledBy !== 'ai') return; // mode manual — admin yang membalas, AI diam
+
+  try {
+    const replyText = await tgHandleMessageAndMaybeSchedule(conv, message.text);
+    if (replyText) {
+      await sendViaTelegram(conv.chatId, replyText);
+      const outMsg = {
+        id: conv.messages.length + 1,
+        dir: 'out',
+        from: 'ai',
+        text: replyText,
+        time: Date.now(),
+      };
+      conv.messages.push(outMsg);
+      conv.lastMessageText = replyText;
+      conv.lastMessageTime = outMsg.time;
     }
+  } catch (err) {
+    console.error('[Telegram] Gagal auto-reply AI:', err.message);
   }
 }
 
@@ -316,6 +321,207 @@ async function startTelegramPolling() {
   }
 
   if (myEpoch === tgPollEpoch) tgPollingActive = false;
+}
+
+// =============================================================
+// 2e) APPOINTMENT DARI PERCAKAPAN (BARU)
+//     AI menawarkan slot jadwal yang masih kosong ke customer lewat chat
+//     Telegram (mis. saat customer bertanya "boleh jadwalkan demo?"). Begitu
+//     customer memilih salah satu slot, appointment otomatis dibuat di sini
+//     (status "menunggu" konfirmasi admin) dan disinkronkan ke halaman
+//     Appointment lewat polling GET /api/appointments/ai-created.
+//     Alurnya: Percakapan → AI tawarkan slot → customer pilih →
+//     appointment masuk ke halaman Appointment → admin klik tombol
+//     "Konfirmasi & Follow-up" → automasi follow-up (endpoint 5b di bawah).
+// =============================================================
+const APPT_BUSINESS_HOURS = { startHour: 9, endHour: 17 }; // jam kerja 09.00–17.00 WIB
+const APPT_WORKING_DAYS = [1, 2, 3, 4, 5]; // Senin–Jumat (0=Minggu, 6=Sabtu)
+const APPT_SLOT_STEP_HOURS = 2; // jarak antar slot yang ditawarkan, biar tidak terlalu padat
+const APPT_DEFAULT_DURATION = 60;
+// Server tidak tahu daftar staff (itu konfigurasi frontend di appointment.js
+// / SELLER_CONFIG.staffList) — pakai fallback yang bisa dioverride lewat .env
+// (APPT_DEFAULT_STAFF=Nama Staff), admin tetap bisa ganti PIC saat konfirmasi.
+const APPT_DEFAULT_STAFF = process.env.APPT_DEFAULT_STAFF || 'Tim Sales (belum ditentukan)';
+const APPT_TYPE_LABELS = {
+  demo: 'Demo Produk',
+  konsultasi: 'Konsultasi',
+  negosiasi: 'Negosiasi',
+  onboarding: 'Onboarding',
+  lainnya: 'Lainnya',
+};
+
+// Appointment yang lahir dari percakapan AI (in-memory, hilang saat restart —
+// sama seperti tgConversations di atas). Terpisah dari AP_DATA di frontend
+// (appointment.js) supaya tidak mengubah data demo yang sudah ada; halaman
+// Appointment menggabungkan keduanya lewat polling.
+const aiAppointments = [];
+
+function apptPad(n) { return String(n).padStart(2, '0'); }
+
+function apptTypeLabel(typeValue) {
+  return APPT_TYPE_LABELS[typeValue] || APPT_TYPE_LABELS.konsultasi;
+}
+
+function apptIsSlotTaken(dateStr, timeStr) {
+  return aiAppointments.some((a) => a.date === dateStr && a.time === timeStr && a.status !== 'dibatalkan');
+}
+
+// Cari N slot kosong terdekat dalam jam kerja, lewati slot yang sudah
+// terisi oleh appointment (hasil AI) lain. Catatan: ini hanya mengecek
+// terhadap appointment yang dibuat lewat chat (aiAppointments) karena
+// appointment manual (AP_DATA) saat ini masih tersimpan di sisi frontend
+// dan belum dikirim ke server — lihat catatan di README/summary.
+function apptGetAvailableSlots(limit = 3, lookaheadDays = 10) {
+  const slots = [];
+  const now = new Date();
+  for (let d = 0; d < lookaheadDays && slots.length < limit; d++) {
+    const day = new Date(now.getFullYear(), now.getMonth(), now.getDate() + d);
+    if (!APPT_WORKING_DAYS.includes(day.getDay())) continue;
+
+    for (let h = APPT_BUSINESS_HOURS.startHour; h < APPT_BUSINESS_HOURS.endHour; h += APPT_SLOT_STEP_HOURS) {
+      if (d === 0 && h <= now.getHours()) continue; // lewati jam yang sudah lewat hari ini
+      const dateStr = `${day.getFullYear()}-${apptPad(day.getMonth() + 1)}-${apptPad(day.getDate())}`;
+      const timeStr = `${apptPad(h)}.00`;
+      if (apptIsSlotTaken(dateStr, timeStr)) continue;
+      slots.push({ date: dateStr, time: timeStr });
+      if (slots.length >= limit) break;
+    }
+  }
+  return slots;
+}
+
+function apptFormatSlotLabel(slot) {
+  const d = new Date(slot.date + 'T00:00:00');
+  const dayName = d.toLocaleDateString('id-ID', { weekday: 'long' });
+  const dateLabel = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long' });
+  return `${dayName}, ${dateLabel} jam ${slot.time} WIB`;
+}
+
+// ── KLASIFIKASI NIAT PENJADWALAN VIA OLLAMA ───────────────────────
+// Dipanggil untuk SETIAP pesan masuk (sebelum balasan bebas) supaya AI bisa
+// mendeteksi: (1) apakah customer ingin membuat janji temu, dan (2) kalau
+// sebelumnya AI sudah menawarkan slot, apakah pesan ini adalah pilihan
+// customer atas salah satu slot tsb.
+function buildSchedulingIntentPrompt(conv, incomingText, offeredSlots) {
+  const roleLabel = { in: 'Customer', ai: 'AI', human: 'Agent' };
+  const historyText = conv.messages
+    .slice(-6)
+    .map((m) => `${roleLabel[m.dir === 'in' ? 'in' : m.from]}: ${m.text}`)
+    .join('\n');
+  const slotListText = offeredSlots.length
+    ? offeredSlots.map((s, i) => `${i + 1}. ${apptFormatSlotLabel(s)}`).join('\n')
+    : '(belum ada slot yang ditawarkan sebelumnya)';
+
+  return `Kamu adalah sistem klasifikasi niat (intent classifier) untuk chat sales B2B Indonesia.
+Analisa pesan customer di bawah ini dan balas HANYA dengan JSON valid, tanpa markdown fence, tanpa teks lain di luar JSON.
+
+${historyText ? `Riwayat percakapan terakhir:\n${historyText}\n\n` : ''}Pesan baru dari customer: "${incomingText}"
+
+Slot jadwal yang SUDAH ditawarkan AI ke customer sebelumnya (kalau ada):
+${slotListText}
+
+Tentukan:
+1. "wants_schedule": true jika customer terlihat ingin menjadwalkan/mengatur pertemuan, demo, konsultasi, atau meeting (baik diminta eksplisit maupun tersirat, mis. "boleh dijadwalkan demo?", "kapan bisa ketemu tim-nya?", "mau konsultasi kak"). false kalau bukan soal jadwal.
+2. "picks_slot_index": HANYA isi kalau daftar slot di atas TIDAK kosong DAN pesan customer terlihat memilih salah satu slot tsb (lewat nomor, hari, atau jam yang disebut). Isi dengan nomor urut slot (1, 2, dst sesuai daftar). Kalau tidak relevan, isi null.
+3. "meeting_type_guess": salah satu dari "demo", "konsultasi", "negosiasi", "onboarding", "lainnya" — tebakan jenis pertemuan dari konteks percakapan. Default "konsultasi" kalau tidak jelas.
+
+Balas HANYA dengan JSON persis format ini (tanpa teks tambahan apapun):
+{"wants_schedule": true|false, "picks_slot_index": null|1|2|3, "meeting_type_guess": "..."}`;
+}
+
+async function classifySchedulingIntent(conv, incomingText, offeredSlots) {
+  const prompt = buildSchedulingIntentPrompt(conv, incomingText, offeredSlots);
+  try {
+    const res = await fetch(`${OLLAMA_BASE_URL}/api/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: OLLAMA_MODEL,
+        prompt,
+        stream: false,
+        format: 'json',
+        options: { temperature: 0.1 },
+      }),
+    });
+    if (!res.ok) throw new Error(`Ollama error ${res.status}`);
+    const data = await res.json();
+    const parsed = JSON.parse(extractJson((data.response || '').trim()));
+    const idx = Number(parsed.picks_slot_index);
+    return {
+      wantsSchedule: !!parsed.wants_schedule,
+      picksSlotIndex: Number.isInteger(idx) && idx > 0 ? idx : null,
+      meetingTypeGuess: APPT_TYPE_LABELS[parsed.meeting_type_guess] ? parsed.meeting_type_guess : 'konsultasi',
+    };
+  } catch (err) {
+    console.error('[Scheduling] Gagal klasifikasi intent, lewati penawaran jadwal:', err.message);
+    return { wantsSchedule: false, picksSlotIndex: null, meetingTypeGuess: 'konsultasi' };
+  }
+}
+
+// Buat appointment baru di aiAppointments begitu customer memilih slot.
+// Statusnya "menunggu" — appointment baru dianggap resmi setelah admin
+// klik "Konfirmasi & Follow-up" di halaman Appointment (lihat endpoint
+// POST /api/appointments/:id/confirm di bawah).
+function apptCreateFromChat(conv, slot, meetingType) {
+  const typeLabel = apptTypeLabel(meetingType);
+  const record = {
+    id: `ai-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+    nama: conv.name,
+    company: conv.username ? '@' + conv.username : '-',
+    phone: conv.username ? '@' + conv.username : `Telegram ${conv.chatId}`,
+    email: '',
+    date: slot.date,
+    time: slot.time,
+    duration: APPT_DEFAULT_DURATION,
+    type: meetingType,
+    typeLabel,
+    sales: APPT_DEFAULT_STAFF,
+    status: 'menunggu',
+    createdBy: 'ai',
+    location: '',
+    notes: `Dibuat otomatis dari percakapan Telegram (chat ID ${conv.chatId}).`,
+    aiNote: 'Appointment ini dijadwalkan otomatis oleh AI berdasarkan pilihan slot customer lewat chat Telegram. Mohon konfirmasi, lengkapi lokasi/link meeting, lalu kirim follow-up.',
+    chatId: conv.chatId,
+    leadId: null,
+    timeline: [
+      { type: 'ai', event: 'AI menawarkan slot jadwal', sub: `Menawarkan ${conv.scheduling.offeredSlots.length} slot kosong via Telegram`, time: 'Baru saja' },
+      { type: 'success', event: 'Customer memilih slot', sub: apptFormatSlotLabel(slot), time: 'Baru saja' },
+      { type: 'ai', event: 'AI membuat appointment otomatis', sub: `Menunggu konfirmasi admin — PIC sementara: ${APPT_DEFAULT_STAFF}`, time: 'Baru saja' },
+    ],
+  };
+  aiAppointments.push(record);
+  return record;
+}
+
+// Handler utama pesan masuk saat conv.handledBy === 'ai'. Urutan prioritas:
+//  1) Kalau AI baru saja menawarkan slot & customer memilih salah satunya
+//     → buat appointment, balas konfirmasi.
+//  2) Kalau customer terlihat ingin jadwal & belum ada tawaran aktif
+//     → cari slot kosong, tawarkan lewat chat.
+//  3) Selain itu → balasan bebas seperti sebelumnya (tgGenerateReplyWithOllama).
+async function tgHandleMessageAndMaybeSchedule(conv, incomingText) {
+  const intent = await classifySchedulingIntent(conv, incomingText, conv.scheduling.offeredSlots);
+
+  if (conv.scheduling.stage === 'offered' && intent.picksSlotIndex) {
+    const chosen = conv.scheduling.offeredSlots[intent.picksSlotIndex - 1];
+    if (chosen) {
+      apptCreateFromChat(conv, chosen, conv.scheduling.meetingType || intent.meetingTypeGuess);
+      const firstName = (conv.name || '').split(' ')[0] || '';
+      conv.scheduling = { stage: 'idle', offeredSlots: [], meetingType: null };
+      return `Baik${firstName ? ' ' + firstName : ''}, jadwal Anda sudah kami catat untuk ${apptFormatSlotLabel(chosen)}. Tim kami akan segera mengonfirmasi dan menghubungi Anda kembali. Terima kasih! 🙏`;
+    }
+  }
+
+  if (intent.wantsSchedule && conv.scheduling.stage !== 'offered') {
+    const slots = apptGetAvailableSlots(3);
+    if (slots.length) {
+      const listText = slots.map((s, i) => `${i + 1}. ${apptFormatSlotLabel(s)}`).join('\n');
+      conv.scheduling = { stage: 'offered', offeredSlots: slots, meetingType: intent.meetingTypeGuess };
+      return `Tentu! Berikut beberapa slot yang masih kosong untuk ${apptTypeLabel(intent.meetingTypeGuess)}:\n\n${listText}\n\nSilakan balas dengan nomor atau sebutkan jadwal yang Anda pilih ya.`;
+    }
+  }
+
+  return tgGenerateReplyWithOllama(conv, incomingText);
 }
 
 // =============================================================
@@ -533,6 +739,136 @@ app.post('/api/followup/send', async (req, res) => {
 // =============================================================
 app.get('/api/followup/log', (req, res) => {
   res.json({ ok: true, log: sendLog });
+});
+
+// =============================================================
+// 5b) ENDPOINT: APPOINTMENT AI FOLLOW-UP (BARU)
+//     Dipicu otomatis dari halaman Appointment (script_page/appointment.js)
+//     setiap kali appointment baru berhasil dibuat. Sengaja dibuat sebagai
+//     endpoint TERPISAH dari /api/followup/generate & /send di atas (yang
+//     dipakai halaman Kontak/Leads) supaya tidak mengubah perilaku yang
+//     sudah ada — prompt-nya khusus konteks appointment (tanggal, jam,
+//     jenis pertemuan, dsb), bukan konteks lead biasa.
+//
+//     Catatan penting: Telegram Bot API TIDAK BISA mengirim pesan pertama
+//     ke user yang belum pernah mulai chat dengan bot ("auto chat duluan"
+//     ke user baru secara teknis tidak dimungkinkan Telegram). Jadi endpoint
+//     ini mencoba mencocokkan appointment dengan percakapan Telegram yang
+//     SUDAH ADA (berdasarkan nama) — kalau ketemu, pesan AI langsung
+//     dikirim & muncul di halaman Percakapan. Kalau belum ada percakapan
+//     yang cocok, pesan tetap di-generate (delivered:false) supaya bisa
+//     dikirim manual, misalnya lewat tombol WhatsApp yang sudah ada.
+// =============================================================
+function buildAppointmentFollowupPrompt({ appointment, lead }) {
+  return `Kamu adalah asisten sales AI yang ramah dan profesional untuk bisnis B2B Indonesia.
+Tugasmu: tulis SATU pesan chat singkat (maksimal 4 kalimat) dalam Bahasa Indonesia untuk
+menindaklanjuti appointment yang baru saja dibuat oleh tim sales. Tujuannya membuka
+percakapan, mengonfirmasi jadwal, dan membuat customer merasa diperhatikan.
+
+Data appointment:
+- Nama customer: ${appointment.nama}
+- Perusahaan: ${appointment.company || '-'}
+- Jenis pertemuan: ${appointment.typeLabel || '-'}
+- Tanggal: ${appointment.date || '-'}
+- Waktu: ${appointment.time || '-'} WIB
+- Penanggung jawab: ${appointment.sales || '-'}
+- Lokasi/link: ${appointment.location || '-'}${lead ? `
+- Kota: ${lead.kota || '-'}
+- Status lead sebelumnya: ${lead.status || '-'}` : ''}
+
+Aturan:
+- Sapa pakai nama customer.
+- Sebutkan jadwal (tanggal & waktu) secara natural.
+- Tutup dengan kalimat ramah yang mengundang balasan (mis. menanyakan kesiapan/pertanyaan).
+- JANGAN gunakan markdown, JANGAN beri judul, JANGAN beri penjelasan tambahan.
+- Output HANYA isi pesannya saja, siap kirim.`;
+}
+
+async function generateAppointmentFollowupMessage({ appointment, lead }) {
+  const prompt = buildAppointmentFollowupPrompt({ appointment, lead });
+
+  const res = await fetch(`${OLLAMA_BASE_URL}/api/generate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: OLLAMA_MODEL,
+      prompt,
+      stream: false,
+      options: { temperature: 0.7 },
+    }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Ollama error ${res.status}: ${text}`);
+  }
+
+  const data = await res.json();
+  return (data.response || '').trim();
+}
+
+// Cari percakapan Telegram yang sudah ada berdasarkan kecocokan nama —
+// satu-satunya penghubung yang tersedia saat ini, karena data appointment/
+// lead belum menyimpan chatId Telegram secara eksplisit.
+function findExistingTelegramConversationByName(name) {
+  const target = (name || '').trim().toLowerCase();
+  if (!target) return null;
+  for (const conv of tgConversations.values()) {
+    if ((conv.name || '').trim().toLowerCase() === target) return conv;
+  }
+  return null;
+}
+
+app.post('/api/appointment/followup', async (req, res) => {
+  try {
+    const { appointment, lead } = req.body;
+    if (!appointment || !appointment.nama) {
+      return res.status(400).json({ ok: false, error: 'Data appointment tidak lengkap' });
+    }
+
+    const message = await generateAppointmentFollowupMessage({ appointment, lead });
+
+    const existingConv = findExistingTelegramConversationByName(appointment.nama);
+    if (existingConv && TELEGRAM_BOT_TOKEN) {
+      await sendViaTelegram(existingConv.chatId, message);
+
+      const outMsg = { id: existingConv.messages.length + 1, dir: 'out', from: 'ai', text: message, time: Date.now() };
+      existingConv.messages.push(outMsg);
+      existingConv.lastMessageText = message;
+      existingConv.lastMessageTime = outMsg.time;
+      existingConv.handledBy = 'ai';
+
+      return res.json({ ok: true, delivered: true, provider: 'telegram', chatId: existingConv.chatId, message });
+    }
+
+    // Belum ada percakapan Telegram yang cocok utk kontak ini — pesan tetap
+    // disiapkan supaya bisa dikirim manual (mis. via tombol WhatsApp).
+    res.json({ ok: true, delivered: false, provider: null, message });
+  } catch (err) {
+    console.error('[Appointment Follow-up] Gagal:', err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// =============================================================
+// 5c) ENDPOINT: APPOINTMENT HASIL PERCAKAPAN (BARU)
+//     Dipoll oleh halaman Appointment (script_page/appointment.js) untuk
+//     menggabungkan appointment yang lahir dari chat ke tabel AP_DATA.
+// =============================================================
+app.get('/api/appointments/ai-created', (req, res) => {
+  res.json({ ok: true, appointments: aiAppointments });
+});
+
+// Dipanggil saat admin klik tombol "Konfirmasi & Follow-up" di halaman
+// Appointment, supaya status appointment ini tersinkron di server juga
+// (mencegah status balik ke "menunggu" saat halaman polling berikutnya).
+app.post('/api/appointments/:id/confirm', (req, res) => {
+  const record = aiAppointments.find((a) => String(a.id) === String(req.params.id));
+  if (!record) return res.status(404).json({ ok: false, error: 'Appointment tidak ditemukan' });
+
+  record.status = 'terkonfirmasi';
+  record.timeline.push({ type: 'success', event: 'Admin mengonfirmasi appointment', sub: 'Dikonfirmasi lewat halaman Appointment', time: 'Baru saja' });
+  res.json({ ok: true, appointment: record });
 });
 
 // =============================================================

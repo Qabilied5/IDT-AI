@@ -95,75 +95,6 @@ const AP_DATA = [
       { type: 'ai', event: 'Pengingat pertama dikirim', sub: 'Customer belum membalas', time: '08:00 hari ini' },
     ],
   },
-  {
-    id: 4,
-    nama: 'Aisyah Putri',
-    company: 'PT Gemilang Nusantara',
-    phone: '087712345678',
-    email: 'aisyah@gemilang.co.id',
-    date: '2025-06-03',
-    time: '10.00',
-    duration: 60,
-    type: 'demo',
-    typeLabel: 'Demo Produk',
-    sales: 'Arif Budiman',
-    status: 'selesai',
-    createdBy: 'manual',
-    location: 'https://meet.google.com/xyz-1234',
-    notes: 'Demo sukses. Customer tertarik untuk order trial 10 unit.',
-    aiNote: null,
-    timeline: [
-      { type: 'manual', event: 'Appointment dibuat oleh Arif Budiman', sub: '', time: '15:00, 2 Jun' },
-      { type: 'success', event: 'Meeting berlangsung sesuai jadwal', sub: 'Durasi 55 menit', time: '10:00, 3 Jun' },
-      { type: 'ai', event: 'AI mencatat ringkasan hasil meeting', sub: 'Customer tertarik order 10 unit. Follow-up terjadwal.', time: '11:00, 3 Jun' },
-    ],
-  },
-  {
-    id: 5,
-    nama: 'Hendra Wijaya',
-    company: 'PT Prima Industri',
-    phone: '081387654321',
-    email: 'hendra@primaindustri.com',
-    date: '2025-06-05',
-    time: '14.00',
-    duration: 30,
-    type: 'onboarding',
-    typeLabel: 'Onboarding',
-    sales: 'Rina Kartika',
-    status: 'terkonfirmasi',
-    createdBy: 'ai',
-    location: 'https://meet.google.com/onboard-abc',
-    notes: 'Customer baru. Sesi onboarding platform Indotrading B2B.',
-    aiNote: 'Customer baru menyelesaikan pendaftaran. AI mendeteksi profil aktif dengan potensi engagement tinggi. Sesi onboarding penting untuk aktivasi dan retensi awal.',
-    timeline: [
-      { type: 'ai', event: 'Trigger otomatis setelah sign-up customer', sub: 'AI menjadwalkan onboarding dalam 24 jam', time: '14:00 kemarin' },
-      { type: 'success', event: 'Customer konfirmasi slot', sub: 'Memilih Kamis 14.00', time: '14:30 kemarin' },
-      { type: 'ai', event: 'Undangan + panduan onboarding dikirim', sub: 'Email & WhatsApp terkirim', time: '14:31 kemarin' },
-    ],
-  },
-  {
-    id: 6,
-    nama: 'Lestari Ningrum',
-    company: 'CV Bintang Selatan',
-    phone: '089512345678',
-    email: 'lestari@bintangselatan.id',
-    date: '2025-06-03',
-    time: '14.00',
-    duration: 60,
-    type: 'negosiasi',
-    typeLabel: 'Negosiasi',
-    sales: 'Dimas Pratama',
-    status: 'dibatalkan',
-    createdBy: 'manual',
-    location: 'Kantor Indotrading Lt. 2',
-    notes: 'Dibatalkan karena customer tidak dapat hadir. Akan dijadwal ulang minggu depan.',
-    aiNote: null,
-    timeline: [
-      { type: 'manual', event: 'Appointment dibuat oleh Dimas Pratama', sub: '', time: '10:00, 2 Jun' },
-      { type: 'system', event: 'Customer menghubungi untuk reschedule', sub: 'Ada urusan mendadak', time: '13:00, 3 Jun' },
-      { type: 'system', event: 'Appointment dibatalkan', sub: 'Akan dijadwalkan ulang minggu depan', time: '13:05, 3 Jun' },
-    ],
-  },
 ];
 
 const AP_AI_LOGS = [
@@ -322,16 +253,31 @@ function apRender() {
       </div>
       <!-- Aksi -->
       <div class="ap-row-actions">
-        <button class="ap-row-btn wa" title="WhatsApp" onclick="event.stopPropagation();apQuickWA(${r.id})">
-          <i class="ti ti-brand-whatsapp"></i>
-        </button>
-        <button class="ap-row-btn" title="Edit" onclick="event.stopPropagation();apSelectRow(${r.id});apOpenEdit()">
-          <i class="ti ti-edit"></i>
-        </button>
-        <button class="ap-row-btn" title="Batalkan" onclick="event.stopPropagation();apSelectRow(${r.id});apOpenCancel()">
-          <i class="ti ti-calendar-x"></i>
-        </button>
-      </div>
+  <button class="ap-row-btn wa" title="FollowUp" onclick="event.stopPropagation();apQuickWA(${r.id})">
+    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+      <polyline points="13 11 11 11 11 13"/>
+    </svg>
+  </button>
+
+  <button class="ap-row-btn" title="Edit" onclick="event.stopPropagation();apSelectRow(${r.id});apOpenEdit()">
+    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+    </svg>
+  </button>
+
+  <button class="ap-row-btn" title="Batalkan" onclick="event.stopPropagation();apSelectRow(${r.id});apOpenCancel()">
+    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+      <line x1="16" y1="2" x2="16" y2="6"/>
+      <line x1="8" y1="2" x2="8" y2="6"/>
+      <line x1="3" y1="10" x2="21" y2="10"/>
+      <line x1="10" y1="14" x2="14" y2="18"/>
+      <line x1="14" y1="14" x2="10" y2="18"/>
+    </svg>
+  </button>
+</div>
     </div>
   `).join('');
 
@@ -458,6 +404,158 @@ function apCloseDetail() {
   apRender();
 }
 
+/* ── 6b. COMPANY AUTOCOMPLETE (Perusahaan) — terhubung ke Kontak/Leads ──
+   Sumber data: variabel global LEADS_DATA (didefinisikan di leads-page.js,
+   diisi dari Google Sheets / CSV / fallback). File ini HANYA membaca
+   LEADS_DATA, tidak pernah mengubahnya — jadi tidak menyentuh logic
+   Kontak/Leads yang sudah ada.
+   ──────────────────────────────────────────────────────────────── */
+let _apCompanyDD = null;
+let _apCompanyDDIndex = -1;
+
+function apEscapeHtml(s) {
+  return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// Ambil daftar perusahaan unik dari LEADS_DATA (1 entri per perusahaan,
+// dipakai baris pertama yang ditemukan sebagai representasi kontaknya).
+function apGetLeadsCompanyList() {
+  if (typeof LEADS_DATA === 'undefined' || !Array.isArray(LEADS_DATA)) return [];
+  const seen = new Set();
+  const list = [];
+  LEADS_DATA.forEach(l => {
+    const nm = (l.perusahaan || '').trim();
+    if (!nm || seen.has(nm.toLowerCase())) return;
+    seen.add(nm.toLowerCase());
+    list.push(l);
+  });
+  return list;
+}
+
+function apBuildCompanyDropdown() {
+  if (_apCompanyDD && document.body.contains(_apCompanyDD)) return _apCompanyDD;
+  const input = document.getElementById('ap-fd-company');
+  if (!input) return null;
+  const wrap = input.parentElement;
+  if (wrap && getComputedStyle(wrap).position === 'static') wrap.style.position = 'relative';
+
+  const dd = document.createElement('div');
+  dd.id = 'ap-fd-company-dd';
+  dd.style.cssText = 'position:absolute;top:100%;left:0;right:0;margin-top:4px;background:#fff;'
+    + 'border:1px solid var(--gray-200,#e5e7eb);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);'
+    + 'max-height:220px;overflow-y:auto;z-index:80;display:none;';
+  if (wrap) wrap.appendChild(dd);
+  _apCompanyDD = dd;
+  return dd;
+}
+
+function apHighlightCompanyDD(items) {
+  items.forEach((el, i) => {
+    el.style.background = i === _apCompanyDDIndex ? 'var(--gray-50,#f9fafb)' : '';
+  });
+}
+
+function apCloseCompanyDropdown() {
+  if (_apCompanyDD) _apCompanyDD.style.display = 'none';
+  _apCompanyDDIndex = -1;
+}
+
+function apSelectCompanyFromLead(lead) {
+  if (!lead) return;
+  const companyEl = document.getElementById('ap-fd-company');
+  const namaEl    = document.getElementById('ap-fd-nama');
+  const phoneEl   = document.getElementById('ap-fd-phone');
+  const emailEl   = document.getElementById('ap-fd-email');
+
+  if (companyEl) {
+    companyEl.value = lead.perusahaan || '';
+    companyEl.dataset.leadId = lead.id; // simpan referensi lead terpilih (dipakai utk AI follow-up)
+  }
+  // Hanya auto-isi field yang masih kosong, supaya tidak menimpa input manual user.
+  if (namaEl && !namaEl.value.trim()) namaEl.value = lead.nama || '';
+  if (phoneEl && !phoneEl.value.trim()) {
+    const p = (lead.phone || '').trim();
+    phoneEl.value = p ? (p.startsWith('0') ? p : '0' + p) : '';
+  }
+  if (emailEl && !emailEl.value.trim()) emailEl.value = lead.email || '';
+
+  apCloseCompanyDropdown();
+}
+
+function apRenderCompanyDropdown(query) {
+  const dd = apBuildCompanyDropdown();
+  if (!dd) return;
+  const list = apGetLeadsCompanyList();
+  const q = (query || '').trim().toLowerCase();
+  const filtered = q
+    ? list.filter(l => (l.perusahaan || '').toLowerCase().includes(q) || (l.nama || '').toLowerCase().includes(q))
+    : list;
+
+  if (!filtered.length) {
+    dd.innerHTML = `<div style="padding:10px 12px;font-size:12px;color:var(--gray-400,#9ca3af)">`
+      + (list.length ? 'Tidak ditemukan perusahaan yang cocok.' : 'Belum ada data Kontak/Leads.')
+      + `</div>`;
+    dd._items = [];
+    dd.style.display = 'block';
+    _apCompanyDDIndex = -1;
+    return;
+  }
+
+  dd.innerHTML = filtered.slice(0, 30).map((l, i) => `
+    <div class="ap-company-dd-item" data-idx="${i}"
+      style="padding:8px 12px;font-size:12.5px;cursor:pointer;border-bottom:1px solid var(--gray-100,#f1f5f9)">
+      <div style="font-weight:600;color:#1f2937">${apEscapeHtml(l.perusahaan || '—')}</div>
+      <div style="font-size:11px;color:var(--gray-400,#9ca3af)">${apEscapeHtml(l.nama || '')}${l.kota ? ' · ' + apEscapeHtml(l.kota) : ''}</div>
+    </div>
+  `).join('');
+  dd._items = filtered;
+  _apCompanyDDIndex = -1;
+
+  dd.querySelectorAll('.ap-company-dd-item').forEach(el => {
+    el.addEventListener('mousedown', (e) => {
+      e.preventDefault(); // cegah blur duluan sebelum klik diproses
+      apSelectCompanyFromLead(filtered[parseInt(el.dataset.idx, 10)]);
+    });
+  });
+
+  dd.style.display = 'block';
+}
+
+function apInitCompanyAutocomplete() {
+  const input = document.getElementById('ap-fd-company');
+  if (!input || input._apAutocompleteBound) return;
+  input._apAutocompleteBound = true;
+
+  input.addEventListener('focus', () => apRenderCompanyDropdown(input.value));
+  input.addEventListener('click', () => apRenderCompanyDropdown(input.value));
+  input.addEventListener('input', () => {
+    delete input.dataset.leadId; // ketik manual = putus link ke lead lama
+    apRenderCompanyDropdown(input.value);
+  });
+  input.addEventListener('blur', () => { setTimeout(apCloseCompanyDropdown, 120); });
+  input.addEventListener('keydown', (e) => {
+    const dd = _apCompanyDD;
+    if (!dd || dd.style.display === 'none' || !dd._items || !dd._items.length) return;
+    const items = dd.querySelectorAll('.ap-company-dd-item');
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      _apCompanyDDIndex = Math.min(_apCompanyDDIndex + 1, items.length - 1);
+      apHighlightCompanyDD(items);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      _apCompanyDDIndex = Math.max(_apCompanyDDIndex - 1, 0);
+      apHighlightCompanyDD(items);
+    } else if (e.key === 'Enter') {
+      if (_apCompanyDDIndex >= 0 && dd._items[_apCompanyDDIndex]) {
+        e.preventDefault();
+        apSelectCompanyFromLead(dd._items[_apCompanyDDIndex]);
+      }
+    } else if (e.key === 'Escape') {
+      apCloseCompanyDropdown();
+    }
+  });
+}
+
 /* ── 7. MODAL: CREATE / EDIT ──────────────────────────────────── */
 
 /* Populate dropdown Jenis Pertemuan dari SELLER_CONFIG (dipanggil setiap open modal) */
@@ -503,6 +601,12 @@ function apOpenCreate() {
   document.getElementById('ap-fd-sales').value = '';
   document.getElementById('ap-fd-send-wa').checked = true;
   document.getElementById('ap-fd-send-reminder').checked = true;
+
+  // Putus link ke lead sebelumnya (kalau ada dari sesi form yang lama) + aktifkan autocomplete Perusahaan
+  const companyElNew = document.getElementById('ap-fd-company');
+  if (companyElNew) delete companyElNew.dataset.leadId;
+  apInitCompanyAutocomplete();
+
   document.getElementById('ap-modal-create').style.display = 'flex';
 }
 
@@ -529,6 +633,14 @@ function apOpenEdit() {
   document.getElementById('ap-fd-sales').value = r.sales;
   document.getElementById('ap-fd-location').value = r.location;
   document.getElementById('ap-fd-notes').value = r.notes;
+
+  // Pulihkan link ke lead Kontak/Leads jika appointment ini sebelumnya dibuat dari dropdown + aktifkan autocomplete
+  const companyElEdit = document.getElementById('ap-fd-company');
+  if (companyElEdit) {
+    if (r.leadId) companyElEdit.dataset.leadId = r.leadId; else delete companyElEdit.dataset.leadId;
+  }
+  apInitCompanyAutocomplete();
+
   document.getElementById('ap-modal-create').style.display = 'flex';
 }
 
@@ -554,6 +666,7 @@ function apSaveAppointment() {
   const typeLabel = typeObj ? typeObj.label : typeEl.value;
 
   const [dateStr, timeStr] = datetime.split('T');
+  let justCreatedId = null;
 
   if (apEditingId) {
     const idx = AP_DATA.findIndex(x => x.id === apEditingId);
@@ -567,6 +680,7 @@ function apSaveAppointment() {
         sales: salesVal,
         location: document.getElementById('ap-fd-location').value.trim(),
         notes: document.getElementById('ap-fd-notes').value.trim(),
+        leadId: document.getElementById('ap-fd-company').dataset.leadId || null,
       });
     }
     apShowToast('success', '<i class="ti ti-check"></i> Appointment berhasil diperbarui.');
@@ -583,10 +697,12 @@ function apSaveAppointment() {
       location: document.getElementById('ap-fd-location').value.trim(),
       notes: document.getElementById('ap-fd-notes').value.trim(),
       aiNote: null,
+      leadId: document.getElementById('ap-fd-company').dataset.leadId || null,
       timeline: [
         { type: 'manual', event: 'Appointment dibuat secara manual', sub: 'Oleh Admin', time: 'Baru saja' },
       ],
     });
+    justCreatedId = newId;
 
     const sendWA = document.getElementById('ap-fd-send-wa').checked;
     if (sendWA) {
@@ -595,11 +711,198 @@ function apSaveAppointment() {
       }, 1200);
     }
     apShowToast('success', '<i class="ti ti-check"></i> Appointment baru berhasil dibuat.');
+
+    // Catatan: follow-up AI ke Percakapan TIDAK di-trigger otomatis di sini.
+    // Fungsi apTriggerAiFollowup(record) sudah tersedia (lihat bawah) dan tinggal
+    // dipanggil dari tombol pemicu manual saat tombolnya sudah dibuat.
   }
 
   apCloseCreate();
-  apCurrentPage = 1;
+
+  if (justCreatedId) {
+    // Appointment baru dibuat → reset filter tanggal/status/pencarian yang sedang aktif
+    // dan lompat ke halaman yang memuatnya, supaya appointment yang baru saja dibuat
+    // pasti langsung terlihat di list (tidak tersembunyi oleh filter "Hari Ini" dsb,
+    // yang tanggal acuannya memang tetap/hardcoded di apFilteredData()).
+    apFilterRange = 'all';
+    apFilterStatus = 'all';
+    apSearchQuery = '';
+    const statusSelReset = document.getElementById('ap-status-filter');
+    if (statusSelReset) statusSelReset.value = 'all';
+    const searchElReset = document.getElementById('ap-search');
+    if (searchElReset) searchElReset.value = '';
+
+    const filteredAfterCreate = apFilteredData();
+    apCurrentPage = Math.max(1, Math.ceil(filteredAfterCreate.length / AP_PER_PAGE));
+  } else {
+    apCurrentPage = 1;
+  }
+
   apRender();
+
+  if (justCreatedId) apSelectRow(justCreatedId);
+}
+
+/* ── 7b. AI AUTO FOLLOW-UP KE PERCAKAPAN ──────────────────────────
+   Dipicu otomatis setiap kali appointment BARU berhasil dibuat.
+   Memanggil backend server.js (endpoint baru /api/appointment/followup,
+   TIDAK menyentuh endpoint /api/followup/* yang sudah dipakai halaman
+   Kontak/Leads) yang men-generate pesan lewat Ollama dan mencoba
+   mengirimkannya ke percakapan Telegram yang sudah ada untuk kontak
+   tsb. Kalau customer belum pernah chat ke bot, Telegram tidak bisa
+   dikirimi pesan pertama (batasan Bot API) — pesan tetap disiapkan,
+   dan bisa dikirim manual lewat tombol WhatsApp yang sudah ada.
+   ──────────────────────────────────────────────────────────────── */
+const AP_FOLLOWUP_API_BASE = window.PC_API_BASE || 'http://localhost:3001';
+
+async function apTriggerAiFollowup(record) {
+  if (!record) return;
+  try {
+    const companyEl = document.getElementById('ap-fd-company');
+    const leadId = record.leadId || (companyEl && companyEl.dataset.leadId) || null;
+    const lead = (leadId && typeof LEADS_DATA !== 'undefined')
+      ? LEADS_DATA.find(l => String(l.id) === String(leadId))
+      : null;
+
+    const res = await fetch(`${AP_FOLLOWUP_API_BASE}/api/appointment/followup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        appointment: {
+          nama: record.nama,
+          company: record.company,
+          phone: record.phone,
+          date: record.date,
+          time: record.time,
+          typeLabel: record.typeLabel,
+          sales: record.sales,
+          location: record.location,
+        },
+        lead: lead || null,
+      }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || data.ok === false) throw new Error(data.error || `Request gagal (${res.status})`);
+
+    const idx = AP_DATA.findIndex(x => x.id === record.id);
+    if (idx !== -1) {
+      AP_DATA[idx].timeline.push({
+        type: 'ai',
+        event: data.delivered ? 'AI mengirim follow-up ke Percakapan' : 'AI menyiapkan pesan follow-up',
+        sub: data.delivered
+          ? `Terkirim via Telegram: "${data.message}"`
+          : `Belum ada percakapan Telegram aktif untuk kontak ini. Pesan disiapkan, kirim manual lewat WhatsApp: "${data.message}"`,
+        time: 'Baru saja',
+      });
+      if (apSelectedId === record.id) apSelectRow(record.id);
+    }
+
+    AP_AI_LOGS.unshift({
+      icon: data.delivered ? 'ti-brand-telegram' : 'ti-message-2',
+      iconClass: data.delivered ? 'success' : 'info',
+      event: data.delivered ? 'Follow-up AI otomatis terkirim ke Percakapan' : 'Pesan follow-up AI disiapkan',
+      sub: `${record.nama} (${record.company || '-'}) — ${data.message}`,
+      time: 'Baru saja',
+    });
+
+    apShowToast(
+      data.delivered ? 'success' : 'default',
+      data.delivered
+        ? '<i class="ti ti-sparkles"></i> AI berhasil follow-up chat ke Percakapan.'
+        : '<i class="ti ti-sparkles"></i> Pesan follow-up AI siap — belum ada percakapan Telegram aktif untuk kontak ini.'
+    );
+  } catch (err) {
+    console.error('AI follow-up ke Percakapan gagal:', err);
+    apShowToast('error', '<i class="ti ti-alert-circle"></i> AI follow-up gagal: tidak bisa terhubung ke server AI (' + AP_FOLLOWUP_API_BASE + ').');
+  }
+}
+
+/* ── 7c. SINKRONISASI APPOINTMENT DARI PERCAKAPAN (BARU) ──────────
+   Appointment yang lahir dari chat Telegram (AI menawarkan slot kosong,
+   customer memilih salah satunya) dibuat & disimpan di server.js, BUKAN
+   langsung di AP_DATA (yang murni in-memory di frontend). Fungsi di bawah
+   ini polling appointment tsb dan menggabungkannya ke AP_DATA supaya
+   muncul di tabel halaman ini seperti appointment lainnya.
+   ──────────────────────────────────────────────────────────────── */
+let _apKnownAiIds = new Set();
+
+async function apSyncAiAppointments() {
+  try {
+    const res = await fetch(`${AP_FOLLOWUP_API_BASE}/api/appointments/ai-created`);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || data.ok === false) return;
+
+    let hasNew = false;
+    (data.appointments || []).forEach((rec) => {
+      const idx = AP_DATA.findIndex((x) => x.id === rec.id);
+      if (idx === -1) {
+        AP_DATA.unshift({ ...rec, company: rec.company || '-', duration: rec.duration || 60 });
+        hasNew = true;
+      } else {
+        // Appointment sudah ada di tabel — sinkronkan status & timeline
+        // terbaru dari server saja (mis. setelah admin konfirmasi),
+        // tanpa menimpa perubahan lain yang mungkin dibuat di sisi UI.
+        AP_DATA[idx].status = rec.status;
+        AP_DATA[idx].timeline = rec.timeline;
+      }
+      _apKnownAiIds.add(rec.id);
+    });
+
+    if (hasNew) {
+      // Appointment baru dari chat → reset filter yang sedang aktif supaya
+      // langsung terlihat (sama seperti perlakuan appointment manual baru,
+      // lihat catatan di apSaveAppointment di atas — filter tanggal demo
+      // di apFilteredData() memang acuannya tanggal tetap, bukan tanggal
+      // hari ini yang sebenarnya).
+      apFilterRange = 'all';
+      apFilterStatus = 'all';
+      apSearchQuery = '';
+      const statusSelReset = document.getElementById('ap-status-filter');
+      if (statusSelReset) statusSelReset.value = 'all';
+      const searchElReset = document.getElementById('ap-search');
+      if (searchElReset) searchElReset.value = '';
+      apCurrentPage = 1;
+      apShowToast('success', '<i class="ti ti-calendar-plus"></i> Appointment baru dari Percakapan — customer sudah memilih jadwal via chat.');
+    }
+
+    apRender();
+    if (apSelectedId && AP_DATA.some((x) => x.id === apSelectedId)) apSelectRow(apSelectedId);
+  } catch (err) {
+    // Backend belum jalan / belum terhubung — diamkan, halaman tetap
+    // pakai data lokal (AP_DATA) seperti biasa.
+  }
+}
+
+function _startApChatSync() {
+  apSyncAiAppointments();
+  setInterval(apSyncAiAppointments, 5000);
+}
+
+// Dipanggil dari tombol "Konfirmasi & Follow-up" di panel detail. Menandai
+// appointment terkonfirmasi (termasuk sinkron ke server kalau appointment
+// ini asalnya dari chat AI, id-nya berawalan "ai-"), lalu langsung memicu
+// automasi follow-up yang sudah ada (apTriggerAiFollowup).
+async function apConfirmAndFollowup() {
+  if (!apSelectedId) return;
+  const r = AP_DATA.find((x) => x.id === apSelectedId);
+  if (!r) return;
+
+  if (typeof r.id === 'string' && r.id.startsWith('ai-')) {
+    try {
+      await fetch(`${AP_FOLLOWUP_API_BASE}/api/appointments/${r.id}/confirm`, { method: 'POST' });
+    } catch (err) {
+      console.error('Gagal menyinkronkan konfirmasi ke server:', err);
+    }
+  }
+
+  if (r.status !== 'terkonfirmasi') {
+    r.status = 'terkonfirmasi';
+    r.timeline.push({ type: 'success', event: 'Admin mengonfirmasi appointment', sub: 'Dikonfirmasi dari halaman Appointment', time: 'Baru saja' });
+  }
+
+  apRender();
+  apSelectRow(r.id);
+  await apTriggerAiFollowup(r);
 }
 
 /* ── 8. MODAL: CANCEL ─────────────────────────────────────────── */
@@ -715,6 +1018,7 @@ function apInitEvents() {
 function apInit() {
   apInitEvents();
   apRender();
+  _startApChatSync();
 }
 
 // Trigger on page show (called from main nav or DOMContentLoaded)
