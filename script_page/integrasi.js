@@ -14,24 +14,16 @@ const IG_DATA = [
     category: 'messaging',
     catLabel: 'Pesan',
     catIcon: 'ti-brand-whatsapp',
-    status: 'connected',    // connected | pending | disconnected
-    desc: 'Hubungkan WhatsApp Business API ke AI Agent Anda. Terima dan balas pesan pelanggan secara otomatis, kelola percakapan massal, dan kirim notifikasi pesanan.',
+    // Status TIDAK di-hardcode lagi — mengikuti ada/tidaknya kredensial WABA
+    // yang tersimpan di browser ini (lihat waba-token.js + igSyncWabaStatus()
+    // di bawah), sejajar dengan pola kartu Telegram.
+    status: 'disconnected', // connected | pending | disconnected
+    desc: 'Hubungkan WhatsApp Business API (Meta Cloud API) ke AI Agent Anda. Terima dan balas pesan pelanggan secara otomatis, kelola percakapan massal, dan kirim notifikasi pesanan.',
     features: [
       { icon: 'ti-robot', label: 'Auto-reply AI' },
       { icon: 'ti-users', label: 'Broadcast List' },
       { icon: 'ti-file-invoice', label: 'Template Pesan' },
       { icon: 'ti-bell', label: 'Notifikasi Order' },
-    ],
-    connectedInfo: {
-      account: '+62 811-2345-6789 (Indotrading)',
-      since: '12 Januari 2025',
-      msgs: '48.291 pesan',
-      lastStatus: '✅ Aktif — 3 menit lalu',
-    },
-    stats: [
-      { val: '48.291', label: 'Pesan' },
-      { val: '91%', label: 'AI Handle' },
-      { val: '2.1 dtk', label: 'Avg Respons' },
     ],
   },
   {
@@ -358,8 +350,34 @@ function igSyncTelegramStatus() {
   }
 }
 
+// Selaraskan status kartu WhatsApp Business (WABA) dengan kredensial yang
+// tersimpan di browser (diatur lewat waba-token.js). Sejajar dengan
+// igSyncTelegramStatus() di atas.
+function igSyncWabaStatus() {
+  const item = IG_DATA.find(i => i.id === 'whatsapp');
+  if (!item) return;
+  const token   = (typeof wbGetToken === 'function') ? wbGetToken() : '';
+  const phoneId = (typeof wbGetPhoneId === 'function') ? wbGetPhoneId() : '';
+  if (token && phoneId) {
+    item.status = 'connected';
+    if (!item.connectedInfo) {
+      item.connectedInfo = {
+        account: `Phone Number ID: ${phoneId}`,
+        since: '—',
+        msgs: '—',
+        lastStatus: '✅ Kredensial aktif',
+      };
+    }
+  } else {
+    item.status = 'disconnected';
+    delete item.connectedInfo;
+    delete item.stats;
+  }
+}
+
 function igRender() {
   igSyncTelegramStatus();
+  igSyncWabaStatus();
   igState.query = (document.getElementById('ig-search')?.value || '').trim();
 
   const filtered = igGetFiltered();
@@ -512,6 +530,22 @@ function igOpenModal(id) {
         </button>
       </div>
     `;
+  } else if (item.id === 'whatsapp') {
+    // WhatsApp Business (WABA) punya modal konfigurasi kredensial khusus
+    // (wb-token-modal, lihat waba-token.js) dengan test koneksi & penyimpanan
+    // ke backend — sejajar dengan pola Telegram di atas, bukan field generic.
+    configWrap.style.display = 'flex';
+    fieldsEl.innerHTML = `
+      <div class="ig-field-group">
+        <div class="ig-field-label" style="margin-bottom:6px">
+          ${item.status === 'connected' ? 'Kredensial WABA tersimpan di browser ini.' : 'Belum ada kredensial WABA yang terhubung.'}
+        </div>
+        <button type="button" class="ig-btn-primary" style="width:100%;justify-content:center"
+                onclick="igCloseModal(); if(typeof wbOpenModal==='function') wbOpenModal();">
+          <i class="ti ti-brand-whatsapp"></i> ${item.status === 'connected' ? 'Kelola Kredensial WABA' : 'Atur Kredensial WABA'}
+        </button>
+      </div>
+    `;
   } else if (item.status !== 'connected' && item.configFields?.length) {
     configWrap.style.display = 'flex';
     fieldsEl.innerHTML = item.configFields.map(f => `
@@ -572,6 +606,13 @@ function igModalAction() {
     // Belum konek: langsung buka modal token khusus, bukan simulasi connect generic.
     igCloseModal();
     if (typeof tgOpenModal === 'function') tgOpenModal();
+    return;
+  }
+
+  if (id === 'whatsapp' && item.status !== 'connected') {
+    // Belum konek: langsung buka modal kredensial WABA khusus, bukan simulasi connect generic.
+    igCloseModal();
+    if (typeof wbOpenModal === 'function') wbOpenModal();
     return;
   }
 
@@ -656,6 +697,13 @@ function igConfirmDisconnect() {
     if (typeof tgClearToken === 'function') tgClearToken();
     const base = (typeof TG_API_BASE !== 'undefined') ? TG_API_BASE : (window.PC_API_BASE || 'http://localhost:3001');
     fetch(`${base}/api/telegram/config`, { method: 'DELETE' }).catch(() => {});
+  }
+
+  if (id === 'whatsapp') {
+    // Hapus kredensial WABA dari browser ini sekaligus dari backend (server.js).
+    if (typeof wbClearConfig === 'function') wbClearConfig();
+    const base = (typeof WB_API_BASE !== 'undefined') ? WB_API_BASE : (window.PC_API_BASE || 'http://localhost:3001');
+    fetch(`${base}/api/waba/config`, { method: 'DELETE' }).catch(() => {});
   }
 
   item.status = 'disconnected';

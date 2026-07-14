@@ -966,9 +966,16 @@
       <div class="lp-title">Kontak &amp; Leads</div>
       <div class="lp-subtitle">Pantau, kelola, dan follow-up semua kontak &amp; prospek Anda dalam satu tempat</div>
     </div>
-    <div class="lp-import-excel" onclick="openImportModal()">
-      <i class="ti ti-file-spreadsheet"></i> Import Excel / Spreadsheets
+
+    <div class="lp-header-actions">
+      <div class="lp-import-excel" onclick="openImportModal()">
+        <i class="ti ti-file-spreadsheet"></i> Import Excel / Spreadsheets
+      </div>
+      <div class="lp-import-excel" onclick="lpStartAiChat()" title="AI menghubungi lead yang belum dihubungi lewat Telegram, berdasarkan nomor HP di data">
+        <i class="ti ti-robot"></i> Mulai Chat AI
+      </div>
     </div>
+  
   </div>
  
   <!-- ── Info Bar ──────────────────────────────────────────────── -->
@@ -1474,6 +1481,7 @@
         <option value="dihubungi">Sudah dihubungi</option>
         <option value="followup">Follow-up lanjutan</option>
         <option value="closed">Closed / Deal</option>
+        <option value="nomor_tidak_ditemukan">Nomor Tidak ditemukan</option>
       </select>
       <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin:10px 0 5px">Catatan (opsional)</label>
       <textarea id="lp-status-note" class="lp-fd-textarea" rows="3" placeholder="Tambahkan catatan follow-up…"></textarea>
@@ -5642,9 +5650,179 @@
 <!-- ENDING MODAL TELEGRAM INPUT -->
 
 
+<!-- ── MODAL OVERLAY — WHATSAPP BUSINESS API (WABA) ─────────────────
+     Memakai class CSS tg-* yang sama dengan modal Telegram di atas supaya
+     tampilan konsisten tanpa perlu duplikasi CSS — hanya id elemen yang
+     beda (wb-*) supaya cocok dengan script_page/waba-token.js. -->
+<div id="wb-token-modal" class="ig-modal-overlay"
+     onclick="if(event.target===this)wbCloseModal()">
+
+  <div class="tg-modal">
+
+    <!-- Header -->
+    <div class="tg-modal-header">
+      <div class="tg-modal-title">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M12 2C6.5 2 2 6.5 2 12c0 1.9.5 3.6 1.4 5.2L2 22l4.9-1.3C8.5 21.6 10.2 22 12 22c5.5 0 10-4.5 10-10S17.5 2 12 2Z" fill="#25D366"/>
+          <path d="M8.5 7.5c.2-.5.5-.5.7-.5h.6c.2 0 .4 0 .6.5.2.5.7 1.7.7 1.8.1.1.1.3 0 .4-.1.2-.1.3-.3.5-.1.2-.3.3-.4.5-.1.1-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.4 2.4 1.5.3.1.5.1.7-.1.2-.2.7-.8.9-1.1.2-.3.4-.2.6-.1.2.1 1.5.7 1.8.8.3.1.5.2.5.3.1.2.1.9-.2 1.7-.3.8-1.7 1.5-2.3 1.6-.6.1-1.1.2-3.7-.8-3.2-1.2-5.2-4.4-5.4-4.6-.2-.2-1.3-1.7-1.3-3.3 0-1.6.8-2.3 1.1-2.6Z" fill="#fff"/>
+        </svg>
+        <span>Konfigurasi WhatsApp Business API</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="tg-saved-badge" id="wb-saved-badge" style="display:none">● Kredensial Tersimpan</span>
+        <button class="tg-icon-btn" onclick="wbCloseModal()" title="Tutup" aria-label="Tutup">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><line x1="2" y1="2" x2="14" y2="14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="14" y1="2" x2="2" y2="14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Info banner -->
+    <div class="tg-info-banner">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="flex-shrink:0;margin-top:1px"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.4"/><line x1="8" y1="6" x2="8" y2="11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="8" cy="4" r=".7" fill="currentColor"/></svg>
+      <span>Kredensial disimpan di browser ini saja (<code>localStorage</code>). Ambil dari Meta App Dashboard &gt; WhatsApp &gt; API Setup.</span>
+    </div>
+
+    <!-- Body -->
+    <div class="tg-modal-body">
+
+      <!-- ACCESS TOKEN -->
+      <div class="tg-field-group">
+        <label class="tg-label" for="wb-input-token">
+          Access Token <span class="tg-req">*</span>
+          <a class="tg-help-link" href="https://developers.facebook.com/docs/whatsapp/cloud-api/get-started" target="_blank" rel="noopener">
+            Cara mendapatkan ↗
+          </a>
+        </label>
+        <div class="tg-input-wrap">
+          <input
+            id="wb-input-token"
+            class="tg-input tg-input-mono"
+            type="password"
+            placeholder="EAAG..."
+            autocomplete="off"
+            spellcheck="false"
+          />
+          <button class="tg-input-action-btn" id="wb-vis-btn"
+                  onclick="wbToggleVisibility('wb-input-token', this)"
+                  title="Tampilkan / sembunyikan" type="button" aria-label="Toggle visibility">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+              <path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5Z" stroke="currentColor" stroke-width="1.4"/>
+              <circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.4"/>
+            </svg>
+          </button>
+          <button class="tg-input-action-btn" id="wb-copy-btn"
+                  onclick="wbCopyToken()" title="Salin token" type="button" aria-label="Salin">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+              <rect x="5" y="5" width="9" height="9" rx="1.5" stroke="currentColor" stroke-width="1.4"/>
+              <path d="M3 11H2a1 1 0 01-1-1V2a1 1 0 011-1h8a1 1 0 011 1v1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
+        <div class="tg-field-hint">Access Token permanen (System User) atau temporary token dari Meta App Dashboard.</div>
+      </div>
+
+      <!-- PHONE NUMBER ID -->
+      <div class="tg-field-group">
+        <label class="tg-label" for="wb-input-phoneid">
+          Phone Number ID <span class="tg-req">*</span>
+        </label>
+        <div class="tg-input-wrap">
+          <input
+            id="wb-input-phoneid"
+            class="tg-input tg-input-mono"
+            type="text"
+            placeholder="1029384756..."
+            autocomplete="off"
+          />
+        </div>
+        <div class="tg-field-hint">Dari Meta App Dashboard &gt; WhatsApp &gt; API Setup &gt; "Phone number ID".</div>
+      </div>
+
+      <!-- WABA / BUSINESS ACCOUNT ID (opsional) -->
+      <div class="tg-field-group">
+        <label class="tg-label" for="wb-input-wabaid">
+          WhatsApp Business Account ID
+          <span class="tg-optional">opsional</span>
+        </label>
+        <div class="tg-input-wrap">
+          <input
+            id="wb-input-wabaid"
+            class="tg-input tg-input-mono"
+            type="text"
+            placeholder="1029384756..."
+            autocomplete="off"
+          />
+        </div>
+      </div>
+
+      <!-- VERIFY TOKEN (untuk webhook, opsional) -->
+      <div class="tg-field-group">
+        <label class="tg-label" for="wb-input-verify">
+          Webhook Verify Token
+          <span class="tg-optional">opsional</span>
+        </label>
+        <div class="tg-input-wrap">
+          <input
+            id="wb-input-verify"
+            class="tg-input tg-input-mono"
+            type="text"
+            placeholder="bebas, mis. indotrading-webhook-2025"
+            autocomplete="off"
+          />
+        </div>
+        <div class="tg-field-hint">Dipakai backend untuk verifikasi webhook Meta — samakan dengan yang diisi di Meta App Dashboard.</div>
+      </div>
+
+      <!-- WEBHOOK URL (info, read-only) -->
+      <div class="tg-field-group">
+        <label class="tg-label">Webhook URL (daftarkan di Meta App Dashboard)</label>
+        <div class="tg-input-wrap">
+          <input class="tg-input tg-input-mono" type="text" readonly id="wb-webhook-url" style="opacity:.8" />
+          <button class="tg-input-action-btn" id="wb-copy-webhook-btn"
+                  onclick="wbCopyWebhookUrl()" title="Salin URL" type="button" aria-label="Salin URL">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+              <rect x="5" y="5" width="9" height="9" rx="1.5" stroke="currentColor" stroke-width="1.4"/>
+              <path d="M3 11H2a1 1 0 01-1-1V2a1 1 0 011-1h8a1 1 0 011 1v1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
+        <div class="tg-field-hint">Localhost tidak bisa diakses Meta — pakai tunnel publik (ngrok/cloudflared) atau domain production saat submit.</div>
+      </div>
+
+      <!-- STATUS ROW -->
+      <div class="tg-status-row" id="wb-status-row"></div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="tg-modal-footer">
+      <button class="tg-btn-danger" id="wb-reset-btn"
+              onclick="wbHandleReset()" style="display:none" type="button">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><polyline points="2 4 14 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M5 4V2h6v2M3 4l1 10h8l1-10" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+        Hapus Kredensial
+      </button>
+      <div style="display:flex;gap:8px;margin-left:auto">
+        <button class="tg-btn-outline wb-btn-primary-test" id="wb-test-btn" onclick="wbHandleTest()" type="button">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><polyline points="3 8 7 12 13 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Test Koneksi
+        </button>
+        <button class="tg-btn-ghost" onclick="wbCloseModal()" type="button">Batal</button>
+        <button class="tg-btn-primary wb-btn-primary" onclick="wbHandleSave()" type="button">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M2 10v4h12v-4M8 2v8M5 5l3-3 3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Simpan
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+<!-- ENDING MODAL WABA INPUT -->
+
+
 <!-- JS SETUP -->
 <script src="script.js"></script>
 <script src="script_page/telegram-token.js"></script>
+<script src="script_page/waba-token.js"></script>
 <script src="script_page/percapakan.js"></script>
 <script src="script_page/ai_agent.js"></script>
 <script src="script_page/leads-page.js"></script>

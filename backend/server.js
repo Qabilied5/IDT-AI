@@ -39,6 +39,16 @@ const PIPELINE_OLLAMA_MODEL = process.env.PIPELINE_OLLAMA_MODEL || OLLAMA_MODEL;
 // dan belum ada token yang dikirim dari frontend.
 let TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
 let TELEGRAM_DEFAULT_CHAT_ID = process.env.TELEGRAM_DEFAULT_CHAT_ID || '';
+// Kredensial WhatsApp Business API (WABA / Meta Cloud API) — sejajar dengan
+// Telegram di atas: TIDAK diambil dari .env secara permanen, diatur runtime
+// lewat halaman Integrasi (POST/DELETE /api/waba/config), dikirim dari
+// browser lewat script_page/waba-token.js. .env cuma fallback awal.
+let WABA_ACCESS_TOKEN = process.env.WABA_ACCESS_TOKEN || '';
+let WABA_PHONE_NUMBER_ID = process.env.WABA_PHONE_NUMBER_ID || '';
+let WABA_BUSINESS_ACCOUNT_ID = process.env.WABA_BUSINESS_ACCOUNT_ID || '';
+let WABA_VERIFY_TOKEN = process.env.WABA_VERIFY_TOKEN || '';
+let wabaBotInfo = null; // { verified_name, display_phone_number }
+let wabaConversations = new Map(); // key = nomor tujuan -> { chatId, name, phone, messages: [...] }
 const SEND_MODE = process.env.SEND_MODE || 'mock'; // mock | telegram | whatsapp
 
 // ── Riwayat pengiriman sementara (in-memory, hilang saat restart) ──
@@ -128,6 +138,96 @@ async function sendViaTelegram(chatId, message) {
 }
 
 // =============================================================
+// 2a-2) KIRIM PESAN — WHATSAPP BUSINESS API (WABA / Meta Cloud API)
+// =============================================================
+async function sendViaWaba(to, message) {
+  if (!WABA_ACCESS_TOKEN || !WABA_PHONE_NUMBER_ID) {
+    throw new Error('WABA belum dikonfigurasi (Access Token / Phone Number ID kosong)');
+  }
+  if (!to) {
+    throw new Error('Nomor tujuan (to) kosong');
+  }
+
+  const url = `https://graph.facebook.com/v20.0/${WABA_PHONE_NUMBER_ID}/messages`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${WABA_ACCESS_TOKEN}`,
+    },
+    body: JSON.stringify({
+      messaging_product: 'whatsapp',
+      to,
+      type: 'text',
+      text: { body: message },
+    }),
+  });
+
+  const data = await res.json();
+  if (data.error) {
+    throw new Error(`WABA error: ${data.error.message || 'unknown'}`);
+  }
+  return data;
+}
+
+// ── KIRIM PESAN PEMBUKA (TEMPLATE) — WHATSAPP BUSINESS API ───────────────────
+// WhatsApp Cloud API MENOLAK pesan bebas (type: "text") sebagai pesan
+// PERTAMA ke nomor yang belum pernah membalas nomor bisnis kita (tidak ada
+// "customer service window" terbuka). Untuk kontak pertama, WAJIB pakai
+// message template yang disetujui Meta. Nama 'hello_world' TIDAK BISA dipakai
+// di WABA ini — nama itu reserved khusus untuk sample template WABA yang baru
+// dibuat dari nol, dan ditolak Meta kalau dibuat manual di WABA yang sudah ada
+// (lihat error 132001 / "reserved for sample templates"). 'hello_test' adalah
+// template custom sederhana (kategori Utility, isi fixed "Hello World") yang
+// dibuat manual & sudah di-approve Meta untuk WABA ini, jadi hanya cocok untuk
+// TEST. Untuk pesan intro custom (nama/perusahaan lead) di production, buat
+// template sendiri di Meta Business Manager > WhatsApp Manager > Message
+// Templates dengan variabel body, ajukan approval, lalu ganti templateName +
+// tambahkan components (lihat komentar di bawah).
+async function sendViaWabaTemplate(to, templateName = 'hello_test', languageCode = 'en', components = null) {
+  if (!WABA_ACCESS_TOKEN || !WABA_PHONE_NUMBER_ID) {
+    throw new Error('WABA belum dikonfigurasi (Access Token / Phone Number ID kosong)');
+  }
+  if (!to) {
+    throw new Error('Nomor tujuan (to) kosong');
+  }
+
+  const template = { name: templateName, language: { code: languageCode } };
+  if (components) template.components = components;
+  // Contoh components untuk template custom dengan 3 variabel di body:
+  // components: [{
+  //   type: 'body',
+  //   parameters: [
+  //     { type: 'text', text: lead.nama },
+  //     { type: 'text', text: COMPANY_INTRO.botName },
+  //     { type: 'text', text: COMPANY_INTRO.companyName },
+  //   ],
+  // }]
+
+  const url = `https://graph.facebook.com/v20.0/${WABA_PHONE_NUMBER_ID}/messages`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${WABA_ACCESS_TOKEN}`,
+    },
+    body: JSON.stringify({
+      messaging_product: 'whatsapp',
+      to,
+      type: 'template',
+      template,
+    }),
+  });
+
+  const data = await res.json();
+  console.log('[WABA] Response template lengkap:', JSON.stringify(data));
+  if (data.error) {
+    throw new Error(`WABA error: ${data.error.message || 'unknown'}`);
+  }
+  return data;
+}
+
+// =============================================================
 // 2b) PERCAKAPAN TELEGRAM (LIVE) — polling getUpdates
 //     Dipakai oleh halaman Percakapan (script_page/percapakan.js)
 //     untuk menampilkan & membalas chat Telegram secara real-time.
@@ -154,6 +254,16 @@ function tgInitials(name) {
     .join('') || 'TG';
 }
 
+// Normalisasi nomor HP ke bentuk "inti" tanpa kode negara/nol depan, supaya
+// nomor dari spreadsheet leads (mis. "82381272032") bisa dicocokkan dengan
+// nomor dari Telegram (mis. "+6282381272032" atau "6282381272032").
+function tgNormalizePhone(raw) {
+  let p = String(raw || '').replace(/\D/g, '');
+  if (p.startsWith('62')) p = p.slice(2);
+  if (p.startsWith('0')) p = p.slice(1);
+  return p;
+}
+
 function tgGetOrCreateConversation(chat, fromUser) {
   const chatId = String(chat.id);
   let conv = tgConversations.get(chatId);
@@ -167,6 +277,8 @@ function tgGetOrCreateConversation(chat, fromUser) {
       name,
       username,
       initials: tgInitials(name),
+      phone: '', // diisi kalau customer share kontak Telegram-nya (dipakai fitur "AI mulai chat duluan")
+      introSent: false,
       handledBy: 'ai', // 'ai' | 'human'
       lastMessageText: '',
       lastMessageTime: Date.now(),
@@ -218,9 +330,19 @@ async function tgGenerateReplyWithOllama(conv, incomingText) {
 }
 
 async function tgProcessMessage(message) {
-  if (!message.text) return; // sementara lewati pesan non-teks (foto, stiker, dll)
-
   const conv = tgGetOrCreateConversation(message.chat, message.from);
+
+  // Tangkap nomor HP kalau customer share kontak Telegram-nya (tombol
+  // "Share Contact") — dipakai fitur "AI mulai chat duluan" (blok 2f) untuk
+  // mencocokkan lead dari Kontak/Leads dengan percakapan yang sudah ada.
+  // Ditaruh SEBELUM guard `!message.text` di bawah karena pesan share-contact
+  // tidak punya field text sama sekali.
+  if (message.contact && message.contact.phone_number) {
+    conv.phone = tgNormalizePhone(message.contact.phone_number);
+  }
+
+  if (!message.text) return; // sementara lewati pesan non-teks lain (foto, stiker, dll)
+
   // State penjadwalan per-percakapan — dipakai fitur "AI tawarkan slot kosong"
   // di bawah (lihat blok 2e). idle = belum ada tawaran aktif, offered = AI baru
   // saja menawarkan slot dan sedang menunggu customer memilih salah satunya.
@@ -525,6 +647,188 @@ async function tgHandleMessageAndMaybeSchedule(conv, incomingText) {
 }
 
 // =============================================================
+// 2f) AI MULAI CHAT DULUAN — OUTREACH KE LEADS (BARU)
+//     Dipicu dari halaman Kontak/Leads (tombol "Mulai Chat AI"). Untuk tiap
+//     lead, AI mencocokkan nomor HP-nya (kolom "lp-contact-phone", asalnya
+//     dari spreadsheet) dengan percakapan Telegram yang SUDAH ADA.
+//
+//     KETERBATASAN PENTING (bukan bug, tapi aturan platform Telegram):
+//     Bot API TIDAK BISA memulai chat ke sembarang nomor HP — bot hanya
+//     boleh mengirim pesan ke user yang sudah pernah mulai chat dengan bot
+//     ini sebelumnya (dan idealnya sudah share kontak, supaya nomornya
+//     tercatat — lihat tgProcessMessage di atas). Jadi fitur ini pada
+//     dasarnya adalah "AI menyapa duluan begitu nomornya dikenali",
+//     BUKAN "AI bisa mengirim pesan pertama ke nomor manapun di spreadsheet".
+//     Kalau nomor tidak ditemukan di percakapan manapun, lead ditandai
+//     status "Nomor Tidak ditemukan" supaya sales tahu harus follow-up
+//     manual (WA/telepon) untuk kontak tsb.
+// =============================================================
+const COMPANY_INTRO = {
+  botName: process.env.BOT_NAME || 'Qabil Bot',
+  companyName: process.env.COMPANY_NAME || 'Indotrading',
+};
+
+function tgFindConversationByPhone(phone) {
+  const target = tgNormalizePhone(phone);
+  if (!target) return null;
+  for (const conv of tgConversations.values()) {
+    if (conv.phone && conv.phone === target) return conv;
+  }
+  return null;
+}
+
+function buildIntroMessage(lead) {
+  const perusahaanText = lead.perusahaan ? ` untuk kebutuhan ${lead.perusahaan}` : '';
+  return `Halo ${lead.nama}, perkenalkan saya ${COMPANY_INTRO.botName} dari ${COMPANY_INTRO.companyName}. Saya menghubungi Anda${perusahaanText} — ada yang bisa kami bantu terkait produk/layanan kami?`;
+}
+
+async function tgStartChatWithLead(lead) {
+  const conv = tgFindConversationByPhone(lead.phone);
+  if (!conv) return { ok: false, reason: 'not_found' };
+  if (conv.introSent) return { ok: false, reason: 'already_started', chatId: conv.chatId };
+
+  const introText = buildIntroMessage(lead);
+  await sendViaTelegram(conv.chatId, introText);
+
+  const outMsg = { id: conv.messages.length + 1, dir: 'out', from: 'ai', text: introText, time: Date.now() };
+  conv.messages.push(outMsg);
+  conv.lastMessageText = introText;
+  conv.lastMessageTime = outMsg.time;
+  conv.handledBy = 'ai';
+  conv.introSent = true;
+
+  return { ok: true, chatId: conv.chatId, message: introText };
+}
+
+// ── Mulai chat via WABA (WhatsApp Cloud API) ─────────────────────────────────
+// Berbeda dengan Telegram, WABA bisa kirim pesan pertama ke nomor baru
+// SELAMA nomor tujuan pernah chat dengan nomor WA bisnis (atau pakai template
+// yang disetujui Meta). Untuk test number, kirim ke nomor yang sudah didaftarkan.
+async function wabaStartChatWithLead(lead) {
+  if (!WABA_ACCESS_TOKEN || !WABA_PHONE_NUMBER_ID) {
+    return { ok: false, reason: 'waba_not_configured' };
+  }
+
+  // Format nomor: hilangkan karakter non-digit, pastikan dimulai dengan kode negara
+  const rawPhone = String(lead.phone || '').replace(/\D/g, '');
+  if (!rawPhone) return { ok: false, reason: 'no_phone' };
+
+  // Tambah prefix 62 (Indonesia) kalau belum ada kode negara
+  const to = rawPhone.startsWith('62')
+    ? rawPhone
+    : rawPhone.startsWith('0')
+      ? '62' + rawPhone.slice(1)
+      : '62' + rawPhone;
+
+  const introText = buildIntroMessage(lead);
+
+  try {
+    // PENTING: kontak pertama WAJIB pakai template (lihat sendViaWabaTemplate).
+    // 'hello_test' cuma untuk TEST — isinya fixed ("Hello World"), bukan introText di atas.
+    // Untuk production, ganti ke template custom yang sudah di-approve Meta
+    // dan kirim introText lewat components (lihat contoh di komentar fungsi).
+    const result = await sendViaWabaTemplate(to, 'hello_test', 'en');
+
+    // Simpan ke wabaConversations supaya muncul di halaman Percakapan
+    const convKey = to;
+    let conv = wabaConversations.get(convKey);
+    if (!conv) {
+      conv = {
+        chatId: to,
+        name: lead.nama,
+        phone: to,
+        handledBy: 'ai',
+        introSent: false,
+        messages: [],
+        lastMessageText: '',
+        lastMessageTime: Date.now(),
+        unread: 0,
+        provider: 'whatsapp',
+      };
+      wabaConversations.set(convKey, conv);
+    }
+
+    // Catatan: yang BENAR-BENAR terkirim ke WhatsApp adalah isi template
+    // 'hello_test' ("Hello World"), BUKAN introText — introText baru bisa
+    // dipakai betulan setelah template custom di production sudah di-approve.
+    // Disimpan begini supaya histori di halaman Percakapan tidak menyesatkan.
+    const sentText = '[Template: hello_test] Hello World';
+    const outMsg = { id: conv.messages.length + 1, dir: 'out', from: 'ai', text: sentText, time: Date.now() };
+    conv.messages.push(outMsg);
+    conv.lastMessageText = sentText;
+    conv.lastMessageTime = outMsg.time;
+    conv.handledBy = 'ai';
+    conv.introSent = true;
+
+    console.log(`[WABA] Pesan intro terkirim ke ${lead.nama} (${to})`);
+    return { ok: true, chatId: to, message: introText, provider: 'whatsapp' };
+  } catch (err) {
+    console.error(`[WABA] Gagal kirim intro ke ${lead.nama} (${to}):`, err.message);
+    return { ok: false, reason: 'send_error', error: err.message };
+  }
+}
+
+// Dipanggil dari halaman Kontak/Leads. Menerima daftar lead (id, nama,
+// perusahaan, phone) dan mencoba memulai chat AI untuk masing-masing.
+app.post('/api/leads/start-chat', async (req, res) => {
+  try {
+    const { leads, provider: requestedProvider } = req.body;
+    if (!Array.isArray(leads)) {
+      return res.status(400).json({ ok: false, error: 'leads harus berupa array' });
+    }
+
+    // ── Tentukan provider aktif ──────────────────────────────────────────────
+    // Prioritas: WABA (lebih andal karena bisa kirim ke nomor baru)
+    // Fallback: Telegram (hanya bisa ke user yang sudah pernah chat ke bot)
+    const wabaReady = !!(WABA_ACCESS_TOKEN && WABA_PHONE_NUMBER_ID);
+    const tgReady   = !!TELEGRAM_BOT_TOKEN;
+
+    let activeProvider;
+    if (requestedProvider === 'whatsapp' && wabaReady) {
+      activeProvider = 'whatsapp';
+    } else if (requestedProvider === 'telegram' && tgReady) {
+      activeProvider = 'telegram';
+    } else if (wabaReady) {
+      activeProvider = 'whatsapp'; // default ke WABA kalau tersedia
+    } else if (tgReady) {
+      activeProvider = 'telegram';
+    } else {
+      return res.status(400).json({
+        ok: false,
+        error: 'Tidak ada provider chat yang aktif. Hubungkan WhatsApp Business API atau Telegram Bot di halaman Integrasi.',
+      });
+    }
+
+    console.log(`[Leads Start Chat] Provider: ${activeProvider}, ${leads.length} lead`);
+
+    const results = [];
+    for (const lead of leads) {
+      if (!lead || !lead.id || !lead.phone) {
+        results.push({ id: lead && lead.id, ok: false, reason: 'no_phone' });
+        continue;
+      }
+      try {
+        let r;
+        if (activeProvider === 'whatsapp') {
+          r = await wabaStartChatWithLead(lead);
+        } else {
+          r = await tgStartChatWithLead(lead);
+        }
+        results.push({ id: lead.id, provider: activeProvider, ...r });
+      } catch (err) {
+        console.error(`[Leads] Gagal mulai chat utk lead ${lead.id}:`, err.message);
+        results.push({ id: lead.id, ok: false, reason: 'error', error: err.message });
+      }
+    }
+
+    res.json({ ok: true, provider: activeProvider, results });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// =============================================================
 // 2c) ENDPOINT: PERCAKAPAN TELEGRAM
 // =============================================================
 
@@ -662,6 +966,157 @@ app.delete('/api/telegram/config', (req, res) => {
   res.json({ ok: true });
 });
 
+// =============================================================
+// 2f) KONFIGURASI WHATSAPP BUSINESS API (WABA) — diatur dari halaman
+//     Integrasi (script_page/integrasi.js + waba-token.js), BUKAN dari .env.
+//     Sejajar dengan blok konfigurasi Telegram (2d) di atas.
+// =============================================================
+
+// Cek konfigurasi saat ini (access token tidak pernah dikirim balik utuh, hanya preview).
+app.get('/api/waba/config', (req, res) => {
+  res.json({
+    ok: true,
+    configured: !!(WABA_ACCESS_TOKEN && WABA_PHONE_NUMBER_ID),
+    tokenPreview: WABA_ACCESS_TOKEN
+      ? `${WABA_ACCESS_TOKEN.slice(0, 6)}••••${WABA_ACCESS_TOKEN.slice(-4)}`
+      : '',
+    phoneNumberId: WABA_PHONE_NUMBER_ID,
+    businessAccountId: WABA_BUSINESS_ACCOUNT_ID,
+    bot: wabaBotInfo,
+  });
+});
+
+// Pasang / ganti kredensial WABA secara runtime. Dipanggil oleh halaman
+// Integrasi saat user klik "Simpan" pada modal konfigurasi WhatsApp.
+app.post('/api/waba/config', async (req, res) => {
+  try {
+    const token = String(req.body.token || '').trim();
+    const phoneNumberId = String(req.body.phoneNumberId || '').trim();
+    const businessAccountId = String(req.body.businessAccountId || '').trim();
+    const verifyToken = String(req.body.verifyToken || '').trim();
+
+    console.log(`[WABA] POST /api/waba/config diterima — verifyToken: "${verifyToken}"`);
+
+    if (!token) {
+      return res.status(400).json({ ok: false, error: 'Access Token tidak boleh kosong' });
+    }
+    if (!phoneNumberId) {
+      return res.status(400).json({ ok: false, error: 'Phone Number ID tidak boleh kosong' });
+    }
+
+    // Validasi kredensial ke Meta Graph API dulu sebelum menggantikan yang lama.
+    const testUrl = `https://graph.facebook.com/v20.0/${phoneNumberId}?fields=display_phone_number,verified_name`;
+    const testRes = await fetch(testUrl, { headers: { Authorization: `Bearer ${token}` } });
+    const testData = await testRes.json();
+    if (testData.error) {
+      return res.status(400).json({ ok: false, error: testData.error.message || 'Kredensial tidak valid' });
+    }
+
+    WABA_ACCESS_TOKEN = token;
+    WABA_PHONE_NUMBER_ID = phoneNumberId;
+    WABA_BUSINESS_ACCOUNT_ID = businessAccountId;
+    if (verifyToken) WABA_VERIFY_TOKEN = verifyToken;
+    console.log(`[WABA] WABA_VERIFY_TOKEN sekarang di memori: "${WABA_VERIFY_TOKEN}"`);
+    wabaBotInfo = {
+      verified_name: testData.verified_name,
+      display_phone_number: testData.display_phone_number,
+    };
+
+    res.json({ ok: true, bot: wabaBotInfo });
+  } catch (err) {
+    console.error('[WABA] Gagal menyimpan konfigurasi:', err.message);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// Hapus kredensial WABA (saat user klik "Putuskan Koneksi" / "Hapus Kredensial").
+app.delete('/api/waba/config', (req, res) => {
+  WABA_ACCESS_TOKEN = '';
+  WABA_PHONE_NUMBER_ID = '';
+  WABA_BUSINESS_ACCOUNT_ID = '';
+  wabaBotInfo = null;
+  res.json({ ok: true });
+});
+
+// ── Endpoint: provider chat aktif (dipakai tombol "Mulai Chat AI" di Leads) ──
+// Mengembalikan provider yang akan dipakai beserta statusnya, sehingga
+// frontend bisa tampilkan label & ikon yang benar tanpa hardcode.
+app.get('/api/leads/chat-provider', (req, res) => {
+  const wabaReady = !!(WABA_ACCESS_TOKEN && WABA_PHONE_NUMBER_ID);
+  const tgReady   = !!TELEGRAM_BOT_TOKEN;
+  const provider  = wabaReady ? 'whatsapp' : tgReady ? 'telegram' : null;
+  res.json({
+    ok: true,
+    provider,
+    whatsapp: { configured: wabaReady, bot: wabaBotInfo },
+    telegram: { configured: tgReady,   bot: tgBotInfo   },
+  });
+});
+
+// Status koneksi (dipakai untuk indikator di UI, sejajar /api/telegram/status).
+app.get('/api/waba/status', (req, res) => {
+  res.json({
+    ok: true,
+    configured: !!(WABA_ACCESS_TOKEN && WABA_PHONE_NUMBER_ID),
+    bot: wabaBotInfo,
+  });
+});
+
+// ── WEBHOOK META (verifikasi + terima pesan masuk) ────────────────
+// Didaftarkan di Meta App Dashboard > WhatsApp > Configuration > Webhook,
+// pakai URL publik (ngrok/cloudflared/domain production) + Verify Token yang
+// sama dengan yang diisi di modal konfigurasi WABA (wb-input-verify).
+app.get('/api/waba/webhook', (req, res) => {
+  const mode = req.query['hub.mode'];
+  const token = req.query['hub.verify_token'];
+  const challenge = req.query['hub.challenge'];
+
+  console.log(`[WABA] Webhook verify — mode: ${mode}, token diterima: "${token}", token di server: "${WABA_VERIFY_TOKEN}"`);
+
+  if (mode === 'subscribe' && token && token === WABA_VERIFY_TOKEN) {
+    return res.status(200).send(challenge);
+  }
+  return res.sendStatus(403);
+});
+
+// Menerima notifikasi pesan masuk WhatsApp dari Meta. Untuk sekarang baru
+// di-log — kalau nanti percakapan WhatsApp mau ditampilkan live seperti
+// Telegram di halaman Percakapan, tinggal simpan ke struktur Map seperti
+// tgConversations lalu tambahkan endpoint GET /api/waba/conversations dkk.
+app.post('/api/waba/webhook', (req, res) => {
+  try {
+    const entry = req.body.entry && req.body.entry[0];
+    const change = entry && entry.changes && entry.changes[0];
+    const value = change && change.value;
+    const messages = value && value.messages;
+    const statuses = value && value.statuses;
+
+    if (Array.isArray(messages)) {
+      messages.forEach((m) => {
+        const bodyText = (m.text && m.text.body) || `[${m.type}]`;
+        console.log('[WABA] Pesan masuk dari', m.from, ':', bodyText);
+      });
+    }
+
+    // Status pengiriman (sent/delivered/read/failed) untuk pesan yang KITA
+    // kirim — ini yang jawab pertanyaan "kenapa tidak sampai".
+    if (Array.isArray(statuses)) {
+      statuses.forEach((s) => {
+        console.log(`[WABA] Status pesan ${s.id} ke ${s.recipient_id}: ${s.status}`);
+        if (s.errors) {
+          console.log('[WABA] Detail error:', JSON.stringify(s.errors));
+        }
+      });
+    }
+
+    res.sendStatus(200);
+  } catch (err) {
+    console.error('[WABA] Gagal proses webhook:', err.message);
+    // Tetap balas 200 supaya Meta tidak retry terus-menerus.
+    res.sendStatus(200);
+  }
+});
+
 async function sendMessage({ mode, chatId, message, lead }) {
   const effectiveMode = mode || SEND_MODE;
 
@@ -676,9 +1131,10 @@ async function sendMessage({ mode, chatId, message, lead }) {
   }
 
   if (effectiveMode === 'whatsapp') {
-    // Placeholder: aktifkan setelah WABA approved.
-    // Struktur body & endpoint mengikuti WhatsApp Cloud API.
-    throw new Error('Mode whatsapp belum diaktifkan — WABA belum siap. Pakai mode "telegram" atau "mock" dulu.');
+    // chatId di sini dipakai sebagai nomor tujuan (format internasional
+    // tanpa "+", mis. "6281234567890"), sesuai kebutuhan WhatsApp Cloud API.
+    const result = await sendViaWaba(chatId, message);
+    return { provider: 'whatsapp', delivered: true, messageId: result.messages?.[0]?.id };
   }
 
   throw new Error(`SEND_MODE tidak dikenal: ${effectiveMode}`);
@@ -1034,6 +1490,7 @@ app.get('/api/health', async (req, res) => {
       baseUrl: OLLAMA_BASE_URL,
     },
     telegram: { configured: !!TELEGRAM_BOT_TOKEN },
+    waba: { configured: !!(WABA_ACCESS_TOKEN && WABA_PHONE_NUMBER_ID) },
   });
 });
 

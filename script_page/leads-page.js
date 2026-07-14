@@ -455,8 +455,9 @@ const LP_SUMBER_MAP = {
 const LP_STATUS_MAP = {
   'Belum Dihubungi': 'belum',
   'Sudah Dihubungi': 'dihubungi',
-  'Follow-up': 'follow-up',
+  'Follow-up': 'followup',
   'Closed / Deal': 'closed',
+  'Nomor Tidak ditemukan': 'nomor_tidak_ditemukan',
 };
 
 // Peta field internal -> daftar kemungkinan nama header CSV (urutan =
@@ -648,9 +649,9 @@ function renderLeadRow(lead) {
   const srcClass = { wa:'src-wa', msg:'src-msg', rfq:'src-rfq', profil:'src-profil' };
   const aktClass = { wa:'wa', msg:'msg', rfq:'rfq', profil:'profil' };
   const aktIcon  = { wa:'ti-message-circle', msg:'ti-message-2', rfq:'ti-calendar-event', profil:'ti-eye' };
-  const statusLabel = { belum:'Belum dihubungi', dihubungi:'Sudah dihubungi', followup:'Follow-up', closed:'Closed / Deal' };
-  const statusClass = { belum:'', dihubungi:'dihubungi', followup:'followup', closed:'closed' };
-  const statusIcon  = { belum:'ti-circle', dihubungi:'ti-circle-check', followup:'ti-refresh', closed:'ti-check-circle-2' };
+  const statusLabel = { belum:'Belum dihubungi', dihubungi:'Sudah dihubungi', followup:'Follow-up', closed:'Closed / Deal', nomor_tidak_ditemukan:'Nomor Tidak ditemukan' };
+  const statusClass = { belum:'', dihubungi:'dihubungi', followup:'followup', closed:'closed', nomor_tidak_ditemukan:'not-found' };
+  const statusIcon  = { belum:'ti-circle', dihubungi:'ti-circle-check', followup:'ti-refresh', closed:'ti-check-circle-2', nomor_tidak_ditemukan:'ti-phone-off' };
 
   const emailDisplay = lead.email.length > 24 ? lead.email.slice(0, 24) + '…' : lead.email;
 
@@ -905,6 +906,94 @@ function hubungiWA(id) {
   // window.open(`https://wa.me/62${lead.phone}`, '_blank');
 }
 
+// ── AI Mulai Chat Duluan (BARU) ──────────────────────────────
+// Mengambil nomor HP dari data lead (kolom "lp-contact-phone", asalnya dari
+// spreadsheet) dan meminta backend (server.js) mencoba mencocokkannya dengan
+// percakapan Telegram yang sudah ada, lalu mengirim pesan perkenalan AI.
+// Catatan: karena keterbatasan Telegram Bot API, ini hanya berhasil untuk
+// kontak yang sebelumnya SUDAH pernah chat ke bot (dan share nomor HP-nya).
+// Kalau nomornya tidak ditemukan, status lead diubah jadi "Nomor Tidak
+// ditemukan" supaya sales tahu harus follow-up manual.
+const LP_CHAT_API_BASE = window.PC_API_BASE || 'http://localhost:3001';
+
+// ── Mulai Chat AI — multi-provider (WABA diutamakan, Telegram fallback) ───────
+// Sebelum kirim, cek provider aktif dari backend supaya label toast akurat.
+async function lpStartAiChat() {
+  const targets = LEADS_DATA.filter(l => l.status === 'belum' && l.phone);
+  if (targets.length === 0) {
+    showLpToast('Tidak ada lead "Belum dihubungi" yang punya nomor HP.', 'error');
+    return;
+  }
+
+  // ── Cek provider aktif dulu ──────────────────────────────────────────────
+  let activeProvider = null;
+  try {
+    const chkRes  = await fetch(`${LP_CHAT_API_BASE}/api/leads/chat-provider`);
+    const chkData = await chkRes.json().catch(() => ({}));
+    activeProvider = chkData.provider || null;
+  } catch (e) { /* backend mungkin offline, lanjut saja — server yg tentukan */ }
+
+  if (!activeProvider) {
+    showLpToast(
+      'Tidak ada provider chat aktif. Hubungkan WhatsApp Business API atau Telegram di halaman Integrasi.',
+      'error'
+    );
+    return;
+  }
+
+  const providerLabel = activeProvider === 'whatsapp' ? 'WhatsApp Business' : 'Telegram';
+  const providerIcon  = activeProvider === 'whatsapp' ? '📱' : '✈️';
+
+  showLpToast(`${providerIcon} AI mulai menghubungi ${targets.length} lead via ${providerLabel}…`, 'success');
+
+  try {
+    const res = await fetch(`${LP_CHAT_API_BASE}/api/leads/start-chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        provider: activeProvider,
+        leads: targets.map(l => ({
+          id: l.id, nama: l.nama, perusahaan: l.perusahaan, phone: l.phone,
+        })),
+      }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || data.ok === false) throw new Error(data.error || `Request gagal (${res.status})`);
+
+    // Gunakan provider yang benar-benar dipakai server (bisa berbeda dengan permintaan)
+    const usedProvider     = data.provider || activeProvider;
+    const usedProviderLabel = usedProvider === 'whatsapp' ? 'WhatsApp Business' : 'Telegram';
+
+    let started = 0, notFound = 0, failed = 0;
+    (data.results || []).forEach(r => {
+      const lead = LEADS_DATA.find(l => l.id === r.id);
+      if (!lead) return;
+
+      if (r.ok) {
+        lead.status = 'dihubungi';
+        syncLeadFieldsToSheet(lead.id, { status: 'dihubungi' });
+        started++;
+      } else if (r.reason === 'not_found') {
+        // Telegram: nomor belum pernah chat ke bot
+        notFound++;
+      } else if (r.reason === 'send_error' || r.reason === 'error') {
+        failed++;
+      }
+    });
+
+    renderLeadsTable();
+    updateKatCounts();
+
+    let msg = `✓ AI berhasil menyapa ${started} kontak via ${usedProviderLabel}.`;
+    if (notFound) msg += ` ${notFound} nomor tidak ditemukan.`;
+    if (failed)   msg += ` ${failed} gagal dikirim.`;
+    showLpToast(msg, 'success');
+  } catch (err) {
+    console.error('Gagal memulai chat AI:', err);
+    showLpToast('Gagal menghubungi backend AI: ' + err.message, 'error');
+  }
+}
+
 // ── AREA 3: AI Recommendation Banner — Lihat Rekomendasi AI ──────
 function getAiRecommendedLeads(limit = 6) {
   // Pilih leads dengan AI Score HOT atau WARM, prioritas HOT dulu,
@@ -1068,9 +1157,9 @@ window.renderLeadRow = function(lead) {
   const srcClass    = { wa:'src-wa', msg:'src-msg', rfq:'src-rfq', profil:'src-profil' };
   const aktClass    = { wa:'wa', msg:'msg', rfq:'rfq', profil:'profil' };
   const aktIcon     = { wa:'ti-message-circle', msg:'ti-message-2', rfq:'ti-calendar-event', profil:'ti-eye' };
-  const statusLabel = { belum:'Belum dihubungi', dihubungi:'Sudah dihubungi', followup:'Follow-up', closed:'Closed' };
-  const statusClass = { belum:'', dihubungi:'dihubungi', followup:'followup', closed:'closed' };
-  const statusIcon  = { belum:'ti-circle', dihubungi:'ti-circle-check', followup:'ti-refresh', closed:'ti-check-circle-2' };
+  const statusLabel = { belum:'Belum dihubungi', dihubungi:'Sudah dihubungi', followup:'Follow-up', closed:'Closed', nomor_tidak_ditemukan:'Nomor Tidak ditemukan' };
+  const statusClass = { belum:'', dihubungi:'dihubungi', followup:'followup', closed:'closed', nomor_tidak_ditemukan:'not-found' };
+  const statusIcon  = { belum:'ti-circle', dihubungi:'ti-circle-check', followup:'ti-refresh', closed:'ti-check-circle-2', nomor_tidak_ditemukan:'ti-phone-off' };
   const scoreIcon   = { HOT:'🔥', WARM:'🌤', COLD:'🧊' };
   const scoreCls    = { HOT:'hot', WARM:'warm', COLD:'cold' };
 
@@ -1239,12 +1328,30 @@ function sendAiFollowupWA() {
   if (lead.status === 'belum') {
     lead.status = 'dihubungi';
     renderLeadsTable();
-    syncStatusToSheet(lead.id, 'dihubungi');
+    syncLeadFieldsToSheet(lead.id, { status: 'dihubungi' });
   }
 
-  // Build WhatsApp URL
-  const waMsg = encodeURIComponent(msg);
-  // window.open(`https://wa.me/62${lead.phone}?text=${waMsg}`, '_blank');
+  // Kirim via WABA jika tersedia, fallback ke wa.me link
+  const waMsg  = encodeURIComponent(msg);
+  const wabaOk = typeof wbGetToken === 'function' && wbGetToken();
+  if (wabaOk) {
+    // Kirim via backend WABA
+    fetch(`${LP_CHAT_API_BASE}/api/leads/start-chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        provider: 'whatsapp',
+        leads: [{ id: lead.id, nama: lead.nama, perusahaan: lead.perusahaan, phone: lead.phone }],
+      }),
+    }).then(r => r.json()).then(data => {
+      if (data.ok && data.results?.[0]?.ok) {
+        showLpToast('📱 Pesan terkirim via WhatsApp Business!', 'success');
+      }
+    }).catch(err => console.warn('[WABA followup]', err));
+  } else {
+    // Fallback: buka wa.me di tab baru
+    window.open(`https://wa.me/62${lead.phone}?text=${waMsg}`, '_blank');
+  }
 
   closeAiFollowup();
   showLpToast(`Pesan AI untuk ${lead.nama} siap dikirim via WhatsApp ✓`, 'success');

@@ -1607,7 +1607,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const typeFilter  = document.getElementById('pl-filter-type');
   const addBtn      = document.getElementById('pl-add-deal-btn');
 
-  if (searchInput) searchInput.addEventListener('input', plRebuildBoard);
+  if (searchInput) searchInput.addEventListener('input', plRebuildBoard);  
   if (picFilter)   picFilter.addEventListener('change', plRebuildBoard);
   if (typeFilter)  typeFilter.addEventListener('change', plRebuildBoard);
   if (addBtn)      addBtn.addEventListener('click', () => openAddDeal('prospek'));
