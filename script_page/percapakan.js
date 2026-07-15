@@ -1,17 +1,37 @@
 /* ============================================
-   PERCAKAPAN PAGE — SCRIPT (Terhubung ke Telegram, live)
-   Data diambil dari backend server.js (endpoint /api/telegram/*)
-   yang polling pesan Telegram lewat getUpdates.
+   PERCAKAPAN PAGE — SCRIPT (Terhubung ke Telegram & WhatsApp/WABA, live)
+   Data diambil dari backend server.js — dua channel sejajar:
+     - /api/telegram/*  (polling getUpdates)
+     - /api/waba/*      (webhook WhatsApp Cloud API)
+   Kedua channel digabung jadi satu daftar percakapan di halaman ini.
    ============================================ */
 
 const PC_API_BASE = window.PC_API_BASE || 'http://localhost:3001';
 
 // ── STATE ────────────────────────────────────────────────────────
-let _activeContactId = null;   // chatId Telegram yang sedang dibuka
-let _listCache = [];           // ringkasan daftar percakapan terakhir dari server
-let _conversationsCache = {};  // chatId -> detail percakapan (termasuk messages)
+// _activeContactId & key di _conversationsCache berbentuk ID gabungan
+// "provider:chatId" (mis. "telegram:123456" atau "whatsapp:6281234567890")
+// supaya chatId dari dua channel berbeda tidak pernah bentrok.
+let _activeContactId = null;
+let _listCache = [];           // ringkasan daftar percakapan terakhir dari server (gabungan 2 channel)
+let _conversationsCache = {};  // "provider:chatId" -> detail percakapan (termasuk messages)
 let _pcListTimer = null;
 let _pcDetailTimer = null;
+
+// ── HELPER PROVIDER (TELEGRAM / WHATSAPP) ─────────────────────────
+function pcMakeId(provider, chatId) { return `${provider}:${chatId}`; }
+function pcSplitId(id) {
+  const s = String(id || '');
+  const idx = s.indexOf(':');
+  if (idx === -1) return { provider: 'telegram', chatId: s }; // fallback untuk data lama
+  return { provider: s.slice(0, idx), chatId: s.slice(idx + 1) };
+}
+function pcApiBase(provider) { return provider === 'whatsapp' ? '/api/waba' : '/api/telegram'; }
+function pcChannelMeta(provider) {
+  return provider === 'whatsapp'
+    ? { label: 'WhatsApp', icon: 'ti-brand-whatsapp', color: '#16a34a', tagClass: 'wa-tag', avClass: 'wa-av' }
+    : { label: 'Telegram', icon: 'ti-brand-telegram', color: '#229ED9', tagClass: 'tg-tag', avClass: 'tg-av' };
+}
 
 // ── HELPER ───────────────────────────────────────────────────────
 function pcInitials(name) {
@@ -40,25 +60,31 @@ async function pcFetch(path, opts) {
   return data;
 }
 
-// Ubah bentuk data percakapan Telegram dari server ke "shape" yang
-// dipakai fungsi render (mirip struktur kontak lama, field CRM yang
-// belum tersedia untuk Telegram diisi placeholder).
+// Ubah bentuk data percakapan (Telegram ATAU WhatsApp/WABA) dari server ke
+// "shape" yang dipakai fungsi render (mirip struktur kontak lama, field CRM
+// yang belum tersedia diisi placeholder). conv.provider WAJIB sudah diisi
+// oleh pemanggil (_loadPcList / _loadConversationDetail) sebelum dipanggil.
 function _toContactShape(conv) {
-  const name = conv.name || `Chat ${conv.chatId}`;
+  const provider = conv.provider === 'whatsapp' ? 'whatsapp' : 'telegram';
+  const isWaba = provider === 'whatsapp';
+  const meta = pcChannelMeta(provider);
+  const name = conv.name || (isWaba ? conv.phone : `Chat ${conv.chatId}`);
   return {
     id: conv.chatId,
+    _id: pcMakeId(provider, conv.chatId),
+    provider,
     name,
     initials: pcInitials(name),
-    company: conv.username ? '@' + conv.username : '—',
-    phone: conv.username ? '@' + conv.username : `ID ${conv.chatId}`,
+    company: isWaba ? '—' : (conv.username ? '@' + conv.username : '—'),
+    phone: isWaba ? ('+' + String(conv.phone || conv.chatId).replace(/\D/g, '')) : (conv.username ? '@' + conv.username : `ID ${conv.chatId}`),
     email: '—',
     city: '—',
-    channel: 'telegram',
-    channelLabel: 'Telegram',
-    channelIcon: 'ti-brand-telegram',
-    channelColor: '#229ED9',
-    channelTagClass: 'tg-tag',
-    avClass: 'tg-av',
+    channel: provider,
+    channelLabel: meta.label,
+    channelIcon: meta.icon,
+    channelColor: meta.color,
+    channelTagClass: meta.tagClass,
+    avClass: meta.avClass,
     status: 'online',
     handledBy: conv.handledBy,
     agentLabel: conv.handledBy === 'human' ? 'Anda (Manual)' : 'Agent AI',
@@ -96,23 +122,24 @@ function _renderPcList(conversations) {
   if (!conversations.length) {
     list.innerHTML = `
       <div style="padding:28px 16px;text-align:center;color:var(--gray-400);font-size:12px">
-        <i class="ti ti-brand-telegram" style="font-size:24px;display:block;margin-bottom:8px"></i>
-        Belum ada percakapan masuk dari Telegram.<br>Kirim pesan ke bot untuk mulai chat.
+        <i class="ti ti-messages" style="font-size:24px;display:block;margin-bottom:8px"></i>
+        Belum ada percakapan masuk dari Telegram maupun WhatsApp.<br>Kirim pesan ke bot/nomor bisnis untuk mulai chat.
       </div>`;
   } else {
     list.innerHTML = conversations
       .map((c) => {
+        const meta = pcChannelMeta(c.provider);
         const initials = pcInitials(c.name);
         const filterVal = c.handledBy === 'human' ? 'human' : 'ai';
-        const isActive = String(c.chatId) === String(_activeContactId);
+        const isActive = String(c._id) === String(_activeContactId);
         const unreadHtml = c.unread > 0 ? `<div class="pc-item-unread">${c.unread > 9 ? '9+' : c.unread}</div>` : '';
         const handledTag =
           c.handledBy === 'human'
             ? `<span class="pc-tag human-tag"><i class="ti ti-user"></i> Agen</span>`
             : `<span class="pc-tag ai-tag"><i class="ti ti-robot"></i> AI</span>`;
         return `
-          <div class="pc-item ${isActive ? 'active' : ''}" data-id="${c.chatId}" data-filter="${filterVal}" data-channel="telegram" onclick="selectConv(this, '${c.chatId}')">
-            <div class="pc-item-av tg-av">${initials}</div>
+          <div class="pc-item ${isActive ? 'active' : ''}" data-id="${c._id}" data-filter="${filterVal}" data-channel="${c.provider}" onclick="selectConv(this, '${c._id}')">
+            <div class="pc-item-av ${meta.avClass}">${initials}</div>
             <div class="pc-item-body">
               <div class="pc-item-top">
                 <span class="pc-item-name">${pcEscape(c.name)}</span>
@@ -120,7 +147,7 @@ function _renderPcList(conversations) {
               </div>
               <div class="pc-item-preview">${pcEscape(c.lastMessageText)}</div>
               <div class="pc-item-tags">
-                <span class="pc-tag tg-tag"><i class="ti ti-brand-telegram"></i> Telegram</span>
+                <span class="pc-tag ${meta.tagClass}"><i class="ti ${meta.icon}"></i> ${meta.label}</span>
                 ${handledTag}
               </div>
             </div>
@@ -135,9 +162,13 @@ function _renderPcList(conversations) {
 
 function _updatePcCounts(conversations) {
   const counts = { all: conversations.length, ai: 0, human: 0, pending: 0 };
+  let tgCount = 0;
+  let wbCount = 0;
   conversations.forEach((c) => {
     if (c.handledBy === 'human') counts.human++;
     else counts.ai++;
+    if (c.provider === 'whatsapp') wbCount++;
+    else tgCount++;
   });
   document.querySelectorAll('.pc-filter-btn').forEach((btn) => {
     const key = btn.dataset.filter;
@@ -145,29 +176,41 @@ function _updatePcCounts(conversations) {
     if (countEl && counts[key] !== undefined) countEl.textContent = counts[key];
   });
   const tgBadgeCount = document.getElementById('pc-tg-badge-count');
-  if (tgBadgeCount) tgBadgeCount.textContent = conversations.length;
+  if (tgBadgeCount) tgBadgeCount.textContent = tgCount;
+  const wbBadgeCount = document.getElementById('pc-wb-badge-count');
+  if (wbBadgeCount) wbBadgeCount.textContent = wbCount;
 }
 
-function _showBotWarning(show) {
+// show: object { telegram: boolean, whatsapp: boolean } — true = channel itu BELUM terhubung.
+function _showBotWarning(notConfigured) {
   const existing = document.getElementById('pc-bot-warning');
-  if (show && !existing) {
+  const missing = [];
+  if (notConfigured.telegram) missing.push('Telegram');
+  if (notConfigured.whatsapp) missing.push('WhatsApp');
+
+  if (missing.length && !existing) {
     const list = document.getElementById('pc-list');
     if (list) {
       list.insertAdjacentHTML(
         'afterbegin',
         `<div id="pc-bot-warning" style="padding:10px 14px;background:var(--amber-bg);color:var(--amber);font-size:11px;font-weight:600;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
           <i class="ti ti-alert-triangle"></i>
-          <span>Bot Telegram belum terhubung.</span>
+          <span>${pcEscape(missing.join(' & '))} belum terhubung.</span>
           <button type="button"
-                  onclick="if(typeof showPage==='function'){showPage('integrasi-page');} else if(typeof tgOpenModal==='function'){tgOpenModal();}"
+                  onclick="if(typeof showPage==='function'){showPage('integrasi-page');}"
                   style="margin-left:auto;background:none;border:1px solid currentColor;color:inherit;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:600;cursor:pointer">
             Atur di halaman Integrasi
           </button>
         </div>`
       );
     }
-  } else if (!show && existing) {
-    existing.remove();
+  } else if (existing) {
+    if (missing.length) {
+      const span = existing.querySelector('span');
+      if (span) span.textContent = `${missing.join(' & ')} belum terhubung.`;
+    } else {
+      existing.remove();
+    }
   }
 }
 
@@ -175,24 +218,35 @@ function _applyActiveFilters(conversations) {
   const activeBtn = document.querySelector('.pc-filter-btn.active');
   const filter = activeBtn ? activeBtn.dataset.filter : 'all';
   const search = (document.getElementById('pc-search-input')?.value || '').toLowerCase();
+  const channelSel = document.getElementById('pc-channel-select')?.value || 'all';
   return conversations.filter((c) => {
     const matchFilter =
       filter === 'all' || (filter === 'ai' && c.handledBy !== 'human') || (filter === 'human' && c.handledBy === 'human');
+    const matchChannel = channelSel === 'all' || c.provider === channelSel;
     const matchSearch =
       !search || c.name.toLowerCase().includes(search) || (c.lastMessageText || '').toLowerCase().includes(search);
-    return matchFilter && matchSearch;
+    return matchFilter && matchChannel && matchSearch;
   });
 }
 
 // ── LOAD & POLL LIST ─────────────────────────────────────────────
+// Ambil daftar percakapan dari KEDUA channel sekaligus (Telegram & WABA)
+// lalu digabung jadi satu list, diurutkan berdasarkan pesan terakhir.
+// Pakai allSettled supaya kalau salah satu backend/channel error, channel
+// yang lain tetap tampil normal (tidak saling menjatuhkan).
 async function _loadPcList() {
-  try {
-    const data = await pcFetch('/api/telegram/conversations');
-    _listCache = data.conversations || [];
-    _renderPcList(_applyActiveFilters(_listCache));
-    _showBotWarning(!data.botConfigured);
-  } catch (err) {
-    console.error('Gagal memuat daftar percakapan Telegram:', err);
+  const [tgResult, wbResult] = await Promise.allSettled([
+    pcFetch('/api/telegram/conversations'),
+    pcFetch('/api/waba/conversations'),
+  ]);
+
+  const tgOk = tgResult.status === 'fulfilled';
+  const wbOk = wbResult.status === 'fulfilled';
+
+  if (!tgOk) console.error('Gagal memuat daftar percakapan Telegram:', tgResult.reason);
+  if (!wbOk) console.error('Gagal memuat daftar percakapan WhatsApp:', wbResult.reason);
+
+  if (!tgOk && !wbOk) {
     const list = document.getElementById('pc-list');
     if (list && !document.getElementById('pc-bot-warning')) {
       list.innerHTML = `
@@ -201,7 +255,18 @@ async function _loadPcList() {
           Tidak bisa terhubung ke backend (${PC_API_BASE}).<br>Pastikan <code>npm start</code> sudah jalan.
         </div>`;
     }
+    return;
   }
+
+  const tgData = tgOk ? tgResult.value : { conversations: [], botConfigured: false };
+  const wbData = wbOk ? wbResult.value : { conversations: [], botConfigured: false };
+
+  const tgList = (tgData.conversations || []).map((c) => ({ ...c, provider: 'telegram', _id: pcMakeId('telegram', c.chatId) }));
+  const wbList = (wbData.conversations || []).map((c) => ({ ...c, provider: 'whatsapp', _id: pcMakeId('whatsapp', c.chatId) }));
+
+  _listCache = [...tgList, ...wbList].sort((a, b) => (b.lastMessageTime || 0) - (a.lastMessageTime || 0));
+  _renderPcList(_applyActiveFilters(_listCache));
+  _showBotWarning({ telegram: !tgData.botConfigured, whatsapp: !wbData.botConfigured });
 }
 
 function _startPcPolling() {
@@ -216,8 +281,10 @@ if (document.readyState === 'loading') {
 }
 
 // ── SELECT CONVERSATION ───────────────────────────────────────────
-async function selectConv(el, chatId) {
-  _activeContactId = String(chatId);
+// id di sini adalah ID gabungan "provider:chatId" (lihat pcMakeId), supaya
+// bisa membedakan chat Telegram dan WhatsApp yang chatId-nya kebetulan sama.
+async function selectConv(el, id) {
+  _activeContactId = String(id);
 
   document.querySelectorAll('.pc-item').forEach((i) => i.classList.remove('active'));
   if (el) el.classList.add('active');
@@ -230,12 +297,14 @@ async function selectConv(el, chatId) {
   _pcDetailTimer = setInterval(() => _loadConversationDetail(_activeContactId, false), 3000);
 }
 
-async function _loadConversationDetail(chatId, forceScroll) {
+async function _loadConversationDetail(id, forceScroll) {
+  const { provider, chatId } = pcSplitId(id);
   try {
-    const data = await pcFetch(`/api/telegram/conversations/${chatId}`);
+    const data = await pcFetch(`${pcApiBase(provider)}/conversations/${chatId}`);
     const conv = data.conversation;
-    if (!conv || String(_activeContactId) !== String(chatId)) return;
-    _conversationsCache[chatId] = conv;
+    if (!conv || String(_activeContactId) !== String(id)) return;
+    conv.provider = provider; // pastikan tertandai (respons Telegram belum bawa field ini)
+    _conversationsCache[id] = conv;
     const c = _toContactShape(conv);
     _updatePcDetail(c, forceScroll);
     _updateColRight(c);
@@ -305,7 +374,7 @@ function _updatePcDetail(c, forceScroll) {
       body.innerHTML = `<div class="pc-date-divider"><span>Belum ada pesan</span></div>`;
     } else {
       body.innerHTML =
-        `<div class="pc-date-divider"><span>Percakapan Telegram</span></div>` +
+        `<div class="pc-date-divider"><span>Percakapan ${pcEscape(c.channelLabel)}</span></div>` +
         c.messages
           .map((m) => {
             if (m.dir === 'in') {
@@ -490,7 +559,7 @@ document.getElementById('pc-search-input')?.addEventListener('input', function (
   _renderPcList(_applyActiveFilters(_listCache));
 });
 
-// ── CHANNEL FILTER (saat ini cuma ada channel Telegram) ────────────
+// ── CHANNEL FILTER (Semua / Telegram / WhatsApp) ────────────────────
 document.getElementById('pc-channel-select')?.addEventListener('change', function () {
   _renderPcList(_applyActiveFilters(_listCache));
 });
@@ -498,13 +567,15 @@ document.getElementById('pc-channel-select')?.addEventListener('change', functio
 // ── HUMAN TAKEOVER ────────────────────────────────────────────────
 async function toggleTakeover() {
   if (!_activeContactId) return;
+  const { provider, chatId } = pcSplitId(_activeContactId);
   const current = _conversationsCache[_activeContactId];
   const newHandledBy = current && current.handledBy === 'human' ? 'ai' : 'human';
   try {
-    const data = await pcFetch(`/api/telegram/conversations/${_activeContactId}/takeover`, {
+    const data = await pcFetch(`${pcApiBase(provider)}/conversations/${chatId}/takeover`, {
       method: 'POST',
       body: JSON.stringify({ handledBy: newHandledBy }),
     });
+    data.conversation.provider = provider;
     _conversationsCache[_activeContactId] = data.conversation;
     const c = _toContactShape(data.conversation);
     _updatePcDetail(c, false);
@@ -533,19 +604,20 @@ function sendInvoice() { document.getElementById('modal-invoice').style.display 
 function submitInvoice() {
   closeModal('modal-invoice');
   const conv = _conversationsCache[_activeContactId];
+  const channelLabel = _activeContactId ? pcChannelMeta(pcSplitId(_activeContactId).provider).label : 'Customer';
   const body = document.getElementById('pc-chat-body');
   const msg = document.createElement('div');
   msg.className = 'msg bot';
   msg.innerHTML = `
     <div class="msg-bubble" style="background:var(--green-bg);color:var(--green);border:1px solid #b2dfcb">
       <div style="font-weight:600;margin-bottom:4px"><i class="ti ti-receipt" style="font-size:12px"></i> Invoice Terkirim</div>
-      <div style="font-size:11px">INV-${new Date().toISOString().slice(0,10).replace(/-/g,'')}-084<br>Dikirim ke ${conv ? pcEscape(conv.name) : 'Customer'} via Telegram</div>
+      <div style="font-size:11px">INV-${new Date().toISOString().slice(0,10).replace(/-/g,'')}-084<br>Dikirim ke ${conv ? pcEscape(conv.name) : 'Customer'} via ${channelLabel}</div>
     </div>
     <div class="msg-meta"><span class="ai-label">Sistem</span> Baru saja</div>
   `;
   body.appendChild(msg);
   body.scrollTop = body.scrollHeight;
-  showToast('✓ Invoice berhasil dikirim (catatan lokal — belum terkirim otomatis ke Telegram)');
+  showToast(`✓ Invoice berhasil dikirim (catatan lokal — belum terkirim otomatis ke ${channelLabel})`);
 }
 
 // ── FOLLOW-UP ─────────────────────────────────────────────────────
@@ -554,12 +626,15 @@ function sendFollowup() { showToast('✓ Pengingat follow-up dijadwalkan dalam 2
 // ── CEK STOK ─────────────────────────────────────────────────────
 function checkStock() { showToast('↗ Mengecek stok...'); }
 
-// ── KIRIM PESAN MANUAL (dikirim beneran ke Telegram) ───────────────
+// ── KIRIM PESAN MANUAL (dikirim beneran ke Telegram atau WhatsApp) ────
 async function sendMsg() {
   const input = document.getElementById('pc-msg-input');
   const text = input.value.trim();
   if (!text || !_activeContactId) return;
   input.value = '';
+
+  const { provider, chatId } = pcSplitId(_activeContactId);
+  const channelLabel = pcChannelMeta(provider).label;
 
   const body = document.getElementById('pc-chat-body');
   const now = new Date();
@@ -570,14 +645,14 @@ async function sendMsg() {
   body.scrollTop = body.scrollHeight;
 
   try {
-    await pcFetch(`/api/telegram/conversations/${_activeContactId}/send`, {
+    await pcFetch(`${pcApiBase(provider)}/conversations/${chatId}/send`, {
       method: 'POST',
       body: JSON.stringify({ text }),
     });
     _loadConversationDetail(_activeContactId, true);
     _loadPcList();
   } catch (err) {
-    showToast('⚠ Gagal mengirim pesan ke Telegram: ' + err.message);
+    showToast(`⚠ Gagal mengirim pesan ke ${channelLabel}: ` + err.message);
   }
 }
 document.getElementById('pc-msg-input')?.addEventListener('keydown', (e) => {

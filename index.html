@@ -17,6 +17,16 @@
   <link rel="stylesheet" href="page.css/pipeline.css">
   <link rel="stylesheet" href="page.css/pipeline-ai.css">
   <link rel="stylesheet" href="desktopOnly.css">
+  <style>
+    /* Style tambahan untuk channel WhatsApp (WABA) di halaman Percakapan —
+       disejajarkan dengan style Telegram (.tg-av / .tg-tag / .pc-channel-badge.tg)
+       yang sudah ada di page.css/percakapan.css. */
+    .pc-item-av.wa-av,
+    .pc-detail-av.wa-av { background: #16a34a; color: #fff; }
+    .pc-tag.wa-tag { background: #dcfce7; color: #16a34a; }
+    .pc-channel-badge.wa { background: #dcfce7; color: #16a34a; border-color: #bbf7d0; }
+    .pc-channel-badge.wa i { color: #16a34a; }
+  </style>
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
   
@@ -468,6 +478,7 @@
                 <select id="pc-channel-select">
                   <option value="all">Semua Channel</option>
                   <option value="telegram">Telegram</option>
+                  <option value="whatsapp">WhatsApp</option>
                 </select>
               </div>
             </div>
@@ -479,6 +490,11 @@
               <i class="ti ti-brand-telegram" aria-hidden="true"></i>
               <span>Telegram</span>
               <strong id="pc-tg-badge-count">0</strong>
+            </div>
+            <div class="pc-channel-badge wa">
+              <i class="ti ti-brand-whatsapp" aria-hidden="true"></i>
+              <span>WhatsApp</span>
+              <strong id="pc-wb-badge-count">0</strong>
             </div>
           </div>
 

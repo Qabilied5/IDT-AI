@@ -664,7 +664,7 @@ async function tgHandleMessageAndMaybeSchedule(conv, incomingText) {
 //     manual (WA/telepon) untuk kontak tsb.
 // =============================================================
 const COMPANY_INTRO = {
-  botName: process.env.BOT_NAME || 'Qabil Bot',
+  botName: process.env.BOT_NAME || 'IDT AI',
   companyName: process.env.COMPANY_NAME || 'Indotrading',
 };
 
@@ -677,9 +677,75 @@ function tgFindConversationByPhone(phone) {
   return null;
 }
 
+// ── GENERATE VARIABEL TEMPLATE INTRO WABA VIA OLLAMA ─────────────────────────
+// Template WhatsApp (mis. 'followup_intro') strukturnya FIXED & sudah
+// di-approve Meta — yang bisa dinamis cuma isi variabel {{1}}, {{2}}, dst.
+// Fungsi ini memakai Ollama untuk mengarang FRASA PENDEK (bukan kalimat utuh)
+// yang mengisi {{2}} — jadi pesan pembuka tetap personalized & natural,
+// bukan cuma nama perusahaan mentah dari spreadsheet.
+function buildWabaIntroVariablePrompt(lead) {
+  const sumberLabel = {
+    wa: 'menghubungi langsung via WhatsApp/telepon',
+    msg: 'mengirim pesan ke bisnis',
+    profil: 'mengunjungi halaman profil/website',
+  }[lead.sumber] || 'berinteraksi dengan bisnis kita';
+
+  return `Kamu adalah asisten sales yang ramah untuk bisnis B2B Indonesia.
+Tugasmu: tulis SATU frasa pendek (maksimal 8 kata, tanpa tanda baca akhir) yang akan
+disisipkan ke dalam kalimat template WhatsApp berikut, menggantikan [FRASA]:
+"Saya menghubungi Anda terkait kebutuhan [FRASA] — ada yang bisa kami bantu terkait produk/layanan kami?"
+
+Data lead:
+- Nama: ${lead.nama}
+- Perusahaan: ${lead.perusahaan || '-'}
+- Kota: ${lead.kota || '-'}
+- Aktivitas terakhir: ${sumberLabel}
+- Skor AI: ${lead.aiScore || 'WARM'}
+
+Aturan:
+- Output HANYA frasa pendeknya saja, contoh: "pengadaan sparepart industri untuk PT Maju Bersama"
+- JANGAN pakai newline, markdown, tanda kutip, atau titik di akhir.
+- Maksimal 8 kata.`;
+}
+
+async function generateWabaIntroVariable(lead) {
+  const fallback = lead.perusahaan ? `kebutuhan ${lead.perusahaan}` : 'produk/layanan kami';
+  try {
+    const prompt = buildWabaIntroVariablePrompt(lead);
+    const res = await fetch(`${OLLAMA_BASE_URL}/api/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: OLLAMA_MODEL,
+        prompt,
+        stream: false,
+        options: { temperature: 0.7 },
+      }),
+    });
+    if (!res.ok) throw new Error(`Ollama error ${res.status}`);
+    const data = await res.json();
+    const text = (data.response || '')
+      .trim()
+      .replace(/\n+/g, ' ')
+      .replace(/\s{2,}/g, ' ')
+      .replace(/["'.]+$/g, '');
+    return text || fallback;
+  } catch (err) {
+    console.error('[WABA] Gagal generate variabel intro via Ollama, pakai fallback:', err.message);
+    return fallback;
+  }
+}
+
 function buildIntroMessage(lead) {
   const perusahaanText = lead.perusahaan ? ` untuk kebutuhan ${lead.perusahaan}` : '';
   return `Halo ${lead.nama}, perkenalkan saya ${COMPANY_INTRO.botName} dari ${COMPANY_INTRO.companyName}. Saya menghubungi Anda${perusahaanText} — ada yang bisa kami bantu terkait produk/layanan kami?`;
+}
+
+// Versi buildIntroMessage yang variabel keduanya sudah hasil Ollama (dipakai
+// khusus untuk WABA supaya histori Percakapan mencerminkan teks yang BENAR-BENAR
+// terkirim lewat template, bukan cuma nama perusahaan mentah).
+function buildIntroMessageWithVariable(lead, introVariable) {
+  return `Halo ${lead.nama}, perkenalkan saya ${COMPANY_INTRO.botName} dari ${COMPANY_INTRO.companyName}. Saya menghubungi Anda terkait ${introVariable} — ada yang bisa kami bantu terkait produk/layanan kami?`;
 }
 
 async function tgStartChatWithLead(lead) {
@@ -698,6 +764,79 @@ async function tgStartChatWithLead(lead) {
   conv.introSent = true;
 
   return { ok: true, chatId: conv.chatId, message: introText };
+}
+
+// =============================================================
+// 2g) PERCAKAPAN WHATSAPP (WABA) — DIPROSES DARI WEBHOOK
+//     Beda dengan Telegram (polling getUpdates), WABA memakai webhook: Meta
+//     yang mendorong notifikasi ke server kita tiap ada pesan masuk (lihat
+//     POST /api/waba/webhook di bawah). Begitu customer SUDAH membalas
+//     (artinya "customer service window" 24 jam terbuka di sisi WhatsApp),
+//     AI bebas membalas dengan teks bebas hasil Ollama tanpa perlu template
+//     lagi — beda dengan pesan PEMBUKA yang wajib pakai template (lihat
+//     wabaStartChatWithLead di atas).
+// =============================================================
+function wabaGetOrCreateConversation(waId, profileName) {
+  let conv = wabaConversations.get(waId);
+  if (!conv) {
+    conv = {
+      chatId: waId,
+      name: profileName || waId,
+      phone: waId,
+      handledBy: 'ai',
+      introSent: true, // pesan masuk duluan dari customer = window sudah terbuka
+      messages: [],
+      lastMessageText: '',
+      lastMessageTime: Date.now(),
+      unread: 0,
+      provider: 'whatsapp',
+      scheduling: { stage: 'idle', offeredSlots: [], meetingType: null },
+    };
+    wabaConversations.set(waId, conv);
+  }
+  // Percakapan lama (dibuat oleh wabaStartChatWithLead sebelum fitur ini ada)
+  // mungkin belum punya field scheduling — lengkapi supaya tidak error.
+  if (!conv.scheduling) conv.scheduling = { stage: 'idle', offeredSlots: [], meetingType: null };
+  if (profileName && conv.name === waId) conv.name = profileName;
+  return conv;
+}
+
+async function wabaProcessIncomingMessage(message, contactProfile) {
+  if (!message.text || !message.text.body) return; // lewati dulu pesan non-teks (gambar, stiker, dll)
+
+  const waId = message.from;
+  const conv = wabaGetOrCreateConversation(waId, contactProfile && contactProfile.name);
+
+  const incomingTime = message.timestamp ? Number(message.timestamp) * 1000 : Date.now();
+  const incomingMsg = {
+    id: conv.messages.length + 1,
+    dir: 'in',
+    from: 'user',
+    text: message.text.body,
+    time: incomingTime,
+  };
+  conv.messages.push(incomingMsg);
+  conv.lastMessageText = message.text.body;
+  conv.lastMessageTime = incomingTime;
+  conv.unread += 1;
+
+  if (conv.handledBy !== 'ai') return; // mode manual — admin yang membalas, AI diam
+
+  try {
+    // Reuse logic penjadwalan & generate balasan yang sama dengan Telegram —
+    // fungsinya generic terhadap bentuk objek `conv` (name/messages/scheduling),
+    // jadi aman dipakai lintas channel tanpa duplikasi logic.
+    const replyText = await tgHandleMessageAndMaybeSchedule(conv, message.text.body);
+    if (replyText) {
+      await sendViaWaba(conv.chatId, replyText);
+      const outMsg = { id: conv.messages.length + 1, dir: 'out', from: 'ai', text: replyText, time: Date.now() };
+      conv.messages.push(outMsg);
+      conv.lastMessageText = replyText;
+      conv.lastMessageTime = outMsg.time;
+    }
+  } catch (err) {
+    console.error('[WABA] Gagal auto-reply AI:', err.message);
+  }
 }
 
 // ── Mulai chat via WABA (WhatsApp Cloud API) ─────────────────────────────────
@@ -720,14 +859,35 @@ async function wabaStartChatWithLead(lead) {
       ? '62' + rawPhone.slice(1)
       : '62' + rawPhone;
 
-  const introText = buildIntroMessage(lead);
+  // Ollama mengarang frasa pendek untuk mengisi {{2}} — supaya alasan
+  // menghubungi lead ini terasa personal, bukan cuma nama perusahaan mentah.
+  const introVariable = await generateWabaIntroVariable(lead);
+  const introText = buildIntroMessageWithVariable(lead, introVariable);
+
+  // Template "followup_intro" (kategori Utility, bahasa Indonesian) punya 2
+  // variabel di body: {{1}} = nama lead, {{2}} = frasa kebutuhan hasil Ollama.
+  // Body template di WhatsApp Manager HARUS PERSIS:
+  // "Halo {{1}}, perkenalkan saya Qabil Bot dari Indotrading. Saya menghubungi
+  //  Anda terkait {{2}} — ada yang bisa kami bantu terkait produk/layanan kami?"
+  // Kalau body template diedit, urutan/isi components di bawah ini harus ikut disesuaikan.
+  const introComponents = [{
+    type: 'body',
+    parameters: [
+      { type: 'text', text: lead.nama || 'Bapak/Ibu' },
+      { type: 'text', text: introVariable },
+    ],
+  }];
 
   try {
     // PENTING: kontak pertama WAJIB pakai template (lihat sendViaWabaTemplate).
-    // 'hello_test' cuma untuk TEST — isinya fixed ("Hello World"), bukan introText di atas.
-    // Untuk production, ganti ke template custom yang sudah di-approve Meta
-    // dan kirim introText lewat components (lihat contoh di komentar fungsi).
-    const result = await sendViaWabaTemplate(to, 'hello_test', 'en');
+    // 'followup_intro' adalah template custom yang sudah di-approve Meta dengan
+    // variabel {{1}}/{{2}}, jadi pesan yang terkirim sekarang beneran personalized
+    // (bukan lagi teks fixed seperti 'hello_test').
+    // Kode bahasa HARUS PERSIS sama dengan yang terdaftar di WhatsApp Manager >
+    // Message Templates > kolom "Select language" untuk template ini.
+    // Dikonfirmasi: template ini bahasa "English" → kodenya 'en'.
+    // Kalau kelak dibuat ulang dalam Bahasa Indonesia, ganti ke 'id'.
+    const result = await sendViaWabaTemplate(to, 'followup_intro', 'en', introComponents);
 
     // Simpan ke wabaConversations supaya muncul di halaman Percakapan
     const convKey = to;
@@ -748,11 +908,11 @@ async function wabaStartChatWithLead(lead) {
       wabaConversations.set(convKey, conv);
     }
 
-    // Catatan: yang BENAR-BENAR terkirim ke WhatsApp adalah isi template
-    // 'hello_test' ("Hello World"), BUKAN introText — introText baru bisa
-    // dipakai betulan setelah template custom di production sudah di-approve.
-    // Disimpan begini supaya histori di halaman Percakapan tidak menyesatkan.
-    const sentText = '[Template: hello_test] Hello World';
+    // Sekarang template 'followup_intro' sudah pakai variabel {{1}}/{{2}} yang
+    // diisi dari data lead, jadi teks yang benar-benar terkirim ke WhatsApp
+    // sudah sama persis (atau sangat mendekati) dengan introText di atas —
+    // aman disimpan langsung ke histori Percakapan.
+    const sentText = introText;
     const outMsg = { id: conv.messages.length + 1, dir: 'out', from: 'ai', text: sentText, time: Date.now() };
     conv.messages.push(outMsg);
     conv.lastMessageText = sentText;
@@ -1062,6 +1222,39 @@ app.get('/api/waba/status', (req, res) => {
   });
 });
 
+// ── DIAGNOSA: DAFTAR MESSAGE TEMPLATE YANG BENAR-BENAR TERDAFTAR ─────────────
+// Dipakai untuk debug error 132001 ("Template name does not exist in the
+// translation") — error itu SERING BUKAN soal salah kode bahasa, tapi karena:
+//  a) Template belum di-submit / masih Draft / masih Pending Review di Meta
+//     (baru "Active"/APPROVED yang bisa dipakai lewat API), atau
+//  b) Template dibuat di WhatsApp Business Account (WABA) yang BEDA dari
+//     WABA_BUSINESS_ACCOUNT_ID yang dikonfigurasi di sini, atau
+//  c) Ada typo/spasi tersembunyi di nama template.
+// Endpoint ini tanya LANGSUNG ke Meta template apa saja yang terdaftar di
+// WABA_BUSINESS_ACCOUNT_ID yang aktif sekarang, lengkap dengan status &
+// bahasanya — supaya tidak perlu tebak-tebak dari tampilan UI Meta.
+// Cara pakai: buka http://localhost:3001/api/waba/templates di browser
+// (atau lewat curl) setelah WABA sudah dikonfigurasi di halaman Integrasi.
+app.get('/api/waba/templates', async (req, res) => {
+  try {
+    if (!WABA_ACCESS_TOKEN || !WABA_BUSINESS_ACCOUNT_ID) {
+      return res.status(400).json({
+        ok: false,
+        error: 'WABA Access Token / WhatsApp Business Account ID belum diisi. Isi keduanya di halaman Integrasi (WhatsApp Business Account ID wajib diisi untuk endpoint ini, walau di form ditandai "opsional").',
+      });
+    }
+    const url = `https://graph.facebook.com/v20.0/${WABA_BUSINESS_ACCOUNT_ID}/message_templates?fields=name,language,status,category&limit=100`;
+    const r = await fetch(url, { headers: { Authorization: `Bearer ${WABA_ACCESS_TOKEN}` } });
+    const data = await r.json();
+    if (data.error) {
+      return res.status(400).json({ ok: false, error: data.error.message, detail: data.error });
+    }
+    res.json({ ok: true, wabaBusinessAccountId: WABA_BUSINESS_ACCOUNT_ID, templates: data.data || [] });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
 // ── WEBHOOK META (verifikasi + terima pesan masuk) ────────────────
 // Didaftarkan di Meta App Dashboard > WhatsApp > Configuration > Webhook,
 // pakai URL publik (ngrok/cloudflared/domain production) + Verify Token yang
@@ -1079,22 +1272,35 @@ app.get('/api/waba/webhook', (req, res) => {
   return res.sendStatus(403);
 });
 
-// Menerima notifikasi pesan masuk WhatsApp dari Meta. Untuk sekarang baru
-// di-log — kalau nanti percakapan WhatsApp mau ditampilkan live seperti
-// Telegram di halaman Percakapan, tinggal simpan ke struktur Map seperti
-// tgConversations lalu tambahkan endpoint GET /api/waba/conversations dkk.
+// Menerima notifikasi pesan masuk WhatsApp dari Meta. Membalas 200 SEGERA
+// (Meta expects respons cepat, kalau lambat/timeout Meta akan retry webhook
+// berulang) — proses pesan (termasuk panggilan Ollama yang bisa makan waktu
+// beberapa detik) dilakukan di background setelah response dikirim.
 app.post('/api/waba/webhook', (req, res) => {
+  res.sendStatus(200);
+
   try {
     const entry = req.body.entry && req.body.entry[0];
     const change = entry && entry.changes && entry.changes[0];
     const value = change && change.value;
     const messages = value && value.messages;
     const statuses = value && value.statuses;
+    const contacts = value && value.contacts;
+
+    // Peta wa_id -> profile (nama tampilan WhatsApp customer), dipakai supaya
+    // percakapan baru di halaman Percakapan tidak cuma nampilin nomor mentah.
+    const profileByWaId = {};
+    if (Array.isArray(contacts)) {
+      contacts.forEach((c) => { if (c.wa_id) profileByWaId[c.wa_id] = c.profile || {}; });
+    }
 
     if (Array.isArray(messages)) {
       messages.forEach((m) => {
         const bodyText = (m.text && m.text.body) || `[${m.type}]`;
         console.log('[WABA] Pesan masuk dari', m.from, ':', bodyText);
+        wabaProcessIncomingMessage(m, profileByWaId[m.from]).catch((err) => {
+          console.error('[WABA] Gagal proses pesan masuk:', err.message);
+        });
       });
     }
 
@@ -1108,13 +1314,78 @@ app.post('/api/waba/webhook', (req, res) => {
         }
       });
     }
-
-    res.sendStatus(200);
   } catch (err) {
     console.error('[WABA] Gagal proses webhook:', err.message);
-    // Tetap balas 200 supaya Meta tidak retry terus-menerus.
-    res.sendStatus(200);
+    // Response 200 sudah terkirim di awal, jadi Meta tidak akan retry.
   }
+});
+
+// ── ENDPOINT PERCAKAPAN WABA (dipakai halaman Percakapan) ────────────────────
+// Sejajar persis dengan /api/telegram/conversations dkk, supaya halaman
+// Percakapan bisa menampilkan & mengelola chat WhatsApp dengan cara yang sama.
+app.get('/api/waba/conversations', (req, res) => {
+  const list = Array.from(wabaConversations.values())
+    .map((c) => ({
+      chatId: c.chatId,
+      name: c.name,
+      phone: c.phone,
+      handledBy: c.handledBy,
+      lastMessageText: c.lastMessageText,
+      lastMessageTime: c.lastMessageTime,
+      unread: c.unread,
+      msgCount: c.messages.length,
+      provider: 'whatsapp',
+    }))
+    .sort((a, b) => b.lastMessageTime - a.lastMessageTime);
+
+  res.json({ ok: true, conversations: list, botConfigured: !!(WABA_ACCESS_TOKEN && WABA_PHONE_NUMBER_ID) });
+});
+
+// Detail 1 percakapan (sekaligus tandai sudah dibaca)
+app.get('/api/waba/conversations/:chatId', (req, res) => {
+  const conv = wabaConversations.get(req.params.chatId);
+  if (!conv) return res.status(404).json({ ok: false, error: 'Percakapan tidak ditemukan' });
+  conv.unread = 0;
+  res.json({ ok: true, conversation: conv });
+});
+
+// Kirim balasan manual (dari agent/human) — otomatis mengambil alih dari AI.
+// Catatan: ini pakai sendViaWaba (freeform), jadi HANYA berhasil kalau window
+// 24 jam customer masih terbuka (customer sudah pernah membalas).
+app.post('/api/waba/conversations/:chatId/send', async (req, res) => {
+  try {
+    const conv = wabaConversations.get(req.params.chatId);
+    if (!conv) return res.status(404).json({ ok: false, error: 'Percakapan tidak ditemukan' });
+
+    const text = (req.body.text || '').trim();
+    if (!text) return res.status(400).json({ ok: false, error: 'Pesan tidak boleh kosong' });
+
+    await sendViaWaba(conv.chatId, text);
+
+    const msg = { id: conv.messages.length + 1, dir: 'out', from: 'human', text, time: Date.now() };
+    conv.messages.push(msg);
+    conv.lastMessageText = text;
+    conv.lastMessageTime = msg.time;
+    conv.handledBy = 'human'; // mengetik balasan manual = ambil alih dari AI
+
+    res.json({ ok: true, message: msg, conversation: conv });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// Ambil alih / kembalikan ke AI
+app.post('/api/waba/conversations/:chatId/takeover', (req, res) => {
+  const conv = wabaConversations.get(req.params.chatId);
+  if (!conv) return res.status(404).json({ ok: false, error: 'Percakapan tidak ditemukan' });
+
+  const { handledBy } = req.body;
+  if (!['ai', 'human'].includes(handledBy)) {
+    return res.status(400).json({ ok: false, error: 'handledBy harus "ai" atau "human"' });
+  }
+  conv.handledBy = handledBy;
+  res.json({ ok: true, conversation: conv });
 });
 
 async function sendMessage({ mode, chatId, message, lead }) {
