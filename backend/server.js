@@ -10,21 +10,41 @@
    Cara pakai cepat:
      1) cp .env.example .env   (isi OLLAMA_* dkk; TELEGRAM_BOT_TOKEN opsional/fallback)
      2) npm install
+        npm install multer pdf-parse mammoth xlsx   (untuk fitur Knowledge Base)
      3) ollama serve           (terminal lain, biarkan jalan)
      4) ollama pull llama3.1   (sekali saja, sesuaikan OLLAMA_MODEL)
      5) npm start
      6) Buka halaman Integrasi di dashboard → hubungkan Telegram Bot
         (token akan otomatis dikirim & dipakai server tanpa perlu .env)
+     7) Buka halaman Knowledge Base di dashboard → upload dokumen/URL/teks.
+        Semua dokumen berstatus "Aktif" otomatis jadi SATU-SATUNYA sumber
+        jawaban AI (lihat kbActiveContext() & tgBuildConversationPrompt di
+        bawah) — disimpan persisten di data/knowledge-base.json.
    ============================================================= */
 
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const fetch = require('node-fetch');
+const fs = require('fs');
+const path = require('path');
+const multer = require('multer');
+
+// Ekstraktor teks per tipe file — dibuat OPSIONAL (try/catch) supaya server
+// tetap bisa start walau salah satu belum di-`npm install`. Kalau modulnya
+// belum ada, upload tetap tersimpan tapi isinya diberi catatan "gagal
+// ekstrak" (bisa dilihat & diedit manual dari tab Teks Langsung).
+// Install semua sekaligus: npm install multer pdf-parse mammoth xlsx
+let pdfParseLib = null;
+let mammothLib = null;
+let xlsxLib = null;
+try { pdfParseLib = require('pdf-parse').PDFParse; } catch (e) { console.warn('[KB] Modul "pdf-parse" belum terinstall — jalankan: npm install pdf-parse'); }
+try { mammothLib = require('mammoth'); } catch (e) { console.warn('[KB] Modul "mammoth" belum terinstall — jalankan: npm install mammoth'); }
+try { xlsxLib = require('xlsx'); } catch (e) { console.warn('[KB] Modul "xlsx" belum terinstall — jalankan: npm install xlsx'); }
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '2mb' }));
 
 const PORT = process.env.PORT || 3001;
 const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
@@ -55,6 +75,191 @@ const SEND_MODE = process.env.SEND_MODE || 'mock'; // mock | telegram | whatsapp
 // Pada implementasi production ini diganti dengan tabel di database.
 const sendLog = [];
 
+// Deskripsi singkat & FAKTUAL soal bisnis Indotrading — disisipkan ke SEMUA
+// prompt Ollama di bawah (follow-up, balasan chat, intro WABA, dst). Tanpa
+// ini, model bisa "mengarang" sendiri bidang usaha perusahaan saat customer
+// tanya produk/layanan (pernah kejadian: AI bilang "menjual mesin produksi",
+// padahal Indotrading adalah marketplace B2B & B2G, bukan pabrikan/reseller
+// mesin). Bisa dioverride lewat .env kalau deskripsinya perlu diperbarui.
+const COMPANY_DESC = process.env.COMPANY_DESC ||
+  'Indotrading.com adalah marketplace B2B & B2G (business-to-business dan ' +
+  'business-to-government) di Indonesia. Kami mempertemukan supplier dengan ' +
+  'buyer perusahaan maupun instansi pemerintah lewat sistem RFQ (permintaan ' +
+  'pembelian/tender online) dan E-Procurement, dan terdaftar resmi di Toko ' +
+  'Daring LKPP. Kami TIDAK memproduksi atau menjual barang/mesin sendiri — ' +
+  'kami adalah platform yang membantu perusahaan (supplier) menjangkau lebih ' +
+  'banyak buyer, dan membantu buyer menemukan supplier yang tepat.';
+
+// =============================================================
+// 0b) KNOWLEDGE BASE — dokumen yang dipakai AI Ollama sebagai SATU-SATUNYA
+//     sumber jawaban (halaman "Knowledge Base" di dashboard).
+//     Disimpan sebagai file JSON di disk (data/knowledge-base.json) supaya
+//     tidak hilang saat server restart — tanpa perlu database.
+//     File asli hasil upload (pdf/docx/xlsx/...) disimpan di data/kb-uploads/,
+//     isi teksnya diekstrak sekali lalu disimpan di field `content` supaya
+//     tidak perlu parse ulang file tiap kali AI membalas chat.
+// =============================================================
+const KB_DATA_DIR    = path.join(__dirname, 'data');
+const KB_UPLOADS_DIR = path.join(KB_DATA_DIR, 'kb-uploads');
+const KB_DATA_FILE   = path.join(KB_DATA_DIR, 'knowledge-base.json');
+fs.mkdirSync(KB_UPLOADS_DIR, { recursive: true });
+
+const KB_MAX_CONTENT_CHARS = 300000; // batas simpan per dokumen (~300rb karakter)
+// Total karakter dari SEMUA dokumen aktif yang disisipkan ke tiap prompt Ollama.
+// Dibatasi supaya prompt tidak meledak / lambat kalau dokumen aktif banyak.
+const KB_CONTEXT_MAX_CHARS = Number(process.env.KB_CONTEXT_MAX_CHARS || 9000);
+
+let knowledgeBase = [];
+
+function kbLoad() {
+  try {
+    if (fs.existsSync(KB_DATA_FILE)) {
+      knowledgeBase = JSON.parse(fs.readFileSync(KB_DATA_FILE, 'utf8'));
+    }
+  } catch (e) {
+    console.error('[KB] Gagal membaca knowledge-base.json:', e.message);
+    knowledgeBase = [];
+  }
+}
+function kbSave() {
+  try {
+    fs.mkdirSync(KB_DATA_DIR, { recursive: true });
+    fs.writeFileSync(KB_DATA_FILE, JSON.stringify(knowledgeBase, null, 2));
+  } catch (e) {
+    console.error('[KB] Gagal menyimpan knowledge-base.json:', e.message);
+  }
+}
+kbLoad();
+
+function kbNextId() {
+  return knowledgeBase.reduce((max, d) => Math.max(max, d.id), 0) + 1;
+}
+function kbFind(id) {
+  return knowledgeBase.find((d) => d.id === Number(id));
+}
+function kbTrimContent(text) {
+  const t = (text || '').replace(/\r\n/g, '\n').trim();
+  return t.length > KB_MAX_CONTENT_CHARS
+    ? t.slice(0, KB_MAX_CONTENT_CHARS) + '\n[...dipotong, dokumen terlalu panjang...]'
+    : t;
+}
+
+// Field yang aman dikirim ke frontend (tanpa `content` penuh, kecuali endpoint detail).
+function kbPublicDoc(d) {
+  return {
+    id: d.id,
+    title: d.title,
+    category: d.category || 'umum',
+    status: d.status || 'aktif',
+    sourceType: d.sourceType,
+    fileName: d.fileName || null,
+    fileExt: d.fileExt || null,
+    sizeBytes: d.sizeBytes || Buffer.byteLength(d.content || '', 'utf8'),
+    url: d.url || null,
+    autoSync: !!d.autoSync,
+    createdAt: d.createdAt,
+    updatedAt: d.updatedAt,
+    contentLength: (d.content || '').length,
+    contentPreview: (d.content || '').slice(0, 500),
+    extractFailed: /^\[(Ekstraksi|Gagal)/.test(d.content || ''),
+  };
+}
+
+// ── EKSTRAKSI TEKS DARI FILE ──────────────────────────────────────
+async function kbExtractFileText(filePath, ext) {
+  try {
+    if (ext === 'txt' || ext === 'csv') {
+      return fs.readFileSync(filePath, 'utf8');
+    }
+    if (ext === 'pdf') {
+      if (!pdfParseLib) return '[Ekstraksi PDF gagal: modul pdf-parse belum terinstall di server]';
+      const buffer = fs.readFileSync(filePath);
+      const parser = new pdfParseLib({ data: buffer });
+      const data = await parser.getText();
+      return data.text || '';
+    }
+    if (ext === 'docx') {
+      if (!mammothLib) return '[Ekstraksi DOCX gagal: modul mammoth belum terinstall di server]';
+      const result = await mammothLib.extractRawText({ path: filePath });
+      return result.value || '';
+    }
+    if (ext === 'xlsx' || ext === 'xls') {
+      if (!xlsxLib) return '[Ekstraksi XLSX gagal: modul xlsx belum terinstall di server]';
+      const wb = xlsxLib.readFile(filePath);
+      let out = '';
+      wb.SheetNames.forEach((name) => {
+        out += `\n--- Sheet: ${name} ---\n` + xlsxLib.utils.sheet_to_csv(wb.Sheets[name]);
+      });
+      return out;
+    }
+    return '';
+  } catch (e) {
+    console.error('[KB] Gagal ekstrak teks file:', e.message);
+    return `[Gagal mengekstrak isi file: ${e.message}]`;
+  }
+}
+
+// ── STRIP HTML (untuk sumber URL/website, tanpa dependency tambahan) ─────
+function kbStripHtml(html) {
+  return String(html || '')
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<!--[\s\S]*?-->/g, ' ')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/(p|div|li|h[1-6]|tr|section|article)>/gi, '\n')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/[ \t]+/g, ' ')
+    .replace(/\n[ \t]*\n[ \t]*\n+/g, '\n\n')
+    .trim();
+}
+
+// ── KONTEKS UNTUK PROMPT OLLAMA ───────────────────────────────────
+// Menggabungkan isi SEMUA dokumen berstatus "aktif" jadi satu blok teks
+// yang disisipkan ke prompt AI. Ini yang membuat AI "hanya menjawab dari
+// Knowledge Base" — lihat tgBuildConversationPrompt di bawah.
+function kbActiveContext() {
+  const active = knowledgeBase.filter((d) => d.status === 'aktif' && (d.content || '').trim());
+  if (!active.length) return '';
+  let out = '';
+  let used = 0;
+  for (const doc of active) {
+    const block = `### ${doc.title} [kategori: ${doc.category || 'umum'}]\n${doc.content.trim()}\n\n`;
+    if (used + block.length > KB_CONTEXT_MAX_CHARS) {
+      const remaining = KB_CONTEXT_MAX_CHARS - used;
+      if (remaining > 200) out += block.slice(0, remaining) + '\n[...dipotong...]\n\n';
+      break;
+    }
+    out += block;
+    used += block.length;
+  }
+  return out.trim();
+}
+
+// Multer — upload file ke data/kb-uploads/ dengan nama unik.
+const kbStorage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, KB_UPLOADS_DIR),
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    cb(null, `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`);
+  },
+});
+const kbUpload = multer({
+  storage: kbStorage,
+  limits: { fileSize: 20 * 1024 * 1024 }, // 20 MB, samakan dengan hint di UI
+  fileFilter: (req, file, cb) => {
+    const ext = path.extname(file.originalname).slice(1).toLowerCase();
+    const allowed = ['pdf', 'docx', 'xlsx', 'xls', 'txt', 'csv'];
+    if (!allowed.includes(ext)) return cb(new Error(`Tipe file .${ext} tidak didukung`));
+    cb(null, true);
+  },
+});
+
 // =============================================================
 // 1) GENERATE PESAN FOLLOW-UP VIA OLLAMA
 // =============================================================
@@ -71,6 +276,9 @@ function buildPrompt(lead) {
 Tugasmu: tulis SATU pesan follow-up WhatsApp singkat (maksimal 4 kalimat) dalam Bahasa Indonesia
 untuk lead berikut. Gaya bahasa ramah dan semi-formal, tidak kaku, tidak terlalu menjual,
 fokus membuka percakapan kembali.
+
+Tentang bisnis kami (jangan mengarang produk/layanan di luar ini):
+${COMPANY_DESC}
 
 Data lead:
 - Nama: ${lead.nama}
@@ -297,15 +505,43 @@ function tgBuildConversationPrompt(conv, incomingText) {
     .map((m) => `${roleLabel[m.dir === 'in' ? 'in' : m.from]}: ${m.text}`)
     .join('\n');
 
+  // Knowledge Base aktif (halaman "Knowledge Base" di dashboard) — kalau ada
+  // isinya, AI WAJIB menjawab detail HANYA dari sini, bukan dari pengetahuan
+  // umum model. Kalau KB masih kosong, fallback ke COMPANY_DESC saja supaya
+  // bot tidak bisu sebelum ada dokumen yang diupload.
+  const kbContext = kbActiveContext();
+
+  const knowledgeBlock = kbContext
+    ? `Berikut adalah KNOWLEDGE BASE resmi — SATU-SATUNYA sumber kebenaran untuk menjawab
+pertanyaan customer soal produk, layanan, harga, promo, SOP, maupun FAQ. Dilarang
+keras menjawab dari pengetahuan lain di luar isi ini, dan dilarang mengarang jawaban:
+---
+${kbContext}
+---`
+    : `Belum ada dokumen di Knowledge Base. Gunakan hanya deskripsi umum bisnis berikut,
+jangan mengarang detail produk/harga/promo yang tidak disebutkan di sini:
+${COMPANY_DESC}`;
+
   return `Kamu adalah asisten sales AI yang ramah dan profesional untuk bisnis B2B Indonesia.
 Kamu sedang membalas chat Telegram dari customer secara real-time.
+
+Tentang bisnis kami secara umum:
+${COMPANY_DESC}
+
+${knowledgeBlock}
 
 ${historyText ? `Riwayat percakapan terakhir:\n${historyText}\n\n` : ''}Pesan baru dari customer: "${incomingText}"
 
 Aturan:
 - Balas pesan tersebut secara natural, singkat (maksimal 3 kalimat), Bahasa Indonesia, ramah dan semi-formal.
 - Jangan mengulang-ulang sapaan jika percakapan sudah berjalan.
+- Kalau customer menanyakan detail spesifik (produk, harga, promo, SOP, FAQ) yang TIDAK ada
+  di Knowledge Base di atas, JANGAN mengarang jawaban — katakan dengan jujur bahwa informasi
+  itu belum tersedia dan akan ditindaklanjuti oleh tim, jangan berpura-pura tahu.
+- Kalau customer menanyakan hal di luar cakupan bisnis kami, jujur katakan itu bukan
+  lingkup Indotrading.
 - JANGAN gunakan markdown, JANGAN beri judul atau penjelasan tambahan.
+- Jika belum mengetahui bisnis customer, maka tanya mereka menjual apa.
 - Output HANYA isi balasannya saja, siap kirim.`;
 }
 
@@ -691,6 +927,10 @@ function buildWabaIntroVariablePrompt(lead) {
   }[lead.sumber] || 'berinteraksi dengan bisnis kita';
 
   return `Kamu adalah asisten sales yang ramah untuk bisnis B2B Indonesia.
+
+Tentang bisnis kami (jangan mengarang produk/layanan di luar ini):
+${COMPANY_DESC}
+
 Tugasmu: tulis SATU frasa pendek (maksimal 8 kata, tanpa tanda baca akhir) yang akan
 disisipkan ke dalam kalimat template WhatsApp berikut, menggantikan [FRASA]:
 "Saya menghubungi Anda terkait kebutuhan [FRASA] — ada yang bisa kami bantu terkait produk/layanan kami?"
@@ -703,7 +943,7 @@ Data lead:
 - Skor AI: ${lead.aiScore || 'WARM'}
 
 Aturan:
-- Output HANYA frasa pendeknya saja, contoh: "pengadaan sparepart industri untuk PT Maju Bersama"
+- Output HANYA frasa pendeknya saja, contoh: "peluang menjadi supplier di Indotrading" atau "kebutuhan pengadaan produk industri lewat RFQ kami"
 - JANGAN pakai newline, markdown, tanda kutip, atau titik di akhir.
 - Maksimal 8 kata.`;
 }
@@ -1201,6 +1441,143 @@ app.delete('/api/waba/config', (req, res) => {
 // ── Endpoint: provider chat aktif (dipakai tombol "Mulai Chat AI" di Leads) ──
 // Mengembalikan provider yang akan dipakai beserta statusnya, sehingga
 // frontend bisa tampilkan label & ikon yang benar tanpa hardcode.
+// =============================================================
+// KNOWLEDGE BASE — endpoint dipakai halaman "Knowledge Base"
+// (script_page/knowledge-base.js). Semua dokumen berstatus "aktif" di sini
+// otomatis disisipkan ke prompt Ollama lewat kbActiveContext() di atas —
+// jadi begitu dokumen disimpan, AI langsung "tahu" tanpa langkah tambahan.
+// =============================================================
+app.get('/api/knowledge-base', (req, res) => {
+  res.json({ ok: true, docs: knowledgeBase.map(kbPublicDoc) });
+});
+
+app.get('/api/knowledge-base/:id', (req, res) => {
+  const doc = kbFind(req.params.id);
+  if (!doc) return res.status(404).json({ ok: false, error: 'Dokumen tidak ditemukan' });
+  res.json({ ok: true, doc: { ...kbPublicDoc(doc), content: doc.content || '' } });
+});
+
+// Upload file (pdf/docx/xlsx/txt/csv) — bisa multiple sekaligus.
+app.post('/api/knowledge-base/upload', (req, res) => {
+  kbUpload.array('files', 10)(req, res, async (err) => {
+    if (err) return res.status(400).json({ ok: false, error: err.message });
+    const files = req.files || [];
+    if (!files.length) return res.status(400).json({ ok: false, error: 'Tidak ada file yang diunggah' });
+
+    const category = (req.body.category || '').trim() || 'umum';
+    const created = [];
+    for (const file of files) {
+      const ext = path.extname(file.originalname).slice(1).toLowerCase();
+      const text = await kbExtractFileText(file.path, ext);
+      const doc = {
+        id: kbNextId(),
+        title: file.originalname.replace(/\.[^.]+$/, ''),
+        category,
+        status: 'aktif',
+        sourceType: 'file',
+        fileName: file.originalname,
+        fileExt: ext,
+        storedPath: file.path,
+        sizeBytes: file.size,
+        content: kbTrimContent(text),
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      };
+      knowledgeBase.push(doc);
+      created.push(doc);
+    }
+    kbSave();
+    res.json({ ok: true, docs: created.map(kbPublicDoc) });
+  });
+});
+
+// Tambah dokumen dari URL/website (crawl sederhana, satu halaman).
+app.post('/api/knowledge-base/url', async (req, res) => {
+  const { url, category, autoSync } = req.body || {};
+  if (!url) return res.status(400).json({ ok: false, error: 'URL kosong' });
+  try {
+    const r = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 IndotradingKB/1.0' } });
+    if (!r.ok) throw new Error(`Gagal mengambil URL (status ${r.status})`);
+    const html = await r.text();
+    const text = kbStripHtml(html);
+    const titleMatch = html.match(/<title[^>]*>([^<]*)<\/title>/i);
+    const doc = {
+      id: kbNextId(),
+      title: (titleMatch && titleMatch[1].trim()) || url,
+      category: (category || '').trim() || 'umum',
+      status: 'aktif',
+      sourceType: 'url',
+      url,
+      autoSync: !!autoSync,
+      content: kbTrimContent(text),
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    };
+    if (!doc.content) throw new Error('Tidak ada teks yang bisa diambil dari halaman ini');
+    knowledgeBase.push(doc);
+    kbSave();
+    res.json({ ok: true, doc: kbPublicDoc(doc) });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+// Tambah dokumen dari teks yang diketik langsung.
+app.post('/api/knowledge-base/text', (req, res) => {
+  const { title, content, category } = req.body || {};
+  if (!title || !title.trim())  return res.status(400).json({ ok: false, error: 'Judul dokumen wajib diisi' });
+  if (!content || !content.trim()) return res.status(400).json({ ok: false, error: 'Konten dokumen wajib diisi' });
+  const doc = {
+    id: kbNextId(),
+    title: title.trim(),
+    category: (category || '').trim() || 'umum',
+    status: 'aktif',
+    sourceType: 'teks',
+    content: kbTrimContent(content),
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+  };
+  knowledgeBase.push(doc);
+  kbSave();
+  res.json({ ok: true, doc: kbPublicDoc(doc) });
+});
+
+// Edit dokumen yang sudah ada (judul/kategori/konten teksnya).
+app.put('/api/knowledge-base/:id', (req, res) => {
+  const doc = kbFind(req.params.id);
+  if (!doc) return res.status(404).json({ ok: false, error: 'Dokumen tidak ditemukan' });
+  const { title, content, category } = req.body || {};
+  if (title !== undefined) doc.title = String(title).trim() || doc.title;
+  if (category !== undefined) doc.category = String(category).trim() || 'umum';
+  if (content !== undefined) doc.content = kbTrimContent(content);
+  doc.updatedAt = Date.now();
+  kbSave();
+  res.json({ ok: true, doc: kbPublicDoc(doc) });
+});
+
+// Aktifkan / nonaktifkan dokumen (dokumen nonaktif TIDAK ikut disisipkan ke prompt AI).
+app.patch('/api/knowledge-base/:id/status', (req, res) => {
+  const doc = kbFind(req.params.id);
+  if (!doc) return res.status(404).json({ ok: false, error: 'Dokumen tidak ditemukan' });
+  const { status } = req.body || {};
+  if (!['aktif', 'nonaktif', 'draft'].includes(status)) {
+    return res.status(400).json({ ok: false, error: 'Status tidak valid' });
+  }
+  doc.status = status;
+  doc.updatedAt = Date.now();
+  kbSave();
+  res.json({ ok: true, doc: kbPublicDoc(doc) });
+});
+
+app.delete('/api/knowledge-base/:id', (req, res) => {
+  const idx = knowledgeBase.findIndex((d) => d.id === Number(req.params.id));
+  if (idx === -1) return res.status(404).json({ ok: false, error: 'Dokumen tidak ditemukan' });
+  const [removed] = knowledgeBase.splice(idx, 1);
+  if (removed.storedPath) fs.unlink(removed.storedPath, () => {});
+  kbSave();
+  res.json({ ok: true });
+});
+
 app.get('/api/leads/chat-provider', (req, res) => {
   const wabaReady = !!(WABA_ACCESS_TOKEN && WABA_PHONE_NUMBER_ID);
   const tgReady   = !!TELEGRAM_BOT_TOKEN;
@@ -1492,6 +1869,9 @@ Tugasmu: tulis SATU pesan chat singkat (maksimal 4 kalimat) dalam Bahasa Indones
 menindaklanjuti appointment yang baru saja dibuat oleh tim sales. Tujuannya membuka
 percakapan, mengonfirmasi jadwal, dan membuat customer merasa diperhatikan.
 
+Tentang bisnis kami (jangan mengarang produk/layanan di luar ini):
+${COMPANY_DESC}
+
 Data appointment:
 - Nama customer: ${appointment.nama}
 - Perusahaan: ${appointment.company || '-'}
@@ -1762,6 +2142,11 @@ app.get('/api/health', async (req, res) => {
     },
     telegram: { configured: !!TELEGRAM_BOT_TOKEN },
     waba: { configured: !!(WABA_ACCESS_TOKEN && WABA_PHONE_NUMBER_ID) },
+    knowledgeBase: {
+      totalDocs: knowledgeBase.length,
+      activeDocs: knowledgeBase.filter((d) => d.status === 'aktif').length,
+      contextChars: kbActiveContext().length,
+    },
   });
 });
 
