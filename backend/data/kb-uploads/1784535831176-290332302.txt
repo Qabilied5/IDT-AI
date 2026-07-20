@@ -1,0 +1,26 @@
+
+
+=== PROFIL PERUSAHAAN (DATA FIKTIF) ===
+
+Nama perusahaan: PT. Manifisting Teknologi Nusantara
+Bidang usaha: Distribusi dan retail perangkat smart home dan elektronik rumah tangga
+Tahun berdiri: 2019 (data fiktif untuk simulasi)
+Kantor pusat: Jl. Teknologi Raya No. 88, Jakarta Selatan, DKI Jakarta 12950 (alamat fiktif)
+Jam operasional CS: Senin sampai Sabtu, 08.00-20.00 WIB
+Situs web: www.manifisting.co.id (domain contoh/dummy)
+Email resmi: cs@manifisting.co.id
+Telepon: 0800-1-234-567 (bebas pulsa)
+
+=== KANAL RESMI ===
+
+Marketplace resmi: Manifisting Official Store, tersedia di Tokopedia, Shopee, dan Blibli
+Media sosial: Instagram @manifisting.id, TikTok @manifisting.official
+Aplikasi: Manifisting Home, tersedia di iOS dan Android
+
+=== KEBIJAKAN PRIVASI SINGKAT ===
+
+PT. Manifisting menjaga kerahasiaan data pelanggan sesuai ketentuan perlindungan data pribadi yang berlaku. Data pelanggan hanya digunakan untuk keperluan transaksi, pengiriman, dan komunikasi layanan, serta tidak dibagikan ke pihak ketiga tanpa persetujuan kecuali diwajibkan oleh peraturan perundang-undangan.
+
+=== CATATAN PENGGUNAAN DOKUMEN ===
+
+Seluruh nama perusahaan, produk, harga, kebijakan, dan data kontak pada dokumen ini adalah data dummy/fiktif yang dibuat khusus untuk keperluan pengujian sistem AI Knowledge Base (tester). Dokumen ini tidak boleh digunakan sebagai referensi kebijakan bisnis nyata.

@@ -1,0 +1,50 @@
+Kategori: Smart Home
+Produk: Manifisting SmartPlug X1
+Deskripsi: Colokan pintar dengan kontrol aplikasi dan jadwal otomatis
+
+Kategori: Smart Home
+Produk: Manifisting HomeCam 360
+Deskripsi: Kamera pengawas rumah dengan deteksi gerak dan mode malam hari
+
+Kategori: Elektronik Dapur
+Produk: Manifisting AirFry Pro 5L
+Deskripsi: Air fryer digital kapasitas 5 liter, 8 mode masak
+
+Kategori: Elektronik Dapur
+Produk: Manifisting BlendMax 900
+Deskripsi: Blender multifungsi 900 watt dengan 4 tingkat kecepatan
+
+Kategori: Perawatan Rumah
+Produk: Manifisting RoboClean V2
+Deskripsi: Robot vacuum cleaner dengan pemetaan ruangan otomatis
+
+Kategori: Aksesoris
+Produk: Manifisting PowerBank 20K
+Deskripsi: Power bank 20.000 mAh fast charging dua arah
+
+=== LAYANAN YANG DITAWARKAN ===
+
+Layanan: Garansi Resmi
+Detail: Semua produk bergaransi resmi 12 bulan, khusus RoboClean V2 24 bulan, untuk kerusakan pabrik.
+
+Layanan: Manifisting Care+
+Detail: Layanan langganan perawatan dan servis prioritas, biaya mulai Rp29.000 per bulan.
+
+Layanan: Instalasi & Setup
+Detail: Layanan pemasangan on-site untuk produk smart home di area Jabodetabek, Bandung, dan Surabaya.
+
+Layanan: Konsultasi Smart Home
+Detail: Sesi konsultasi gratis 30 menit untuk pelanggan yang ingin mengintegrasikan seluruh perangkat rumah.
+
+Layanan: Trade-In Program
+Detail: Tukar tambah perangkat lama dengan diskon hingga 15% untuk pembelian produk baru.
+
+=== SPESIFIKASI UNGGULAN: MANIFISTING ROBOCLEAN V2 ===
+
+Daya baterai: 5200 mAh, waktu operasi hingga 150 menit
+Kapasitas debu: 600 ml, kantong debu dapat dicuci ulang
+Fitur navigasi: LiDAR mapping, deteksi tangga otomatis
+Konektivitas: Wi-Fi 2.4GHz, kontrol via aplikasi Manifisting Home
+Kompatibilitas: Google Assistant, Amazon Alexa
+Dimensi: diameter 35 cm, tinggi 9.5 cm
+
