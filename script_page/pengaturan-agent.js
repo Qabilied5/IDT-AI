@@ -8,13 +8,12 @@ const paState = {
   activeSection: 'persona',
   selectedTone: 'santai',
   dirtyFields: new Set(),
-  agents: [
-    { id:1, nama:'Budi Wicaksono',  email:'budi@indotrading.com',   role:'superadmin', status:'online',  initials:'BW', chat:14 },
-    { id:2, nama:'Sari Dewi',       email:'sari@indotrading.com',   role:'admin',      status:'online',  initials:'SD', chat:8  },
-    { id:3, nama:'Andi Prasetyo',   email:'andi@indotrading.com',   role:'agent',      status:'busy',    initials:'AP', chat:5  },
-    { id:4, nama:'Rini Kusuma',     email:'rini@indotrading.com',   role:'agent',      status:'offline', initials:'RK', chat:0  },
-    { id:5, nama:'Maya Lestari',    email:'maya@indotrading.com',   role:'viewer',     status:'online',  initials:'ML', chat:0  },
-  ],
+  // Data PIC/agent TIDAK di-hardcode lagi di sini — dimuat dari backend
+  // (GET /api/agents) saat halaman dibuka lewat loadAgentsFromServer().
+  // Tetap kosong sampai user benar-benar menambahkan PIC lewat modal
+  // "Undang Agent Baru", supaya tidak ada data dummy/contoh yang salah kaprah
+  // muncul di dropdown "Ambil Alih" pada halaman Percakapan.
+  agents: [],
   brands: [
     { id:1, name:'Indotrading B2B',    cat:'Platform Utama',   color:'#c8102e', abbr:'IT', conv:1284, agents:3, active: true  },
     { id:2, name:'Indotrading Mesin',  cat:'Industri Mesin',   color:'#1d4ed8', abbr:'IM', conv:342,  agents:2, active: false },
@@ -28,9 +27,33 @@ const paState = {
   ],
 };
 
+// ── API base — sama dengan yang dipakai integrasi Telegram/WABA ─
+const PA_API_BASE = window.PC_API_BASE || 'http://localhost:3001';
+
+async function paFetch(path, opts) {
+  const res = await fetch(`${PA_API_BASE}${path}`, {
+    headers: { 'Content-Type': 'application/json' },
+    ...opts,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || data.ok === false) throw new Error(data.error || `Request gagal (${res.status})`);
+  return data;
+}
+
+async function loadAgentsFromServer() {
+  try {
+    const data = await paFetch('/api/agents');
+    paState.agents = data.agents || [];
+    renderAgentTable();
+  } catch (e) {
+    console.error('Gagal memuat daftar PIC/Agent:', e);
+    paShowToast('Tidak bisa terhubung ke backend — pastikan server.js jalan', 'error');
+  }
+}
+
 // ── Init ──────────────────────────────────────────────────────
 function initPengaturanAgent() {
-  renderAgentTable();
+  loadAgentsFromServer();
   renderBrandCards();
   renderKeywordTags();
   renderJadwalRows();
@@ -375,7 +398,10 @@ function paDiscardChanges() {
 }
 
 // ── Modal: Tambah Agent ───────────────────────────────────────
+let paEditingAgentId = null;
+
 function openAddAgentModal() {
+  paEditingAgentId = null;
   const overlay = document.getElementById('pa-modal-agent');
   if (overlay) overlay.style.display = 'flex';
   document.getElementById('pa-modal-agent-form')?.reset();
@@ -385,9 +411,14 @@ function openAddAgentModal() {
 function openEditAgentModal(id) {
   const agent = paState.agents.find(a => a.id === id);
   if (!agent) return;
+  paEditingAgentId = id;
   const overlay = document.getElementById('pa-modal-agent');
   if (overlay) overlay.style.display = 'flex';
   document.getElementById('pa-modal-agent-title').textContent = 'Edit Agent: ' + agent.nama;
+  const namaEl = document.getElementById('pa-modal-agent-nama');
+  if (namaEl) namaEl.value = agent.nama;
+  const emailEl = document.getElementById('pa-modal-agent-email');
+  if (emailEl) emailEl.value = agent.email;
   const roleEl = document.getElementById('pa-modal-agent-role');
   if (roleEl) roleEl.value = agent.role;
 }
@@ -395,18 +426,47 @@ function openEditAgentModal(id) {
 function closeAgentModal() {
   const overlay = document.getElementById('pa-modal-agent');
   if (overlay) overlay.style.display = 'none';
+  paEditingAgentId = null;
 }
 
-function saveAgentModal() {
-  closeAgentModal();
-  paShowToast('Data agent diperbarui', 'success');
+async function saveAgentModal() {
+  const nama = document.getElementById('pa-modal-agent-nama')?.value.trim();
+  const email = document.getElementById('pa-modal-agent-email')?.value.trim();
+  const role = document.getElementById('pa-modal-agent-role')?.value || 'agent';
+
+  if (!nama) { paShowToast('Nama wajib diisi', 'error'); return; }
+  if (!email) { paShowToast('Email wajib diisi', 'error'); return; }
+
+  try {
+    if (paEditingAgentId !== null) {
+      await paFetch(`/api/agents/${paEditingAgentId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ nama, email, role }),
+      });
+      paShowToast('Data agent diperbarui', 'success');
+    } else {
+      await paFetch('/api/agents', {
+        method: 'POST',
+        body: JSON.stringify({ nama, email, role }),
+      });
+      paShowToast('Agent baru berhasil ditambahkan', 'success');
+    }
+    closeAgentModal();
+    await loadAgentsFromServer();
+  } catch (e) {
+    paShowToast('Gagal menyimpan: ' + e.message, 'error');
+  }
 }
 
-function removeAgent(id) {
+async function removeAgent(id) {
   if (!confirm('Hapus agent ini dari daftar?')) return;
-  paState.agents = paState.agents.filter(a => a.id !== id);
-  renderAgentTable();
-  paShowToast('Agent dihapus', '');
+  try {
+    await paFetch(`/api/agents/${id}`, { method: 'DELETE' });
+    paShowToast('Agent dihapus', '');
+    await loadAgentsFromServer();
+  } catch (e) {
+    paShowToast('Gagal menghapus: ' + e.message, 'error');
+  }
 }
 
 // ── Modal: Brand ──────────────────────────────────────────────

@@ -329,6 +329,26 @@ const IG_DATA = [
       { key: 'zap_secret', label: 'Secret Header (opsional)', placeholder: 'my-webhook-secret', type: 'text' },
     ],
   },
+  {
+    id: 'calendly',
+    name: 'Calendly',
+    icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="#006BFF" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm0 2c4.418 0 8 3.582 8 8s-3.582 8-8 8-8-3.582-8-8 3.582-8 8-8zm-1 4v5l4.25 2.52.75-1.23-3.5-2.08V8H11z"/>
+    </svg>`,
+    category: 'tools',
+    catLabel: 'Tools',
+    catIcon: 'ti-calendar-event',
+    // Status TIDAK di-hardcode — mengikuti ada/tidaknya kredensial Calendly
+    // yang tersimpan di browser ini (lihat calendly-token.js), sejajar
+    // dengan pola kartu Telegram & WhatsApp.
+    status: 'disconnected',
+    desc: 'Hubungkan Calendly supaya AI Agent bisa menawarkan jadwal meeting berdasarkan ketersediaan ASLI di kalender kamu, kirim link booking personal ke customer via chat, dan otomatis membuat appointment begitu customer selesai booking.',
+    features: [
+      { icon: 'ti-calendar-check', label: 'Cek Ketersediaan Real-time' },
+      { icon: 'ti-link', label: 'Link Booking Personal' },
+      { icon: 'ti-calendar-plus', label: 'Auto-sync ke Appointment' },
+    ],
+  },
 ];
 
 // ── STATE ──────────────────────────────────────────────────────
@@ -417,9 +437,34 @@ function igSyncWabaStatus() {
   }
 }
 
+// Selaraskan status kartu Calendly dengan kredensial yang tersimpan di
+// browser (diatur lewat calendly-token.js). Sejajar dengan pola di atas.
+function igSyncCalendlyStatus() {
+  const item = IG_DATA.find(i => i.id === 'calendly');
+  if (!item) return;
+  const token = (typeof cyGetToken === 'function') ? cyGetToken() : '';
+  if (token) {
+    item.status = 'connected';
+    if (!item.connectedInfo) {
+      const eventUri = (typeof cyGetEventUri === 'function') ? cyGetEventUri() : '';
+      item.connectedInfo = {
+        account: eventUri ? `Event Type: ${eventUri}` : 'Personal Access Token tersimpan di browser ini',
+        since: '—',
+        msgs: '—',
+        lastStatus: '✅ Token aktif',
+      };
+    }
+  } else {
+    item.status = 'disconnected';
+    delete item.connectedInfo;
+    delete item.stats;
+  }
+}
+
 function igRender() {
   igSyncTelegramStatus();
   igSyncWabaStatus();
+  igSyncCalendlyStatus();
   igState.query = (document.getElementById('ig-search')?.value || '').trim();
 
   const filtered = igGetFiltered();
@@ -588,6 +633,22 @@ function igOpenModal(id) {
         </button>
       </div>
     `;
+  } else if (item.id === 'calendly') {
+    // Calendly punya modal konfigurasi kredensial khusus (dibuat dinamis oleh
+    // calendly-token.js) dengan test koneksi & penyimpanan ke backend —
+    // sejajar dengan pola Telegram & WABA di atas, bukan field generic.
+    configWrap.style.display = 'flex';
+    fieldsEl.innerHTML = `
+      <div class="ig-field-group">
+        <div class="ig-field-label" style="margin-bottom:6px">
+          ${item.status === 'connected' ? 'Kredensial Calendly tersimpan di browser ini.' : 'Belum ada kredensial Calendly yang terhubung.'}
+        </div>
+        <button type="button" class="ig-btn-primary" style="width:100%;justify-content:center"
+                onclick="igCloseModal(); if(typeof cyOpenModal==='function') cyOpenModal();">
+          <i class="ti ti-calendar-event"></i> ${item.status === 'connected' ? 'Kelola Kredensial Calendly' : 'Atur Kredensial Calendly'}
+        </button>
+      </div>
+    `;
   } else if (item.status !== 'connected' && item.configFields?.length) {
     configWrap.style.display = 'flex';
     fieldsEl.innerHTML = item.configFields.map(f => `
@@ -655,6 +716,13 @@ function igModalAction() {
     // Belum konek: langsung buka modal kredensial WABA khusus, bukan simulasi connect generic.
     igCloseModal();
     if (typeof wbOpenModal === 'function') wbOpenModal();
+    return;
+  }
+
+  if (id === 'calendly' && item.status !== 'connected') {
+    // Belum konek: langsung buka modal kredensial Calendly khusus, bukan simulasi connect generic.
+    igCloseModal();
+    if (typeof cyOpenModal === 'function') cyOpenModal();
     return;
   }
 

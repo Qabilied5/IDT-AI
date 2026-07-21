@@ -69,6 +69,13 @@ let WABA_BUSINESS_ACCOUNT_ID = process.env.WABA_BUSINESS_ACCOUNT_ID || '';
 let WABA_VERIFY_TOKEN = process.env.WABA_VERIFY_TOKEN || '';
 let wabaBotInfo = null; // { verified_name, display_phone_number }
 let wabaConversations = new Map(); // key = nomor tujuan -> { chatId, name, phone, messages: [...] }
+// Kredensial Calendly — sejajar dengan Telegram/WABA di atas: TIDAK diambil
+// dari .env secara permanen, diatur runtime lewat halaman Integrasi
+// (POST/DELETE /api/calendly/config), dikirim dari browser lewat
+// script_page/calendly-token.js. .env cuma fallback awal.
+let CALENDLY_ACCESS_TOKEN = process.env.CALENDLY_ACCESS_TOKEN || '';
+let CALENDLY_EVENT_TYPE_URI = process.env.CALENDLY_EVENT_TYPE_URI || '';
+let calendlyUserInfo = null; // { uri, name, email, organizationUri }
 const SEND_MODE = process.env.SEND_MODE || 'mock'; // mock | telegram | whatsapp
 
 // ── Riwayat pengiriman sementara (in-memory, hilang saat restart) ──
@@ -130,6 +137,48 @@ function kbSave() {
   }
 }
 kbLoad();
+
+// =============================================================
+// 0c) DATA PIC / AGENT — dipakai halaman Pengaturan Agent & dropdown
+//     "Ambil Alih" di halaman Percakapan (pilih PIC mana yang menangani).
+//     Disimpan persisten di data/agents.json, pola sama seperti Knowledge
+//     Base di atas. TIDAK ada data dummy/contoh — kosong sampai user benar-benar
+//     menambahkan PIC lewat halaman Pengaturan Agent.
+// =============================================================
+const AGENTS_DATA_FILE = path.join(KB_DATA_DIR, 'agents.json');
+let picAgents = [];
+
+function picLoad() {
+  try {
+    if (fs.existsSync(AGENTS_DATA_FILE)) {
+      picAgents = JSON.parse(fs.readFileSync(AGENTS_DATA_FILE, 'utf8'));
+    }
+  } catch (e) {
+    console.error('[PIC] Gagal membaca agents.json:', e.message);
+    picAgents = [];
+  }
+}
+function picSave() {
+  try {
+    fs.mkdirSync(KB_DATA_DIR, { recursive: true });
+    fs.writeFileSync(AGENTS_DATA_FILE, JSON.stringify(picAgents, null, 2));
+  } catch (e) {
+    console.error('[PIC] Gagal menyimpan agents.json:', e.message);
+  }
+}
+picLoad();
+
+function picNextId() {
+  return picAgents.reduce((max, a) => Math.max(max, a.id), 0) + 1;
+}
+function picInitials(name) {
+  return (name || '')
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0].toUpperCase())
+    .join('') || '?';
+}
 
 function kbNextId() {
   return knowledgeBase.reduce((max, d) => Math.max(max, d.id), 0) + 1;
@@ -851,11 +900,147 @@ function apptCreateFromChat(conv, slot, meetingType) {
   return record;
 }
 
+// =============================================================
+// 2e-bis) INTEGRASI CALENDLY — kalau terhubung (lihat POST /api/calendly/config
+//     di bawah), AI TIDAK LAGI memakai slot internal (apptGetAvailableSlots)
+//     melainkan slot ASLI dari kalender Calendly, dan customer booking lewat
+//     link personal (scheduling link) alih-alih memilih nomor lewat chat.
+//     Appointment hasil booking Calendly masuk otomatis lewat webhook
+//     (POST /api/calendly/webhook di bawah) — lihat apptCreateFromCalendlyBooking.
+// =============================================================
+const CALENDLY_API_BASE = 'https://api.calendly.com';
+
+function calendlyConfigured() {
+  return !!(CALENDLY_ACCESS_TOKEN && CALENDLY_EVENT_TYPE_URI);
+}
+
+// Wrapper fetch ke Calendly API — selalu pakai Bearer token yang tersimpan,
+// dan melempar error dengan pesan yang sudah diekstrak dari body kalau gagal.
+async function calendlyFetch(pathOrUrl, options = {}) {
+  const url = pathOrUrl.startsWith('http') ? pathOrUrl : `${CALENDLY_API_BASE}${pathOrUrl}`;
+  const res = await fetch(url, {
+    ...options,
+    headers: {
+      Authorization: `Bearer ${CALENDLY_ACCESS_TOKEN}`,
+      'Content-Type': 'application/json',
+      ...(options.headers || {}),
+    },
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.message || data.title || `Calendly API error ${res.status}`);
+  }
+  return data;
+}
+
+// Ambil slot kosong ASLI dari Calendly untuk Event Type yang dikonfigurasi.
+// Calendly membatasi rentang query `event_type_available_times` maksimal
+// 7 hari per request, jadi di-loop per "jendela" 6 hari sampai jumlah slot
+// yang diminta terkumpul atau lookaheadDays habis.
+async function calendlyGetAvailableSlots(limit = 3, lookaheadDays = 14) {
+  if (!calendlyConfigured()) return [];
+  const slots = [];
+  const now = new Date();
+  const hardEnd = new Date(now.getTime() + lookaheadDays * 86400000);
+  let windowStart = now;
+
+  while (slots.length < limit && windowStart < hardEnd) {
+    const windowEnd = new Date(Math.min(windowStart.getTime() + 6 * 86400000, hardEnd.getTime()));
+    try {
+      const qs = new URLSearchParams({
+        event_type: CALENDLY_EVENT_TYPE_URI,
+        start_time: windowStart.toISOString(),
+        end_time: windowEnd.toISOString(),
+      });
+      const data = await calendlyFetch(`/event_type_available_times?${qs.toString()}`);
+      for (const s of (data.collection || [])) {
+        if (s.status !== 'available') continue;
+        slots.push({ startTime: s.start_time, schedulingUrl: s.scheduling_url });
+        if (slots.length >= limit) break;
+      }
+    } catch (e) {
+      console.error('[Calendly] Gagal ambil available_times:', e.message);
+      break; // token/Event Type URI kemungkinan invalid — hentikan biar tidak retry percuma
+    }
+    windowStart = new Date(windowEnd.getTime() + 1000);
+  }
+  return slots;
+}
+
+function calendlyFormatSlotLabel(iso) {
+  const d = new Date(iso);
+  const dayName = d.toLocaleDateString('id-ID', { weekday: 'long', timeZone: 'Asia/Jakarta' });
+  const dateLabel = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', timeZone: 'Asia/Jakarta' });
+  const timeLabel = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' });
+  return `${dayName}, ${dateLabel} jam ${timeLabel} WIB`;
+}
+
+// Buat scheduling link personal SEKALI-PAKAI (max_event_count: 1) untuk
+// dikirim ke customer lewat chat — supaya tiap customer dapat link unik
+// dan booking langsung tercatat di Calendly (lalu masuk sistem via webhook).
+async function calendlyCreateSchedulingLink() {
+  const data = await calendlyFetch('/scheduling_links', {
+    method: 'POST',
+    body: JSON.stringify({
+      max_event_count: 1,
+      owner: CALENDLY_EVENT_TYPE_URI,
+      owner_type: 'EventType',
+    }),
+  });
+  return data.resource && data.resource.booking_url;
+}
+
+// Buat appointment dari hasil booking Calendly (dipanggil dari webhook
+// invitee.created). Polanya SENGAJA dibuat semirip mungkin dengan
+// apptCreateFromChat supaya masuk ke aiAppointments yang sama dan otomatis
+// muncul di halaman Appointment lewat mekanisme polling yang sudah ada
+// (apSyncAiAppointments di appointment.js) — tanpa perlu ubah appointment.js.
+function apptCreateFromCalendlyBooking(payload, eventInfo) {
+  const startIso = eventInfo.start_time;
+  const d = new Date(startIso);
+  const dateStr = `${d.getFullYear()}-${apptPad(d.getMonth() + 1)}-${apptPad(d.getDate())}`;
+  const timeStr = `${apptPad(d.getHours())}.${apptPad(d.getMinutes())}`;
+  const locationInfo = eventInfo.location || {};
+
+  const record = {
+    id: `cal-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+    nama: payload.name || '-',
+    company: '-',
+    phone: payload.text_reminder_number || '-',
+    email: payload.email || '',
+    date: dateStr,
+    time: timeStr,
+    duration: APPT_DEFAULT_DURATION,
+    type: 'konsultasi',
+    typeLabel: apptTypeLabel('konsultasi'),
+    sales: APPT_DEFAULT_STAFF,
+    status: 'menunggu',
+    createdBy: 'calendly',
+    location: locationInfo.join_url || locationInfo.location || '',
+    notes: `Dibuat otomatis dari booking Calendly (${payload.email || '-'}).`,
+    aiNote: 'Appointment ini dibuat otomatis lewat link Calendly yang dikirim AI ke customer via chat. Mohon konfirmasi, lengkapi lokasi/link meeting bila belum ada, lalu kirim follow-up.',
+    chatId: null,
+    leadId: null,
+    calendlyEventUri: eventInfo.uri || null,
+    timeline: [
+      { type: 'success', event: 'Customer booking langsung lewat Calendly', sub: calendlyFormatSlotLabel(startIso), time: 'Baru saja' },
+      { type: 'ai', event: 'Appointment otomatis dibuat dari webhook Calendly', sub: `Menunggu konfirmasi admin — PIC sementara: ${APPT_DEFAULT_STAFF}`, time: 'Baru saja' },
+    ],
+  };
+  aiAppointments.push(record);
+  return record;
+}
+
 // Handler utama pesan masuk saat conv.handledBy === 'ai'. Urutan prioritas:
-//  1) Kalau AI baru saja menawarkan slot & customer memilih salah satunya
-//     → buat appointment, balas konfirmasi.
-//  2) Kalau customer terlihat ingin jadwal & belum ada tawaran aktif
-//     → cari slot kosong, tawarkan lewat chat.
+//  1) Kalau AI baru saja menawarkan slot INTERNAL & customer memilih salah
+//     satunya → buat appointment, balas konfirmasi. (Jalur ini otomatis
+//     tidak pernah dipakai kalau Calendly terhubung, lihat poin 2.)
+//  2) Kalau customer terlihat ingin jadwal & belum ada tawaran aktif:
+//     - Calendly terhubung → ambil slot ASLI dari Calendly + kirim link
+//       booking personal (customer booking langsung di halaman Calendly,
+//       appointment masuk otomatis lewat webhook).
+//     - Calendly belum terhubung (atau gagal) → fallback ke slot internal
+//       seperti sebelumnya (customer pilih nomor lewat chat).
 //  3) Selain itu → balasan bebas seperti sebelumnya (tgGenerateReplyWithOllama).
 async function tgHandleMessageAndMaybeSchedule(conv, incomingText) {
   const intent = await classifySchedulingIntent(conv, incomingText, conv.scheduling.offeredSlots);
@@ -871,11 +1056,36 @@ async function tgHandleMessageAndMaybeSchedule(conv, incomingText) {
   }
 
   if (intent.wantsSchedule && conv.scheduling.stage !== 'offered') {
+    const meetingType = intent.meetingTypeGuess;
+    const firstName = (conv.name || '').split(' ')[0] || '';
+
+    // ── Jalur Calendly (slot & booking asli) ──
+    if (calendlyConfigured()) {
+      try {
+        const [slots, bookingUrl] = await Promise.all([
+          calendlyGetAvailableSlots(3),
+          calendlyCreateSchedulingLink(),
+        ]);
+        conv.scheduling = { stage: 'idle', offeredSlots: [], meetingType: null };
+
+        if (bookingUrl) {
+          const previewText = slots.length
+            ? `\n\nBeberapa slot terdekat yang kosong:\n${slots.map((s, i) => `${i + 1}. ${calendlyFormatSlotLabel(s.startTime)}`).join('\n')}`
+            : '';
+          return `Tentu${firstName ? ' ' + firstName : ''}! Silakan pilih & booking jadwal ${apptTypeLabel(meetingType)} langsung lewat link berikut ya:\n${bookingUrl}${previewText}\n\nSetelah Anda booking, jadwalnya otomatis tercatat di sistem kami.`;
+        }
+      } catch (e) {
+        console.error('[Calendly] Gagal membuat link booking, fallback ke slot internal:', e.message);
+        // lanjut ke jalur internal di bawah
+      }
+    }
+
+    // ── Jalur internal (fallback / Calendly belum terhubung) ──
     const slots = apptGetAvailableSlots(3);
     if (slots.length) {
       const listText = slots.map((s, i) => `${i + 1}. ${apptFormatSlotLabel(s)}`).join('\n');
-      conv.scheduling = { stage: 'offered', offeredSlots: slots, meetingType: intent.meetingTypeGuess };
-      return `Tentu! Berikut beberapa slot yang masih kosong untuk ${apptTypeLabel(intent.meetingTypeGuess)}:\n\n${listText}\n\nSilakan balas dengan nomor atau sebutkan jadwal yang Anda pilih ya.`;
+      conv.scheduling = { stage: 'offered', offeredSlots: slots, meetingType };
+      return `Tentu! Berikut beberapa slot yang masih kosong untuk ${apptTypeLabel(meetingType)}:\n\n${listText}\n\nSilakan balas dengan nomor atau sebutkan jadwal yang Anda pilih ya.`;
     }
   }
 
@@ -1287,11 +1497,21 @@ app.post('/api/telegram/conversations/:chatId/takeover', (req, res) => {
   const conv = tgConversations.get(req.params.chatId);
   if (!conv) return res.status(404).json({ ok: false, error: 'Percakapan tidak ditemukan' });
 
-  const { handledBy } = req.body;
+  const { handledBy, picId, picName } = req.body;
   if (!['ai', 'human'].includes(handledBy)) {
     return res.status(400).json({ ok: false, error: 'handledBy harus "ai" atau "human"' });
   }
   conv.handledBy = handledBy;
+  if (handledBy === 'human') {
+    // Simpan siapa PIC yang mengambil alih — dipakai frontend buat label
+    // "Ditangani: <nama PIC>" alih-alih generik "Anda (Manual)".
+    conv.picId = picId || null;
+    conv.picName = picName || null;
+  } else {
+    // Balik ke AI — kosongkan PIC supaya tidak nyangkut dari sesi sebelumnya.
+    conv.picId = null;
+    conv.picName = null;
+  }
   res.json({ ok: true, conversation: conv });
 });
 
@@ -1438,9 +1658,215 @@ app.delete('/api/waba/config', (req, res) => {
   res.json({ ok: true });
 });
 
+// =============================================================
+// 2g) KONFIGURASI CALENDLY — diatur dari halaman Integrasi
+//     (script_page/integrasi.js + calendly-token.js), BUKAN dari .env.
+//     Sejajar dengan blok konfigurasi Telegram/WABA di atas. Helper
+//     calendly* (calendlyGetAvailableSlots, calendlyCreateSchedulingLink,
+//     apptCreateFromCalendlyBooking) ada di bagian 2e-bis, dekat logic
+//     scheduling chat, supaya mudah ditelusuri bersama alurnya.
+// =============================================================
+
+// Cek konfigurasi saat ini (access token tidak pernah dikirim balik utuh, hanya preview).
+app.get('/api/calendly/config', (req, res) => {
+  res.json({
+    ok: true,
+    configured: calendlyConfigured(),
+    tokenPreview: CALENDLY_ACCESS_TOKEN
+      ? `${CALENDLY_ACCESS_TOKEN.slice(0, 6)}••••${CALENDLY_ACCESS_TOKEN.slice(-4)}`
+      : '',
+    eventTypeUri: CALENDLY_EVENT_TYPE_URI,
+    user: calendlyUserInfo,
+  });
+});
+
+// Pasang / ganti kredensial Calendly secara runtime. Dipanggil oleh halaman
+// Integrasi (calendly-token.js → cySyncToBackend) saat user klik "Simpan"
+// pada modal konfigurasi Calendly, atau otomatis saat load kalau token
+// sudah pernah tersimpan di localStorage (cyAutoSyncOnLoad).
+app.post('/api/calendly/config', async (req, res) => {
+  try {
+    const token = String(req.body.token || '').trim();
+    const eventTypeUri = String(req.body.eventTypeUri || '').trim();
+
+    if (!token) {
+      return res.status(400).json({ ok: false, error: 'Personal Access Token tidak boleh kosong' });
+    }
+
+    // Validasi token ke Calendly dulu sebelum dipakai menggantikan yang lama.
+    const meRes = await fetch(`${CALENDLY_API_BASE}/users/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const meData = await meRes.json().catch(() => ({}));
+    if (!meRes.ok || !meData.resource) {
+      return res.status(400).json({ ok: false, error: (meData.message || meData.title) || 'Token tidak valid' });
+    }
+
+    CALENDLY_ACCESS_TOKEN = token;
+    CALENDLY_EVENT_TYPE_URI = eventTypeUri; // boleh kosong, diisi belakangan
+    calendlyUserInfo = {
+      uri: meData.resource.uri,
+      name: meData.resource.name,
+      email: meData.resource.email,
+      organizationUri: meData.resource.current_organization,
+    };
+
+    res.json({ ok: true, user: calendlyUserInfo });
+  } catch (err) {
+    console.error('[Calendly] Gagal menyimpan konfigurasi:', err.message);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// Hapus kredensial Calendly (saat user klik "Hapus Kredensial").
+app.delete('/api/calendly/config', (req, res) => {
+  CALENDLY_ACCESS_TOKEN = '';
+  CALENDLY_EVENT_TYPE_URI = '';
+  calendlyUserInfo = null;
+  res.json({ ok: true });
+});
+
+// Ambil slot kosong ASLI dari Calendly — dipakai kalau ada halaman/tombol
+// di dashboard yang ingin menampilkan preview slot tanpa lewat chat AI.
+app.get('/api/calendly/availability', async (req, res) => {
+  try {
+    if (!calendlyConfigured()) {
+      return res.status(400).json({ ok: false, error: 'Calendly belum dikonfigurasi (token/Event Type URI belum lengkap)' });
+    }
+    const limit = Math.min(Number(req.query.limit) || 5, 20);
+    const slots = await calendlyGetAvailableSlots(limit);
+    res.json({
+      ok: true,
+      slots: slots.map((s) => ({
+        startTime: s.startTime,
+        label: calendlyFormatSlotLabel(s.startTime),
+        schedulingUrl: s.schedulingUrl,
+      })),
+    });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// Webhook Calendly — dipanggil Calendly begitu customer SELESAI booking di
+// halaman scheduling link yang dikirim AI. Event yang diproses: hanya
+// "invitee.created" (booking baru); event lain (mis. invitee.canceled)
+// sengaja dilewati dulu — appointment yang sudah "menunggu" tetap bisa
+// dibatalkan manual dari halaman Appointment.
+//
+// CATATAN: endpoint ini belum verifikasi signature (Calendly-Webhook-Signature).
+// Untuk produksi, sebaiknya tambahkan verifikasi HMAC pakai signing key yang
+// didapat saat membuat webhook subscription (lihat POST .../webhook/register
+// di bawah) — perlu raw body, jadi middleware express.json() perlu diberi
+// opsi `verify` untuk menyimpan rawBody sebelum di-parse.
+app.post('/api/calendly/webhook', (req, res) => {
+  res.sendStatus(200); // ack cepat, Calendly retry kalau lambat/non-200
+
+  try {
+    const { event, payload } = req.body || {};
+    if (event !== 'invitee.created' || !payload) return;
+
+    const eventInfo = payload.scheduled_event || {};
+    if (!eventInfo.start_time) {
+      console.warn('[Calendly] Payload invitee.created tanpa scheduled_event.start_time, dilewati:', JSON.stringify(payload));
+      return;
+    }
+
+    console.log(`[Calendly] Booking baru dari ${payload.email || '-'} untuk ${eventInfo.start_time}`);
+    apptCreateFromCalendlyBooking(payload, eventInfo);
+  } catch (err) {
+    console.error('[Calendly] Gagal proses webhook:', err.message);
+  }
+});
+
+// (Opsional) Daftarkan webhook subscription ke Calendly lewat API — perlu
+// callbackUrl PUBLIK (bukan localhost, mis. lewat ngrok/domain server) yang
+// mengarah ke POST /api/calendly/webhook di atas. Dipanggil manual sekali
+// (mis. lewat Postman/curl) setelah token & Event Type URI tersimpan; TIDAK
+// dipanggil otomatis oleh calendly-token.js karena server dev biasanya jalan
+// di localhost yang tidak bisa dijangkau Calendly.
+app.post('/api/calendly/webhook/register', async (req, res) => {
+  try {
+    if (!calendlyConfigured()) {
+      return res.status(400).json({ ok: false, error: 'Calendly belum dikonfigurasi' });
+    }
+    if (!calendlyUserInfo) {
+      return res.status(400).json({ ok: false, error: 'Info user Calendly belum tersedia — simpan ulang token dulu' });
+    }
+    const callbackUrl = String(req.body.callbackUrl || '').trim();
+    if (!callbackUrl) {
+      return res.status(400).json({ ok: false, error: 'callbackUrl wajib diisi, contoh: https://xxxx.ngrok.io/api/calendly/webhook' });
+    }
+
+    const data = await calendlyFetch('/webhook_subscriptions', {
+      method: 'POST',
+      body: JSON.stringify({
+        url: callbackUrl,
+        events: ['invitee.created'],
+        organization: calendlyUserInfo.organizationUri,
+        user: calendlyUserInfo.uri,
+        scope: 'user',
+      }),
+    });
+    res.json({ ok: true, subscription: data.resource });
+  } catch (err) {
+    console.error('[Calendly] Gagal daftar webhook subscription:', err.message);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
 // ── Endpoint: provider chat aktif (dipakai tombol "Mulai Chat AI" di Leads) ──
 // Mengembalikan provider yang akan dipakai beserta statusnya, sehingga
 // frontend bisa tampilkan label & ikon yang benar tanpa hardcode.
+// =============================================================
+// PIC / AGENT — endpoint dipakai halaman Pengaturan Agent & dropdown
+// "Ambil Alih" di halaman Percakapan.
+// =============================================================
+app.get('/api/agents', (req, res) => {
+  res.json({ ok: true, agents: picAgents });
+});
+
+app.post('/api/agents', (req, res) => {
+  const nama = (req.body.nama || '').trim();
+  const email = (req.body.email || '').trim();
+  const role = req.body.role || 'agent';
+  if (!nama) return res.status(400).json({ ok: false, error: 'Nama wajib diisi' });
+  if (!email) return res.status(400).json({ ok: false, error: 'Email wajib diisi' });
+
+  const agent = {
+    id: picNextId(),
+    nama,
+    email,
+    role,
+    status: 'offline',
+    initials: picInitials(nama),
+    chat: 0,
+  };
+  picAgents.push(agent);
+  picSave();
+  res.json({ ok: true, agent });
+});
+
+app.patch('/api/agents/:id', (req, res) => {
+  const agent = picAgents.find((a) => a.id === Number(req.params.id));
+  if (!agent) return res.status(404).json({ ok: false, error: 'PIC tidak ditemukan' });
+
+  if (req.body.nama !== undefined) { agent.nama = String(req.body.nama).trim(); agent.initials = picInitials(agent.nama); }
+  if (req.body.email !== undefined) agent.email = String(req.body.email).trim();
+  if (req.body.role !== undefined) agent.role = req.body.role;
+  if (req.body.status !== undefined) agent.status = req.body.status;
+  picSave();
+  res.json({ ok: true, agent });
+});
+
+app.delete('/api/agents/:id', (req, res) => {
+  const idx = picAgents.findIndex((a) => a.id === Number(req.params.id));
+  if (idx === -1) return res.status(404).json({ ok: false, error: 'PIC tidak ditemukan' });
+  picAgents.splice(idx, 1);
+  picSave();
+  res.json({ ok: true });
+});
+
 // =============================================================
 // KNOWLEDGE BASE — endpoint dipakai halaman "Knowledge Base"
 // (script_page/knowledge-base.js). Semua dokumen berstatus "aktif" di sini
@@ -1757,11 +2183,18 @@ app.post('/api/waba/conversations/:chatId/takeover', (req, res) => {
   const conv = wabaConversations.get(req.params.chatId);
   if (!conv) return res.status(404).json({ ok: false, error: 'Percakapan tidak ditemukan' });
 
-  const { handledBy } = req.body;
+  const { handledBy, picId, picName } = req.body;
   if (!['ai', 'human'].includes(handledBy)) {
     return res.status(400).json({ ok: false, error: 'handledBy harus "ai" atau "human"' });
   }
   conv.handledBy = handledBy;
+  if (handledBy === 'human') {
+    conv.picId = picId || null;
+    conv.picName = picName || null;
+  } else {
+    conv.picId = null;
+    conv.picName = null;
+  }
   res.json({ ok: true, conversation: conv });
 });
 
@@ -2142,6 +2575,7 @@ app.get('/api/health', async (req, res) => {
     },
     telegram: { configured: !!TELEGRAM_BOT_TOKEN },
     waba: { configured: !!(WABA_ACCESS_TOKEN && WABA_PHONE_NUMBER_ID) },
+    calendly: { configured: calendlyConfigured(), eventTypeUri: CALENDLY_EVENT_TYPE_URI || null },
     knowledgeBase: {
       totalDocs: knowledgeBase.length,
       activeDocs: knowledgeBase.filter((d) => d.status === 'aktif').length,

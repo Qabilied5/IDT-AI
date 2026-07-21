@@ -213,7 +213,7 @@ function apRender() {
   if (pagination) pagination.style.display = 'flex';
 
   tbody.innerHTML = slice.map(r => `
-    <div class="ap-row${apSelectedId === r.id ? ' selected' : ''}" onclick="apSelectRow(${r.id})">
+    <div class="ap-row${String(apSelectedId) === String(r.id) ? ' selected' : ''}" onclick="apSelectRow('${r.id}')">
       <div class="ap-th-check" onclick="event.stopPropagation()">
         <input type="checkbox" />
       </div>
@@ -253,21 +253,21 @@ function apRender() {
       </div>
       <!-- Aksi -->
       <div class="ap-row-actions">
-  <button class="ap-row-btn wa" title="FollowUp" onclick="event.stopPropagation();apQuickWA(${r.id})">
+  <button class="ap-row-btn wa" title="FollowUp" onclick="event.stopPropagation();apQuickWA('${r.id}')">
     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
       <polyline points="13 11 11 11 11 13"/>
     </svg>
   </button>
 
-  <button class="ap-row-btn" title="Edit" onclick="event.stopPropagation();apSelectRow(${r.id});apOpenEdit()">
+  <button class="ap-row-btn" title="Edit" onclick="event.stopPropagation();apSelectRow('${r.id}');apOpenEdit()">
     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
       <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
     </svg>
   </button>
 
-  <button class="ap-row-btn" title="Batalkan" onclick="event.stopPropagation();apSelectRow(${r.id});apOpenCancel()">
+  <button class="ap-row-btn" title="Batalkan" onclick="event.stopPropagation();apSelectRow('${r.id}');apOpenCancel()">
     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
       <line x1="16" y1="2" x2="16" y2="6"/>
@@ -317,7 +317,7 @@ function apSelectRow(id) {
   apSelectedId = id;
   apRender();
 
-  const r = AP_DATA.find(x => x.id === id);
+  const r = AP_DATA.find(x => String(x.id) === String(id));
   if (!r) return;
 
   // show panel
@@ -612,7 +612,7 @@ function apOpenCreate() {
 
 function apOpenEdit() {
   if (!apSelectedId) return;
-  const r = AP_DATA.find(x => x.id === apSelectedId);
+  const r = AP_DATA.find(x => String(x.id) === String(apSelectedId));
   if (!r) return;
   apEditingId = r.id;
 
@@ -669,7 +669,7 @@ function apSaveAppointment() {
   let justCreatedId = null;
 
   if (apEditingId) {
-    const idx = AP_DATA.findIndex(x => x.id === apEditingId);
+    const idx = AP_DATA.findIndex(x => String(x.id) === String(apEditingId));
     if (idx !== -1) {
       Object.assign(AP_DATA[idx], {
         nama, company: document.getElementById('ap-fd-company').value.trim(),
@@ -685,7 +685,13 @@ function apSaveAppointment() {
     }
     apShowToast('success', '<i class="ti ti-check"></i> Appointment berhasil diperbarui.');
   } else {
-    const newId = Math.max(...AP_DATA.map(x => x.id)) + 1;
+    // AP_DATA sekarang bisa berisi ID string dari appointment AI/Calendly
+    // (mis. "ai-...", "cal-...") — Math.max langsung di atasnya akan jadi
+    // NaN, jadi ID non-angka difilter dulu sebelum dicari nilai maksimalnya.
+    const numericIds = AP_DATA
+      .map(x => (typeof x.id === 'number' ? x.id : parseInt(x.id, 10)))
+      .filter(Number.isFinite);
+    const newId = (numericIds.length ? Math.max(...numericIds) : 0) + 1;
     AP_DATA.push({
       id: newId,
       nama, company: document.getElementById('ap-fd-company').value.trim(),
@@ -784,7 +790,7 @@ async function apTriggerAiFollowup(record) {
     const data = await res.json().catch(() => ({}));
     if (!res.ok || data.ok === false) throw new Error(data.error || `Request gagal (${res.status})`);
 
-    const idx = AP_DATA.findIndex(x => x.id === record.id);
+    const idx = AP_DATA.findIndex(x => String(x.id) === String(record.id));
     if (idx !== -1) {
       AP_DATA[idx].timeline.push({
         type: 'ai',
@@ -834,7 +840,7 @@ async function apSyncAiAppointments() {
 
     let hasNew = false;
     (data.appointments || []).forEach((rec) => {
-      const idx = AP_DATA.findIndex((x) => x.id === rec.id);
+      const idx = AP_DATA.findIndex((x) => String(x.id) === String(rec.id));
       if (idx === -1) {
         AP_DATA.unshift({ ...rec, company: rec.company || '-', duration: rec.duration || 60 });
         hasNew = true;
@@ -866,7 +872,7 @@ async function apSyncAiAppointments() {
     }
 
     apRender();
-    if (apSelectedId && AP_DATA.some((x) => x.id === apSelectedId)) apSelectRow(apSelectedId);
+    if (apSelectedId && AP_DATA.some((x) => String(x.id) === String(apSelectedId))) apSelectRow(apSelectedId);
   } catch (err) {
     // Backend belum jalan / belum terhubung — diamkan, halaman tetap
     // pakai data lokal (AP_DATA) seperti biasa.
@@ -884,10 +890,13 @@ function _startApChatSync() {
 // automasi follow-up yang sudah ada (apTriggerAiFollowup).
 async function apConfirmAndFollowup() {
   if (!apSelectedId) return;
-  const r = AP_DATA.find((x) => x.id === apSelectedId);
+  const r = AP_DATA.find((x) => String(x.id) === String(apSelectedId));
   if (!r) return;
 
-  if (typeof r.id === 'string' && r.id.startsWith('ai-')) {
+  // ID string ('ai-...' dari Telegram, 'cal-...' dari Calendly) berarti
+  // appointment ini lahir di server (aiAppointments), jadi statusnya perlu
+  // disinkronkan balik ke sana. ID angka = appointment manual, murni lokal.
+  if (typeof r.id === 'string') {
     try {
       await fetch(`${AP_FOLLOWUP_API_BASE}/api/appointments/${r.id}/confirm`, { method: 'POST' });
     } catch (err) {
@@ -908,7 +917,7 @@ async function apConfirmAndFollowup() {
 /* ── 8. MODAL: CANCEL ─────────────────────────────────────────── */
 function apOpenCancel() {
   if (!apSelectedId) return;
-  const r = AP_DATA.find(x => x.id === apSelectedId);
+  const r = AP_DATA.find(x => String(x.id) === String(apSelectedId));
   if (!r) return;
   document.getElementById('ap-cancel-name').textContent = r.nama;
   document.getElementById('ap-cancel-reason').value = '';
@@ -922,7 +931,7 @@ function apCloseCancel() {
 
 function apConfirmCancel() {
   if (!apSelectedId) return;
-  const idx = AP_DATA.findIndex(x => x.id === apSelectedId);
+  const idx = AP_DATA.findIndex(x => String(x.id) === String(apSelectedId));
   if (idx !== -1) {
     AP_DATA[idx].status = 'dibatalkan';
     AP_DATA[idx].timeline.push({ type: 'system', event: 'Appointment dibatalkan', sub: document.getElementById('ap-cancel-reason').value || '', time: 'Baru saja' });
@@ -961,7 +970,7 @@ function apSendWA() {
 }
 
 function apQuickWA(id) {
-  const r = AP_DATA.find(x => x.id === id);
+  const r = AP_DATA.find(x => String(x.id) === String(id));
   if (!r) return;
   const msg = `Halo ${r.nama}, kami ingin mengingatkan jadwal meeting Anda pada ${apFormatDate(r.date)} pukul ${r.time} WIB. Sampai jumpa! 🤝`;
   window.open(`https://wa.me/62${r.phone.replace(/^0/, '')}?text=${encodeURIComponent(msg)}`, '_blank');

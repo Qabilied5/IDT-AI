@@ -87,7 +87,7 @@ function _toContactShape(conv) {
     avClass: meta.avClass,
     status: 'online',
     handledBy: conv.handledBy,
-    agentLabel: conv.handledBy === 'human' ? 'Anda (Manual)' : 'Agent AI',
+    agentLabel: conv.handledBy === 'human' ? (conv.picName || 'Belum ditentukan') : 'Agent AI',
     activeSince: pcTimeLabel((conv.messages && conv.messages[0] && conv.messages[0].time) || conv.lastMessageTime),
     msgCount: (conv.messages && conv.messages.length) || 0,
     badges: [],
@@ -565,26 +565,111 @@ document.getElementById('pc-channel-select')?.addEventListener('change', functio
 });
 
 // ── HUMAN TAKEOVER ────────────────────────────────────────────────
+// Ambil alih (AI → human) sekarang WAJIB pilih PIC dulu lewat modal kecil,
+// supaya tercatat siapa yang menangani percakapan ini (bukan cuma label
+// generik "Anda"). Kembalikan ke AI (human → ai) tidak perlu pilih PIC,
+// langsung jalan seperti biasa.
 async function toggleTakeover() {
   if (!_activeContactId) return;
-  const { provider, chatId } = pcSplitId(_activeContactId);
   const current = _conversationsCache[_activeContactId];
-  const newHandledBy = current && current.handledBy === 'human' ? 'ai' : 'human';
+  const goingToHuman = !(current && current.handledBy === 'human');
+
+  if (goingToHuman) {
+    pcOpenPicPicker();
+  } else {
+    await pcApplyTakeover('ai', null, null);
+  }
+}
+
+async function pcApplyTakeover(handledBy, picId, picName) {
+  if (!_activeContactId) return;
+  const { provider, chatId } = pcSplitId(_activeContactId);
   try {
     const data = await pcFetch(`${pcApiBase(provider)}/conversations/${chatId}/takeover`, {
       method: 'POST',
-      body: JSON.stringify({ handledBy: newHandledBy }),
+      body: JSON.stringify({ handledBy, picId, picName }),
     });
     data.conversation.provider = provider;
     _conversationsCache[_activeContactId] = data.conversation;
     const c = _toContactShape(data.conversation);
     _updatePcDetail(c, false);
     _updateColRight(c);
-    showToast(newHandledBy === 'human' ? '✓ Percakapan dialihkan ke Anda' : '✓ Percakapan dikembalikan ke AI');
+    showToast(handledBy === 'human' ? `✓ Percakapan dialihkan ke ${picName}` : '✓ Percakapan dikembalikan ke AI');
     _loadPcList();
   } catch (err) {
     showToast('⚠ Gagal mengubah status: ' + err.message);
   }
+}
+
+// ── MODAL PILIH PIC (dibuat dinamis via JS, tanpa perlu ubah index.html) ──
+async function pcOpenPicPicker() {
+  let overlay = document.getElementById('pc-modal-pic-picker');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'pc-modal-pic-picker';
+    overlay.className = 'pc-modal-overlay';
+    overlay.onclick = (e) => { if (e.target === overlay) overlay.style.display = 'none'; };
+    overlay.innerHTML = `
+      <div class="pc-modal" style="max-width:380px">
+        <div class="pc-modal-header">
+          <div class="pc-modal-title"><i class="ti ti-transfer" style="color:var(--red)"></i> Ambil Alih Percakapan</div>
+          <button class="pc-modal-close" onclick="document.getElementById('pc-modal-pic-picker').style.display='none'"><i class="ti ti-x"></i></button>
+        </div>
+        <div class="pc-modal-body">
+          <label class="pc-field-label">Diambil alih oleh PIC</label>
+          <select class="pc-field-input" id="pc-pic-select"></select>
+          <div id="pc-pic-empty-hint" style="display:none;font-size:11px;color:var(--gray-400);margin-top:6px">
+            Belum ada PIC terdaftar. Tambahkan dulu lewat halaman <strong>Pengaturan Agent</strong>.
+          </div>
+        </div>
+        <div class="pc-modal-footer">
+          <button class="pc-btn-ghost" onclick="document.getElementById('pc-modal-pic-picker').style.display='none'">Batal</button>
+          <button class="pc-btn-primary" id="pc-pic-confirm-btn" onclick="pcConfirmPicPicker()">
+            <i class="ti ti-check"></i> Ambil Alih
+          </button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+  }
+
+  overlay.style.display = 'flex';
+  const select = document.getElementById('pc-pic-select');
+  const emptyHint = document.getElementById('pc-pic-empty-hint');
+  const confirmBtn = document.getElementById('pc-pic-confirm-btn');
+  select.innerHTML = '<option>Memuat daftar PIC…</option>';
+  select.disabled = true;
+  confirmBtn.disabled = true;
+
+  try {
+    const data = await pcFetch('/api/agents');
+    const agents = data.agents || [];
+    if (!agents.length) {
+      select.innerHTML = '';
+      select.disabled = true;
+      emptyHint.style.display = 'block';
+      confirmBtn.disabled = true;
+    } else {
+      select.innerHTML = agents.map((a) => `<option value="${a.id}" data-name="${pcEscape(a.nama)}">${pcEscape(a.nama)} — ${pcEscape(a.email)}</option>`).join('');
+      select.disabled = false;
+      emptyHint.style.display = 'none';
+      confirmBtn.disabled = false;
+    }
+  } catch (err) {
+    select.innerHTML = '';
+    emptyHint.textContent = 'Gagal memuat daftar PIC: ' + err.message;
+    emptyHint.style.display = 'block';
+    confirmBtn.disabled = true;
+  }
+}
+
+async function pcConfirmPicPicker() {
+  const select = document.getElementById('pc-pic-select');
+  if (!select || !select.value) return;
+  const picId = Number(select.value);
+  const picName = select.options[select.selectedIndex].dataset.name;
+
+  document.getElementById('pc-modal-pic-picker').style.display = 'none';
+  await pcApplyTakeover('human', picId, picName);
 }
 
 // ── TOGGLE AI (tombol kecil di input area — pakai status yang sama dengan takeover) ──
@@ -627,11 +712,24 @@ function sendFollowup() { showToast('✓ Pengingat follow-up dijadwalkan dalam 2
 function checkStock() { showToast('↗ Mengecek stok...'); }
 
 // ── KIRIM PESAN MANUAL (dikirim beneran ke Telegram atau WhatsApp) ────
+// Ambil nama depan PIC yang sedang menangani percakapan aktif (kalau ada),
+// dipakai buat tanda tangan otomatis "-Nama" di setiap pesan manual.
+function pcActivePicFirstName() {
+  const conv = _conversationsCache[_activeContactId];
+  if (!conv || conv.handledBy !== 'human' || !conv.picName) return null;
+  return String(conv.picName).trim().split(' ')[0];
+}
+
 async function sendMsg() {
   const input = document.getElementById('pc-msg-input');
-  const text = input.value.trim();
-  if (!text || !_activeContactId) return;
+  const rawText = input.value.trim();
+  if (!rawText || !_activeContactId) return;
   input.value = '';
+
+  // Tanda tangan otomatis "-Nama depan PIC" — cuma disisipkan kalau percakapan
+  // ini sedang ditangani manual oleh PIC tertentu (bukan mode AI).
+  const picFirstName = pcActivePicFirstName();
+  const text = picFirstName ? `${rawText}\n-${picFirstName}` : rawText;
 
   const { provider, chatId } = pcSplitId(_activeContactId);
   const channelLabel = pcChannelMeta(provider).label;
