@@ -547,8 +547,8 @@ async function wabaSendCtaUrl(to, bodyText, buttonLabel, url) {
 }
 
 // Dispatcher generik: terima `options` generik ({id,label,url?}) dari sistem
-// penjadwalan (schedBuildRangeQuestion / schedBuildSlotOffer / schedConfirmPick)
-// dan pilih jenis pesan WhatsApp yang paling sesuai secara otomatis.
+// penjadwalan (schedBuildRangeQuestion / schedBuildDateOffer / schedBuildTimeOffer /
+// schedConfirmTime) dan pilih jenis pesan WhatsApp yang paling sesuai secara otomatis.
 async function wabaSendOfferMessage(to, text, options) {
   if (!options || !options.length) return sendViaWaba(to, text);
 
@@ -568,7 +568,7 @@ async function wabaSendOfferMessage(to, text, options) {
 // Ubah `options` generik jadi teks polos bernomor — dipakai sebagai FALLBACK
 // kalau pesan interactive (button/list) gagal terkirim, supaya customer tetap
 // bisa memilih dengan cara mengetik angka (ditangani classifySchedulingIntent
-// yang sudah bisa baca jawaban ketikan bebas di stage 'offered'/'awaiting_range').
+// yang sudah bisa baca jawaban ketikan bebas di stage 'awaiting_date'/'awaiting_time'/'awaiting_range').
 function schedOptionsToPlainText(text, options) {
   if (!options || !options.length) return text;
   const lines = options.map((o, i) => `${i + 1}. ${o.label}${o.url ? `\n   ${o.url}` : ''}`);
@@ -794,7 +794,7 @@ async function tgProcessMessage(message) {
   // State penjadwalan per-percakapan — dipakai fitur "AI tawarkan slot kosong"
   // di bawah (lihat blok 2e). idle = belum ada tawaran aktif, offered = AI baru
   // saja menawarkan slot dan sedang menunggu customer memilih salah satunya.
-  if (!conv.scheduling) conv.scheduling = { stage: 'idle', offeredSlots: [], meetingType: null };
+  if (!conv.scheduling || !conv.scheduling.offeredDates) conv.scheduling = schedFreshState();
 
   const incomingTime = message.date ? message.date * 1000 : Date.now();
   const incomingMsg = {
@@ -833,9 +833,10 @@ async function tgProcessMessage(message) {
 
 // Ditangani terpisah dari tgProcessMessage (pesan teks biasa) karena bentuk
 // payload-nya beda: update.callback_query, bukan update.message. Dipicu saat
-// customer memencet tombol "Minggu Ini/Depan" atau tombol pilih slot internal
-// (id "range:*" / "pick:*", lihat schedResolveButtonId). Untuk slot Calendly,
-// tombolnya berupa URL langsung ke Calendly jadi TIDAK lewat sini sama sekali.
+// customer memencet tombol "Minggu Ini/Depan", tombol pilih tanggal, atau
+// tombol pilih jam (id "range:*" / "date:*" / "time:*", lihat
+// schedResolveButtonId). Untuk link booking final Calendly, tombolnya berupa
+// URL langsung ke Calendly jadi TIDAK lewat sini sama sekali.
 async function tgProcessCallbackQuery(callbackQuery) {
   const dataId = callbackQuery.data || '';
   await tgAnswerCallbackQuery(callbackQuery.id); // wajib, biar tombol berhenti "loading" di HP customer
@@ -943,11 +944,17 @@ async function startTelegramPolling() {
 //     appointment masuk ke halaman Appointment → admin klik tombol
 //     "Konfirmasi & Follow-up" → automasi follow-up (endpoint 5b di bawah).
 // =============================================================
-const APPT_BUSINESS_HOURS = { startHour: 8, endHour: 17 }; // jam kerja 08.00–17.00 WIB
-const APPT_LUNCH_BREAK = { startHour: 12, endHour: 13 }; // jam istirahat 12.00–13.00, TIDAK ditawarkan sbg slot
 const APPT_WORKING_DAYS = [1, 2, 3, 4, 5, 6]; // Senin–Sabtu (0=Minggu, 6=Sabtu) — Minggu libur
-const APPT_SLOT_STEP_HOURS = 1; // 1 slot = 1 jam (selaras dengan APPT_DEFAULT_DURATION 60 menit)
-const APPT_DEFAULT_DURATION = 60;
+// Jam kerja sekarang dibagi jadi 4 jendela tetap per hari (bukan lagi loop
+// per-jam) — dipakai sebagai daftar JAM yang ditawarkan setelah customer
+// memilih TANGGAL (lihat alur baru: pilih minggu → pilih tanggal → pilih jam).
+const APPT_TIME_SLOTS = [
+  { start: '08.00', end: '09.30' },
+  { start: '10.00', end: '11.30' },
+  { start: '13.00', end: '14.30' },
+  { start: '15.00', end: '16.30' },
+];
+const APPT_DEFAULT_DURATION = 90; // menit — selaras dengan lebar tiap jendela di APPT_TIME_SLOTS
 // Server tidak tahu daftar staff (itu konfigurasi frontend di appointment.js
 // / SELLER_CONFIG.staffList) — pakai fallback yang bisa dioverride lewat .env
 // (APPT_DEFAULT_STAFF=Nama Staff), admin tetap bisa ganti PIC saat konfirmasi.
@@ -976,48 +983,76 @@ function apptIsSlotTaken(dateStr, timeStr) {
   return aiAppointments.some((a) => a.date === dateStr && a.time === timeStr && a.status !== 'dibatalkan');
 }
 
-// Cari N slot kosong terdekat dalam jam kerja, lewati slot yang sudah
-// terisi oleh appointment (hasil AI) lain. Catatan: ini hanya mengecek
-// terhadap appointment yang dibuat lewat chat (aiAppointments) karena
-// appointment manual (AP_DATA) saat ini masih tersimpan di sisi frontend
-// dan belum dikirim ke server — lihat catatan di README/summary.
-function apptGetAvailableSlots(limit = 3, lookaheadDays = 10) {
-  const now = new Date();
-  return apptGetAvailableSlotsInRange(limit, now, new Date(now.getTime() + lookaheadDays * 86400000));
+// Jam yang sudah lewat HARI INI dianggap penuh — bandingkan jam MULAI jendela
+// (slot.start, format "HH.MM") dengan jam:menit sekarang.
+function apptTimeSlotIsPast(now, timeSlot) {
+  const [h, m] = timeSlot.start.split('.').map(Number);
+  const slotMinutes = h * 60 + (m || 0);
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  return slotMinutes <= nowMinutes;
 }
 
-// Versi generik dibatasi rentang tanggal [startDate, endDate] eksplisit —
-// dipakai supaya AI bisa menawarkan slot HANYA di "minggu ini" atau "minggu
-// depan" (lihat schedWeekRange), bukan asal N hari ke depan dari sekarang.
-function apptGetAvailableSlotsInRange(limit, startDate, endDate) {
-  const slots = [];
+// Cek apakah tanggal tsb masih punya minimal 1 dari 4 jendela jam
+// (APPT_TIME_SLOTS) yang kosong & belum lewat waktu (kalau harinya hari ini).
+function apptDateHasOpenSlot(dateStr, isToday, now) {
+  return APPT_TIME_SLOTS.some((ts) => {
+    if (isToday && apptTimeSlotIsPast(now, ts)) return false;
+    return !apptIsSlotTaken(dateStr, ts.start);
+  });
+}
+
+// Daftar TANGGAL (bukan jam) yang masih ada slot kosong di rentang
+// [startDate, endDate] — dipakai utk langkah 2 alur baru (pilih minggu →
+// PILIH TANGGAL → pilih jam). Hanya hari kerja (Senin–Sabtu, Minggu libur)
+// dan tanggal hari ini dihitung mulai dari SEKARANG (bukan dari jam 00.00),
+// bukan dibatasi 3 seperti sebelumnya — semua hari kerja yang masih kosong
+// dalam rentang tsb ditawarkan (maks 6 hari/minggu karena Minggu libur).
+function apptGetAvailableDatesInRange(startDate, endDate) {
+  const dates = [];
   const now = new Date();
   let cursor = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
   const endDay = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
 
-  while (cursor <= endDay && slots.length < limit) {
+  while (cursor <= endDay) {
     if (APPT_WORKING_DAYS.includes(cursor.getDay())) {
       const isToday = cursor.toDateString() === now.toDateString();
       const dateStr = `${cursor.getFullYear()}-${apptPad(cursor.getMonth() + 1)}-${apptPad(cursor.getDate())}`;
-      for (let h = APPT_BUSINESS_HOURS.startHour; h < APPT_BUSINESS_HOURS.endHour; h += APPT_SLOT_STEP_HOURS) {
-        if (h >= APPT_LUNCH_BREAK.startHour && h < APPT_LUNCH_BREAK.endHour) continue; // lewati jam istirahat
-        if (isToday && h <= now.getHours()) continue; // lewati jam yang sudah lewat hari ini
-        const timeStr = `${apptPad(h)}.00`;
-        if (apptIsSlotTaken(dateStr, timeStr)) continue;
-        slots.push({ date: dateStr, time: timeStr });
-        break; // ambil SATU slot (jam paling awal yang kosong) per hari, lalu lanjut ke hari berikutnya — supaya tawaran menyebar ke beberapa hari, bukan numpuk di 1 hari
+      if (apptDateHasOpenSlot(dateStr, isToday, now)) {
+        dates.push({ date: dateStr, source: 'internal' });
       }
     }
     cursor = new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate() + 1);
   }
-  return slots;
+  return dates;
 }
 
-function apptFormatSlotLabel(slot) {
-  const d = new Date(slot.date + 'T00:00:00');
+// Daftar JAM (dari APPT_TIME_SLOTS) yang masih kosong untuk SATU tanggal
+// tertentu — dipakai utk langkah 3 alur baru (setelah customer memilih
+// tanggal, tawarkan jam-jam yang tersedia di tanggal itu).
+function apptGetAvailableTimesForDate(dateStr) {
+  const now = new Date();
+  const isToday = new Date(dateStr + 'T00:00:00').toDateString() === now.toDateString();
+  return APPT_TIME_SLOTS.filter((ts) => {
+    if (isToday && apptTimeSlotIsPast(now, ts)) return false;
+    return !apptIsSlotTaken(dateStr, ts.start);
+  }).map((ts) => ({ date: dateStr, time: ts.start, endTime: ts.end, source: 'internal' }));
+}
+
+function apptFormatDateLabel(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00');
   const dayName = d.toLocaleDateString('id-ID', { weekday: 'long' });
   const dateLabel = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long' });
-  return `${dayName}, ${dateLabel} jam ${slot.time} WIB`;
+  return `${dayName}, ${dateLabel}`;
+}
+
+function apptFormatTimeLabel(slot) {
+  return `${slot.time} - ${slot.endTime} WIB`;
+}
+
+// Label lengkap (tanggal + jam) — dipakai di catatan/timeline appointment
+// setelah customer selesai memilih tanggal DAN jam.
+function apptFormatSlotLabel(slot) {
+  return `${apptFormatDateLabel(slot.date)} jam ${slot.time} WIB`;
 }
 
 // ── KLASIFIKASI NIAT PENJADWALAN VIA OLLAMA ───────────────────────
@@ -1025,35 +1060,38 @@ function apptFormatSlotLabel(slot) {
 // mendeteksi: (1) apakah customer ingin membuat janji temu, dan (2) kalau
 // sebelumnya AI sudah menawarkan slot, apakah pesan ini adalah pilihan
 // customer atas salah satu slot tsb.
-function buildSchedulingIntentPrompt(conv, incomingText, offeredSlots) {
+// `offeredLabels` adalah array STRING (bukan objek slot) — dipakai generik
+// baik saat stage 'awaiting_date' (daftar tanggal) maupun 'awaiting_time'
+// (daftar jam), supaya fungsi ini tidak perlu tahu bentuk objek slotnya.
+function buildSchedulingIntentPrompt(conv, incomingText, offeredLabels) {
   const roleLabel = { in: 'Customer', ai: 'AI', human: 'Agent' };
   const historyText = conv.messages
     .slice(-6)
     .map((m) => `${roleLabel[m.dir === 'in' ? 'in' : m.from]}: ${m.text}`)
     .join('\n');
-  const slotListText = offeredSlots.length
-    ? offeredSlots.map((s, i) => `${i + 1}. ${schedFormatSlotLabel(s)}`).join('\n')
-    : '(belum ada slot yang ditawarkan sebelumnya)';
+  const slotListText = offeredLabels.length
+    ? offeredLabels.map((label, i) => `${i + 1}. ${label}`).join('\n')
+    : '(belum ada pilihan yang ditawarkan sebelumnya)';
 
   return `Kamu adalah sistem klasifikasi niat (intent classifier) untuk chat sales B2B Indonesia.
 Analisa pesan customer di bawah ini dan balas HANYA dengan JSON valid, tanpa markdown fence, tanpa teks lain di luar JSON.
 
 ${historyText ? `Riwayat percakapan terakhir:\n${historyText}\n\n` : ''}Pesan baru dari customer: "${incomingText}"
 
-Slot jadwal yang SUDAH ditawarkan AI ke customer sebelumnya (kalau ada):
+Pilihan yang SUDAH ditawarkan AI ke customer sebelumnya (kalau ada):
 ${slotListText}
 
 Tentukan:
 1. "wants_schedule": true jika customer terlihat ingin menjadwalkan/mengatur pertemuan, demo, konsultasi, atau meeting (baik diminta eksplisit maupun tersirat, mis. "boleh dijadwalkan demo?", "kapan bisa ketemu tim-nya?", "mau konsultasi kak"). false kalau bukan soal jadwal.
-2. "picks_slot_index": HANYA isi kalau daftar slot di atas TIDAK kosong DAN pesan customer terlihat memilih salah satu slot tsb (lewat nomor, hari, atau jam yang disebut). Isi dengan nomor urut slot (1, 2, dst sesuai daftar). Kalau tidak relevan, isi null.
+2. "picks_slot_index": HANYA isi kalau daftar pilihan di atas TIDAK kosong DAN pesan customer terlihat memilih salah satu pilihan tsb (lewat nomor, hari, atau jam yang disebut). Isi dengan nomor urut pilihan (1, 2, dst sesuai daftar). Kalau tidak relevan, isi null.
 3. "meeting_type_guess": salah satu dari "demo", "konsultasi", "negosiasi", "onboarding", "lainnya" — tebakan jenis pertemuan dari konteks percakapan. Default "konsultasi" kalau tidak jelas.
 
 Balas HANYA dengan JSON persis format ini (tanpa teks tambahan apapun):
 {"wants_schedule": true|false, "picks_slot_index": null|1|2|3, "meeting_type_guess": "..."}`;
 }
 
-async function classifySchedulingIntent(conv, incomingText, offeredSlots) {
-  const prompt = buildSchedulingIntentPrompt(conv, incomingText, offeredSlots);
+async function classifySchedulingIntent(conv, incomingText, offeredLabels) {
+  const prompt = buildSchedulingIntentPrompt(conv, incomingText, offeredLabels);
   try {
     const res = await fetch(`${OLLAMA_BASE_URL}/api/generate`, {
       method: 'POST',
@@ -1107,8 +1145,8 @@ function apptCreateFromChat(conv, slot, meetingType) {
     chatId: conv.chatId,
     leadId: null,
     timeline: [
-      { type: 'ai', event: 'AI menawarkan slot jadwal', sub: `Menawarkan ${conv.scheduling.offeredSlots.length} slot kosong via Telegram`, time: 'Baru saja' },
-      { type: 'success', event: 'Customer memilih slot', sub: apptFormatSlotLabel(slot), time: 'Baru saja' },
+      { type: 'ai', event: 'AI menawarkan jam jadwal', sub: `Menawarkan ${conv.scheduling.offeredTimes.length} jam kosong via Telegram`, time: 'Baru saja' },
+      { type: 'success', event: 'Customer memilih jadwal', sub: apptFormatSlotLabel(slot), time: 'Baru saja' },
       { type: 'ai', event: 'AI membuat appointment otomatis', sub: `Menunggu konfirmasi admin — PIC sementara: ${APPT_DEFAULT_STAFF}`, time: 'Baru saja' },
     ],
   };
@@ -1205,6 +1243,80 @@ function calendlyFormatSlotLabel(iso) {
   return `${dayName}, ${dateLabel} jam ${timeLabel} WIB`;
 }
 
+function calendlyFormatDateLabel(iso) {
+  const d = new Date(iso);
+  const dayName = d.toLocaleDateString('id-ID', { weekday: 'long', timeZone: 'Asia/Jakarta' });
+  const dateLabel = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', timeZone: 'Asia/Jakarta' });
+  return `${dayName}, ${dateLabel}`;
+}
+
+function calendlyFormatTimeLabel(iso) {
+  const d = new Date(iso);
+  return `${d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' })} WIB`;
+}
+
+// Tanggal (YYYY-MM-DD, mengikuti WIB/Asia-Jakarta) dari 1 ISO timestamp —
+// dipakai utk mengelompokkan available_times Calendly per hari.
+function calendlyDateKey(iso) {
+  return new Date(iso).toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' });
+}
+
+// Daftar TANGGAL (bukan jam) yang punya minimal 1 available time di Calendly
+// dalam rentang [startDate, endDate] — dipakai utk langkah 2 alur baru (pilih
+// minggu → PILIH TANGGAL → pilih jam). Minggu (Sunday) selalu dikecualikan
+// sesuai aturan bisnis (Senin–Sabtu saja), terlepas dari pengaturan
+// availability di sisi Calendly.
+async function calendlyGetAvailableDatesInRange(startDate, endDate) {
+  if (!calendlyConfigured()) return [];
+  const seenDates = new Set();
+  let windowStart = startDate;
+
+  while (windowStart < endDate) {
+    const windowEnd = new Date(Math.min(windowStart.getTime() + 6 * 86400000, endDate.getTime()));
+    try {
+      const qs = new URLSearchParams({
+        event_type: CALENDLY_EVENT_TYPE_URI,
+        start_time: windowStart.toISOString(),
+        end_time: windowEnd.toISOString(),
+      });
+      const data = await calendlyFetch(`/event_type_available_times?${qs.toString()}`);
+      for (const s of (data.collection || [])) {
+        if (s.status !== 'available') continue;
+        const d = new Date(s.start_time);
+        if (d.getDay() === 0) continue; // Minggu libur, tidak ditawarkan
+        seenDates.add(calendlyDateKey(s.start_time));
+      }
+    } catch (e) {
+      console.error('[Calendly] Gagal ambil tanggal available_times:', e.message);
+      break;
+    }
+    windowStart = new Date(windowEnd.getTime() + 1000);
+  }
+  return [...seenDates].sort().map((date) => ({ date, source: 'calendly' }));
+}
+
+// Daftar JAM (available times ASLI dari Calendly) utk SATU tanggal tertentu —
+// dipakai utk langkah 3 alur baru, setelah customer memilih tanggal.
+async function calendlyGetAvailableTimesForDate(dateStr) {
+  if (!calendlyConfigured()) return [];
+  try {
+    const startOfDay = new Date(`${dateStr}T00:00:00+07:00`);
+    const endOfDay = new Date(`${dateStr}T23:59:59+07:00`);
+    const qs = new URLSearchParams({
+      event_type: CALENDLY_EVENT_TYPE_URI,
+      start_time: startOfDay.toISOString(),
+      end_time: endOfDay.toISOString(),
+    });
+    const data = await calendlyFetch(`/event_type_available_times?${qs.toString()}`);
+    return (data.collection || [])
+      .filter((s) => s.status === 'available')
+      .map((s) => ({ date: dateStr, startTime: s.start_time, schedulingUrl: s.scheduling_url, source: 'calendly' }));
+  } catch (e) {
+    console.error('[Calendly] Gagal ambil jam available_times utk tanggal:', e.message);
+    return [];
+  }
+}
+
 // Buat scheduling link personal SEKALI-PAKAI (max_event_count: 1) untuk
 // dikirim ke customer lewat chat — supaya tiap customer dapat link unik
 // dan booking langsung tercatat di Calendly (lalu masuk sistem via webhook).
@@ -1263,37 +1375,57 @@ function apptCreateFromCalendlyBooking(payload, eventInfo) {
 
 // =============================================================
 // SISTEM PENJADWALAN GENERIK — dipakai bersama oleh Telegram & WhatsApp.
-// Alurnya sekarang 2 langkah supaya daftar tombol tidak kepanjangan:
+// Alurnya SEKARANG 3 langkah (sebelumnya 2 langkah dengan tanggal+jam
+// digabung jadi 1 tombol, yang bikin daftarnya kepanjangan & jamnya tidak
+// konsisten dgn jam kerja bisnis):
 //   1) Customer terlihat ingin jadwal → AI tanya dulu: "minggu ini atau
 //      minggu depan?" (cuma 2 tombol, conv.scheduling.stage = 'awaiting_range')
-//   2) Setelah rentang dipilih → AI ambil MAKS 3 slot kosong di rentang itu
-//      (dari Calendly kalau terhubung, atau slot internal sebagai fallback)
-//      dan tawarkan sebagai tombol pilihan (stage = 'offered').
+//   2) Setelah rentang dipilih → AI tawarkan daftar TANGGAL kosong (Senin–
+//      Sabtu saja, Minggu libur; mulai dari HARI INI kalau "minggu ini") di
+//      rentang tsb — TANPA jam (stage = 'awaiting_date').
+//   3) Setelah tanggal dipilih → AI tawarkan daftar JAM kosong utk tanggal
+//      itu (4 jendela tetap: 08.00-09.30 / 10.00-11.30 / 13.00-14.30 /
+//      15.00-16.30 — atau jam ASLI dari Calendly kalau terhubung) (stage =
+//      'awaiting_time').
+//   4) Setelah jam dipilih → appointment otomatis dibuat (atau, khusus
+//      Calendly, dikirim SATU tombol link booking final).
 // Representasi tombol dibuat GENERIK ({id, label, url?}) supaya bisa
 // diterjemahkan ke format Telegram (inline keyboard) maupun WhatsApp
 // (reply buttons / list / cta_url) tanpa duplikasi logic penjadwalan.
 // =============================================================
 
-// Label tampilan untuk 1 slot, apapun sumbernya (internal atau Calendly).
-function schedFormatSlotLabel(slot) {
-  return slot.source === 'calendly' ? calendlyFormatSlotLabel(slot.startTime) : apptFormatSlotLabel(slot);
+function schedFreshState() {
+  return { stage: 'idle', offeredDates: [], offeredTimes: [], meetingType: null, rangeKey: null };
 }
 
-// Rentang tanggal [start, end] untuk "minggu ini" (dari sekarang s.d. Minggu
-// pekan ini) atau "minggu depan" (Senin s.d. Minggu pekan berikutnya).
+// Label tampilan TANGGAL saja (tanpa jam) — sama untuk sumber internal
+// maupun Calendly, karena keduanya sama-sama menyimpan `date` sbg
+// string YYYY-MM-DD.
+function schedFormatDateLabel(item) {
+  return apptFormatDateLabel(item.date);
+}
+
+// Label tampilan JAM saja utk 1 pilihan waktu, apapun sumbernya.
+function schedFormatTimeLabel(slot) {
+  return slot.source === 'calendly' ? calendlyFormatTimeLabel(slot.startTime) : apptFormatTimeLabel(slot);
+}
+
+// Rentang tanggal [start, end] untuk "minggu ini" (dari sekarang s.d. Sabtu
+// pekan ini — Minggu tidak perlu ditampilkan) atau "minggu depan" (Senin s.d.
+// Sabtu pekan berikutnya).
 function schedWeekRange(rangeKey) {
   const now = new Date();
   const day = now.getDay(); // 0 = Minggu .. 6 = Sabtu
   const mondayOffset = day === 0 ? -6 : 1 - day;
   const thisMonday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + mondayOffset);
+  const thisSaturday = new Date(thisMonday.getFullYear(), thisMonday.getMonth(), thisMonday.getDate() + 5, 23, 59, 59);
 
   if (rangeKey === 'next_week') {
     const nextMonday = new Date(thisMonday.getFullYear(), thisMonday.getMonth(), thisMonday.getDate() + 7);
-    const nextSunday = new Date(nextMonday.getFullYear(), nextMonday.getMonth(), nextMonday.getDate() + 6, 23, 59, 59);
-    return { start: nextMonday, end: nextSunday, label: 'minggu depan' };
+    const nextSaturday = new Date(nextMonday.getFullYear(), nextMonday.getMonth(), nextMonday.getDate() + 5, 23, 59, 59);
+    return { start: nextMonday, end: nextSaturday, label: 'minggu depan' };
   }
-  const thisSunday = new Date(thisMonday.getFullYear(), thisMonday.getMonth(), thisMonday.getDate() + 6, 23, 59, 59);
-  return { start: now, end: thisSunday, label: 'minggu ini' };
+  return { start: now, end: thisSaturday, label: 'minggu ini' };
 }
 
 // Interpretasi jawaban customer yang MENGETIK (bukan pencet tombol) saat
@@ -1314,107 +1446,164 @@ function schedBuildRangeQuestion(meetingType) {
   };
 }
 
-// Ambil MAKS 3 slot kosong di rentang [start, end] yang dipilih customer, lalu
-// bungkus jadi { text, options, offeredSlots } siap dikirim. Prioritas ambil
-// dari Calendly (kalau terhubung) — TIDAK fallback ke slot internal saat
-// Calendly terhubung tapi kosong di rentang itu, supaya AI tidak menawarkan
-// slot "internal" yang sebetulnya tidak ada di kalender asli.
-async function schedBuildSlotOffer(meetingType, rangeKey) {
+// Langkah 2: tawarkan daftar TANGGAL (Senin–Sabtu, tanpa jam) di rentang
+// [start, end] yang dipilih customer. Prioritas ambil dari Calendly (kalau
+// terhubung) — TIDAK fallback ke tanggal internal saat Calendly terhubung
+// tapi kosong di rentang itu, supaya AI tidak menawarkan tanggal yang
+// sebetulnya tidak ada di kalender asli.
+async function schedBuildDateOffer(meetingType, rangeKey) {
   const { start, end, label: rangeLabel } = schedWeekRange(rangeKey);
   const typeLabel = apptTypeLabel(meetingType);
 
   if (calendlyConfigured()) {
     try {
-      const slots = await calendlyGetAvailableSlotsInRange(3, start, end);
-      if (slots.length) {
-        const offered = slots.map((s) => ({ source: 'calendly', startTime: s.startTime, schedulingUrl: s.schedulingUrl }));
+      const dates = await calendlyGetAvailableDatesInRange(start, end);
+      if (dates.length) {
         return {
-          text: `Berikut slot kosong untuk ${typeLabel} di ${rangeLabel}. Silakan pilih salah satu:`,
-          options: offered.map((s, i) => ({ id: `pick:${i}`, label: `📅 ${schedFormatSlotLabel(s)}`, url: s.schedulingUrl })),
-          offeredSlots: offered,
+          text: `Berikut tanggal kosong untuk ${typeLabel} di ${rangeLabel}. Silakan pilih salah satu:`,
+          options: dates.map((d) => ({ id: `date:${d.date}`, label: `📅 ${schedFormatDateLabel(d)}` })),
+          offeredDates: dates,
         };
       }
       return {
-        text: `Mohon maaf, tidak ada slot kosong untuk ${typeLabel} di ${rangeLabel}. Silakan coba rentang lain atau hubungi tim kami langsung ya.`,
+        text: `Mohon maaf, tidak ada tanggal kosong untuk ${typeLabel} di ${rangeLabel}. Silakan coba rentang lain atau hubungi tim kami langsung ya.`,
         options: [],
-        offeredSlots: [],
+        offeredDates: [],
       };
     } catch (e) {
-      console.error('[Calendly] Gagal ambil slot in-range, fallback ke slot internal:', e.message);
+      console.error('[Calendly] Gagal ambil tanggal in-range, fallback ke tanggal internal:', e.message);
       // lanjut ke jalur internal di bawah
     }
   }
 
-  const internalSlots = apptGetAvailableSlotsInRange(3, start, end);
-  if (!internalSlots.length) {
+  const internalDates = apptGetAvailableDatesInRange(start, end);
+  if (!internalDates.length) {
     return {
-      text: `Mohon maaf, tidak ada slot kosong untuk ${typeLabel} di ${rangeLabel}. Silakan coba rentang lain ya.`,
+      text: `Mohon maaf, tidak ada tanggal kosong untuk ${typeLabel} di ${rangeLabel}. Silakan coba rentang lain ya.`,
       options: [],
-      offeredSlots: [],
+      offeredDates: [],
     };
   }
-  const offered = internalSlots.map((s) => ({ source: 'internal', date: s.date, time: s.time }));
   return {
-    text: `Berikut slot kosong untuk ${typeLabel} di ${rangeLabel}. Silakan pilih salah satu:`,
-    options: offered.map((s, i) => ({ id: `pick:${i}`, label: `🗓️ ${schedFormatSlotLabel(s)}` })),
-    offeredSlots: offered,
+    text: `Berikut tanggal kosong untuk ${typeLabel} di ${rangeLabel}. Silakan pilih salah satu:`,
+    options: internalDates.map((d) => ({ id: `date:${d.date}`, label: `🗓️ ${schedFormatDateLabel(d)}` })),
+    offeredDates: internalDates,
   };
 }
 
-// Konfirmasi begitu customer memilih salah satu slot (index 0-based) dari
-// conv.scheduling.offeredSlots — dipanggil baik dari jalur ketik nomor MAUPUN
-// dari jalur pencet tombol (Telegram callback_query / WhatsApp interactive
-// reply), lihat schedResolveButtonId di bawah.
+// Langkah 3: setelah tanggal dipilih, tawarkan daftar JAM kosong utk
+// tanggal itu — 4 jendela tetap (APPT_TIME_SLOTS) utk sumber internal, atau
+// jam ASLI dari Calendly (event_type_available_times) kalau tanggal itu
+// berasal dari Calendly.
+async function schedBuildTimeOffer(meetingType, dateStr, source) {
+  const typeLabel = apptTypeLabel(meetingType);
+  const dateLabel = apptFormatDateLabel(dateStr);
+
+  if (source === 'calendly') {
+    const times = await calendlyGetAvailableTimesForDate(dateStr);
+    if (!times.length) {
+      return {
+        text: `Mohon maaf, jam untuk ${dateLabel} sudah penuh. Silakan pilih tanggal lain ya.`,
+        options: [],
+        offeredTimes: [],
+      };
+    }
+    return {
+      text: `Baik, untuk ${typeLabel} di ${dateLabel}. Berikut jam yang tersedia, silakan pilih salah satu:`,
+      options: times.map((t, i) => ({ id: `time:${i}`, label: `⏰ ${calendlyFormatTimeLabel(t.startTime)}` })),
+      offeredTimes: times,
+    };
+  }
+
+  const times = apptGetAvailableTimesForDate(dateStr);
+  if (!times.length) {
+    return {
+      text: `Mohon maaf, jam untuk ${dateLabel} sudah penuh. Silakan pilih tanggal lain ya.`,
+      options: [],
+      offeredTimes: [],
+    };
+  }
+  return {
+    text: `Baik, untuk ${typeLabel} di ${dateLabel}. Berikut jam yang tersedia, silakan pilih salah satu:`,
+    options: times.map((t, i) => ({ id: `time:${i}`, label: `⏰ ${apptFormatTimeLabel(t)}` })),
+    offeredTimes: times,
+  };
+}
+
+// Langkah 4: konfirmasi begitu customer memilih salah satu JAM (index
+// 0-based) dari conv.scheduling.offeredTimes — dipanggil baik dari jalur
+// ketik nomor MAUPUN dari jalur pencet tombol, lihat schedResolveButtonId.
 //   - Slot "internal": appointment langsung dibuat & dicatat di sini.
 //   - Slot "calendly": booking SESUNGGUHNYA terjadi di halaman Calendly (lalu
 //     appointment masuk otomatis lewat webhook) — jadi di sini AI cukup
 //     kasih SATU tombol link langsung ke slot yang dipilih.
-function schedConfirmPick(conv, index) {
-  const slot = conv.scheduling.offeredSlots && conv.scheduling.offeredSlots[index];
+function schedConfirmTime(conv, index) {
+  const slot = conv.scheduling.offeredTimes && conv.scheduling.offeredTimes[index];
   if (!slot) return null;
   const firstName = (conv.name || '').split(' ')[0] || '';
 
   if (slot.source === 'internal') {
     apptCreateFromChat(conv, { date: slot.date, time: slot.time }, conv.scheduling.meetingType);
-    conv.scheduling = { stage: 'idle', offeredSlots: [], meetingType: null };
+    const label = apptFormatSlotLabel(slot);
+    conv.scheduling = schedFreshState();
     return {
-      text: `Baik${firstName ? ' ' + firstName : ''}, jadwal Anda sudah kami catat untuk ${schedFormatSlotLabel(slot)}. Tim kami akan segera mengonfirmasi dan menghubungi Anda kembali. Terima kasih! 🙏`,
+      text: `Baik${firstName ? ' ' + firstName : ''}, jadwal Anda sudah kami catat untuk ${label}. Tim kami akan segera mengonfirmasi dan menghubungi Anda kembali. Terima kasih! 🙏`,
       options: [],
     };
   }
 
-  conv.scheduling = { stage: 'idle', offeredSlots: [], meetingType: null };
+  const label = calendlyFormatSlotLabel(slot.startTime);
+  conv.scheduling = schedFreshState();
   return {
-    text: `Baik${firstName ? ' ' + firstName : ''}, untuk ${schedFormatSlotLabel(slot)}, silakan konfirmasi & selesaikan booking lewat tombol di bawah ya:`,
+    text: `Baik${firstName ? ' ' + firstName : ''}, untuk ${label}, silakan konfirmasi & selesaikan booking lewat tombol di bawah ya:`,
     options: [{ id: 'noop', label: 'Konfirmasi & Booking Sekarang', url: slot.schedulingUrl }],
   };
 }
 
 // Dipanggil saat customer MEMENCET tombol (Telegram callback_data ATAU
-// WhatsApp button_reply/list_reply id) — id-nya berformat "range:<key>" atau
-// "pick:<index>". Return null kalau id tidak dikenali / tawarannya sudah
-// basi (mis. customer pencet tombol lama setelah state berubah).
+// WhatsApp button_reply/list_reply id) — id-nya berformat "range:<key>",
+// "date:<YYYY-MM-DD>", atau "time:<index>". Return null kalau id tidak
+// dikenali / tawarannya sudah basi (mis. customer pencet tombol lama
+// setelah state berubah).
 async function schedResolveButtonId(conv, id) {
-  if (!conv.scheduling) conv.scheduling = { stage: 'idle', offeredSlots: [], meetingType: null };
+  if (!conv.scheduling) conv.scheduling = schedFreshState();
   const [kind, val] = String(id).split(':');
 
   if (kind === 'range') {
     if (conv.scheduling.stage !== 'awaiting_range') return null;
-    const offer = await schedBuildSlotOffer(conv.scheduling.meetingType, val);
+    const offer = await schedBuildDateOffer(conv.scheduling.meetingType, val);
     conv.scheduling = {
-      stage: offer.offeredSlots.length ? 'offered' : 'idle',
-      offeredSlots: offer.offeredSlots,
+      stage: offer.offeredDates.length ? 'awaiting_date' : 'idle',
+      offeredDates: offer.offeredDates,
+      offeredTimes: [],
       meetingType: conv.scheduling.meetingType,
+      rangeKey: val,
     };
     return { text: offer.text, options: offer.options, chosenLabel: val === 'next_week' ? 'Minggu Depan' : 'Minggu Ini' };
   }
 
-  if (kind === 'pick') {
-    if (conv.scheduling.stage !== 'offered') return null;
+  if (kind === 'date') {
+    if (conv.scheduling.stage !== 'awaiting_date') return null;
+    const dateStr = val;
+    const matched = conv.scheduling.offeredDates.find((d) => d.date === dateStr);
+    if (!matched) return null;
+    const offer = await schedBuildTimeOffer(conv.scheduling.meetingType, dateStr, matched.source);
+    conv.scheduling = {
+      stage: offer.offeredTimes.length ? 'awaiting_time' : 'idle',
+      offeredDates: conv.scheduling.offeredDates,
+      offeredTimes: offer.offeredTimes,
+      meetingType: conv.scheduling.meetingType,
+      rangeKey: conv.scheduling.rangeKey,
+    };
+    return { text: offer.text, options: offer.options, chosenLabel: schedFormatDateLabel(matched) };
+  }
+
+  if (kind === 'time') {
+    if (conv.scheduling.stage !== 'awaiting_time') return null;
     const idx = Number(val);
-    const slot = conv.scheduling.offeredSlots[idx];
-    const chosenLabel = slot ? schedFormatSlotLabel(slot) : `pilihan #${idx}`;
-    const result = schedConfirmPick(conv, idx);
+    const slot = conv.scheduling.offeredTimes[idx];
+    const chosenLabel = slot ? schedFormatTimeLabel(slot) : `pilihan #${idx}`;
+    const result = schedConfirmTime(conv, idx);
     if (!result) return null;
     return { text: result.text, options: result.options, chosenLabel };
   }
@@ -1437,37 +1626,62 @@ function tgOptionsToKeyboard(options) {
 // yang menerjemahkan options generik ini ke format interactive WhatsApp sendiri
 // (lihat wabaProcessIncomingMessage). Urutan prioritas:
 //  1) Stage 'awaiting_range' & pesan ini teks bebas → tafsirkan sbg pilihan minggu.
-//  2) Stage 'offered' & pesan ini terlihat memilih salah satu slot → konfirmasi.
-//  3) Stage 'idle' & customer terlihat ingin jadwal → tanya dulu minggu ini/depan.
-//  4) Selain itu → balasan bebas seperti biasa (tgGenerateReplyWithOllama).
+//  2) Stage 'awaiting_date' & pesan ini terlihat memilih salah satu tanggal → tawarkan jam.
+//  3) Stage 'awaiting_time' & pesan ini terlihat memilih salah satu jam → konfirmasi & buat appointment.
+//  4) Stage 'idle' & customer terlihat ingin jadwal → tanya dulu minggu ini/depan.
+//  5) Selain itu → balasan bebas seperti biasa (tgGenerateReplyWithOllama).
 async function tgHandleMessageAndMaybeSchedule(conv, incomingText) {
-  if (!conv.scheduling) conv.scheduling = { stage: 'idle', offeredSlots: [], meetingType: null };
+  if (!conv.scheduling) conv.scheduling = schedFreshState();
 
   if (conv.scheduling.stage === 'awaiting_range') {
     const rangeKey = schedParseRangeChoice(incomingText);
-    const offer = await schedBuildSlotOffer(conv.scheduling.meetingType, rangeKey);
+    const offer = await schedBuildDateOffer(conv.scheduling.meetingType, rangeKey);
     conv.scheduling = {
-      stage: offer.offeredSlots.length ? 'offered' : 'idle',
-      offeredSlots: offer.offeredSlots,
+      stage: offer.offeredDates.length ? 'awaiting_date' : 'idle',
+      offeredDates: offer.offeredDates,
+      offeredTimes: [],
       meetingType: conv.scheduling.meetingType,
+      rangeKey,
     };
     return { text: offer.text, replyMarkup: tgOptionsToKeyboard(offer.options), options: offer.options };
   }
 
-  if (conv.scheduling.stage === 'offered') {
-    const intent = await classifySchedulingIntent(conv, incomingText, conv.scheduling.offeredSlots);
+  if (conv.scheduling.stage === 'awaiting_date') {
+    const dateLabels = conv.scheduling.offeredDates.map((d) => schedFormatDateLabel(d));
+    const intent = await classifySchedulingIntent(conv, incomingText, dateLabels);
     if (intent.picksSlotIndex) {
-      const result = schedConfirmPick(conv, intent.picksSlotIndex - 1);
+      const picked = conv.scheduling.offeredDates[intent.picksSlotIndex - 1];
+      if (picked) {
+        const offer = await schedBuildTimeOffer(conv.scheduling.meetingType, picked.date, picked.source);
+        conv.scheduling = {
+          stage: offer.offeredTimes.length ? 'awaiting_time' : 'idle',
+          offeredDates: conv.scheduling.offeredDates,
+          offeredTimes: offer.offeredTimes,
+          meetingType: conv.scheduling.meetingType,
+          rangeKey: conv.scheduling.rangeKey,
+        };
+        return { text: offer.text, replyMarkup: tgOptionsToKeyboard(offer.options), options: offer.options };
+      }
+    }
+    // Tidak jelas pilih tanggal yang mana — biarkan lanjut ke balasan bebas di
+    // bawah, state 'awaiting_date' tetap dipertahankan (tombol lama masih berlaku).
+  }
+
+  if (conv.scheduling.stage === 'awaiting_time') {
+    const timeLabels = conv.scheduling.offeredTimes.map((t) => schedFormatTimeLabel(t));
+    const intent = await classifySchedulingIntent(conv, incomingText, timeLabels);
+    if (intent.picksSlotIndex) {
+      const result = schedConfirmTime(conv, intent.picksSlotIndex - 1);
       if (result) return { text: result.text, replyMarkup: tgOptionsToKeyboard(result.options), options: result.options };
     }
-    // Tidak jelas pilih yang mana — biarkan lanjut ke balasan bebas di bawah,
-    // state 'offered' tetap dipertahankan (tombol lama masih berlaku).
+    // Tidak jelas pilih jam yang mana — biarkan lanjut ke balasan bebas di
+    // bawah, state 'awaiting_time' tetap dipertahankan (tombol lama masih berlaku).
   }
 
   if (conv.scheduling.stage === 'idle') {
     const intent = await classifySchedulingIntent(conv, incomingText, []);
     if (intent.wantsSchedule) {
-      conv.scheduling = { stage: 'awaiting_range', offeredSlots: [], meetingType: intent.meetingTypeGuess };
+      conv.scheduling = { stage: 'awaiting_range', offeredDates: [], offeredTimes: [], meetingType: intent.meetingTypeGuess, rangeKey: null };
       const q = schedBuildRangeQuestion(intent.meetingTypeGuess);
       return { text: q.text, replyMarkup: tgOptionsToKeyboard(q.options), options: q.options };
     }
@@ -1625,13 +1839,15 @@ function wabaGetOrCreateConversation(waId, profileName) {
       lastMessageTime: Date.now(),
       unread: 0,
       provider: 'whatsapp',
-      scheduling: { stage: 'idle', offeredSlots: [], meetingType: null },
+      scheduling: schedFreshState(),
     };
     wabaConversations.set(waId, conv);
   }
-  // Percakapan lama (dibuat oleh wabaStartChatWithLead sebelum fitur ini ada)
-  // mungkin belum punya field scheduling — lengkapi supaya tidak error.
-  if (!conv.scheduling) conv.scheduling = { stage: 'idle', offeredSlots: [], meetingType: null };
+  // Percakapan lama (dibuat oleh wabaStartChatWithLead sebelum fitur ini ada,
+  // atau dari versi sebelum alur 3-langkah) mungkin belum punya field
+  // scheduling, atau masih pakai bentuk lama (offeredSlots) — reset ke bentuk
+  // baru supaya tidak error.
+  if (!conv.scheduling || !conv.scheduling.offeredDates) conv.scheduling = schedFreshState();
   if (profileName && conv.name === waId) conv.name = profileName;
   return conv;
 }
