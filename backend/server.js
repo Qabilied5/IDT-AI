@@ -371,7 +371,11 @@ async function generateMessageWithOllama(lead) {
 // =============================================================
 // 2) KIRIM PESAN — TELEGRAM (mode testing) / MOCK (log saja)
 // =============================================================
-async function sendViaTelegram(chatId, message) {
+// replyMarkup (opsional) = objek inline_keyboard Telegram, dipakai untuk
+// mengirim daftar pilihan berupa TOMBOL (bukan cuma teks berlist) — misal
+// tombol pilih minggu / tombol per-slot jadwal. Lihat tgOptionsToKeyboard()
+// di bagian sistem penjadwalan generik.
+async function sendViaTelegram(chatId, message, replyMarkup) {
   if (!TELEGRAM_BOT_TOKEN) {
     throw new Error('TELEGRAM_BOT_TOKEN belum diisi di .env');
   }
@@ -381,17 +385,59 @@ async function sendViaTelegram(chatId, message) {
   }
 
   const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+  const body = { chat_id: targetChatId, text: message };
+  if (replyMarkup) body.reply_markup = replyMarkup;
+
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ chat_id: targetChatId, text: message }),
+    body: JSON.stringify(body),
   });
 
   const data = await res.json();
   if (!data.ok) {
+    // Log detail lengkap dari Telegram (mis. keyboard/inline_keyboard yang
+    // tidak valid) supaya penyebab aslinya kelihatan di console, bukan cuma
+    // pesan generik.
+    console.error('[Telegram] sendMessage ditolak, detail lengkap:', JSON.stringify(data));
     throw new Error(`Telegram error: ${data.description || 'unknown'}`);
   }
   return data;
+}
+
+// BUG FIX (customer tidak dapat balasan setelah pencet tombol "Minggu
+// Ini"/"Minggu Depan" di Telegram): kalau sendMessage dengan inline_keyboard
+// gagal (mis. Telegram menolak format keyboard-nya), sebelumnya error cuma
+// di-log ke console dan customer tidak menerima balasan sama sekali. Wrapper
+// ini menambahkan safety net: kalau kirim dengan keyboard gagal, otomatis
+// coba kirim ulang sebagai teks biasa (tanpa keyboard) supaya customer tetap
+// dapat balasannya.
+async function sendViaTelegramSafe(chatId, message, replyMarkup) {
+  try {
+    return await sendViaTelegram(chatId, message, replyMarkup);
+  } catch (err) {
+    console.error('[Telegram] Gagal kirim dengan keyboard, fallback ke teks biasa:', err.message);
+    if (replyMarkup) {
+      return sendViaTelegram(chatId, message);
+    }
+    throw err;
+  }
+}
+
+// Ack tombol yang dipencet customer (wajib dipanggil Telegram, kalau tidak
+// tombolnya tetap terlihat "loading" di HP customer). text (opsional) muncul
+// sebagai notifikasi kecil di atas keyboard HP customer.
+async function tgAnswerCallbackQuery(callbackQueryId, text) {
+  if (!TELEGRAM_BOT_TOKEN) return;
+  try {
+    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ callback_query_id: callbackQueryId, text: text || undefined }),
+    });
+  } catch (e) {
+    console.error('[Telegram] Gagal answerCallbackQuery:', e.message);
+  }
 }
 
 // =============================================================
@@ -427,7 +473,124 @@ async function sendViaWaba(to, message) {
   return data;
 }
 
-// ── KIRIM PESAN PEMBUKA (TEMPLATE) — WHATSAPP BUSINESS API ───────────────────
+// ── KIRIM PESAN INTERAKTIF (TOMBOL) — WHATSAPP CLOUD API ─────────────────────
+// WhatsApp punya 3 jenis pesan "interactive" yang relevan buat kita:
+//  - "button": maks 3 tombol reply (id + title, TANPA url) — cocok utk 2-3
+//    pilihan sederhana (mis. "Minggu Ini" / "Minggu Depan", atau slot internal).
+//  - "list": sampai 10 baris pilihan dalam 1 tombol "Pilih" yang dibuka jadi
+//    menu — dipakai kalau butuh >3 pilihan ATAU pilihannya adalah slot
+//    Calendly (yang masing-masing perlu link BEDA, tidak muat di tipe "button").
+//  - "cta_url": SATU tombol yang langsung buka link — dipakai utk kirim link
+//    booking Calendly final setelah customer pilih slotnya dari list.
+// Helper generik di bagian bawah (wabaSendOfferMessage) yang memutuskan mana
+// yang dipakai berdasarkan `options` yang diberikan — pemanggil (scheduling
+// handler) tidak perlu tahu detail format WhatsApp ini sama sekali.
+async function wabaSendInteractiveRaw(payload) {
+  if (!WABA_ACCESS_TOKEN || !WABA_PHONE_NUMBER_ID) {
+    throw new Error('WABA belum dikonfigurasi (Access Token / Phone Number ID kosong)');
+  }
+  const url = `https://graph.facebook.com/v20.0/${WABA_PHONE_NUMBER_ID}/messages`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${WABA_ACCESS_TOKEN}` },
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json();
+  if (data.error) {
+    // Log detail LENGKAP dari Meta (error_data.details sering berisi alasan
+    // sesungguhnya kenapa pesan interactive ditolak — mis. format list/button
+    // tidak valid — yang tidak kelihatan kalau cuma print data.error.message.
+    console.error('[WABA] Interactive message ditolak, detail lengkap:', JSON.stringify(data.error));
+    throw new Error(`WABA error: ${data.error.message || 'unknown'}`);
+  }
+  return data;
+}
+
+async function wabaSendInteractiveButtons(to, bodyText, options) {
+  const buttons = options.slice(0, 3).map((o) => ({
+    type: 'reply',
+    reply: { id: o.id, title: (o.label || '').slice(0, 20) }, // WA batasi title maks 20 karakter
+  }));
+  return wabaSendInteractiveRaw({
+    messaging_product: 'whatsapp',
+    to,
+    type: 'interactive',
+    interactive: { type: 'button', body: { text: bodyText }, action: { buttons } },
+  });
+}
+
+async function wabaSendInteractiveList(to, bodyText, options, buttonLabel) {
+  const rows = options.slice(0, 10).map((o) => ({ id: o.id, title: (o.label || '').slice(0, 24) })); // WA batasi title maks 24 karakter
+  return wabaSendInteractiveRaw({
+    messaging_product: 'whatsapp',
+    to,
+    type: 'interactive',
+    interactive: {
+      type: 'list',
+      body: { text: bodyText },
+      action: { button: (buttonLabel || 'Pilih').slice(0, 20), sections: [{ title: 'Pilihan', rows }] },
+    },
+  });
+}
+
+async function wabaSendCtaUrl(to, bodyText, buttonLabel, url) {
+  return wabaSendInteractiveRaw({
+    messaging_product: 'whatsapp',
+    to,
+    type: 'interactive',
+    interactive: {
+      type: 'cta_url',
+      body: { text: bodyText },
+      action: { name: 'cta_url', parameters: { display_text: (buttonLabel || 'Buka Link').slice(0, 20), url } },
+    },
+  });
+}
+
+// Dispatcher generik: terima `options` generik ({id,label,url?}) dari sistem
+// penjadwalan (schedBuildRangeQuestion / schedBuildSlotOffer / schedConfirmPick)
+// dan pilih jenis pesan WhatsApp yang paling sesuai secara otomatis.
+async function wabaSendOfferMessage(to, text, options) {
+  if (!options || !options.length) return sendViaWaba(to, text);
+
+  const hasUrl = options.some((o) => o.url);
+  if (options.length === 1 && options[0].url) {
+    return wabaSendCtaUrl(to, text, options[0].label, options[0].url);
+  }
+  if (!hasUrl && options.length <= 3) {
+    return wabaSendInteractiveButtons(to, text, options);
+  }
+  // >3 pilihan, atau ada url per-item (slot Calendly) — pakai list. Kalau
+  // customer memilih baris yang urlnya beda-beda, schedResolveButtonId akan
+  // membalas lagi dengan SATU tombol cta_url (kasus di atas) untuk slot itu.
+  return wabaSendInteractiveList(to, text, options, 'Pilih Jadwal');
+}
+
+// Ubah `options` generik jadi teks polos bernomor — dipakai sebagai FALLBACK
+// kalau pesan interactive (button/list) gagal terkirim, supaya customer tetap
+// bisa memilih dengan cara mengetik angka (ditangani classifySchedulingIntent
+// yang sudah bisa baca jawaban ketikan bebas di stage 'offered'/'awaiting_range').
+function schedOptionsToPlainText(text, options) {
+  if (!options || !options.length) return text;
+  const lines = options.map((o, i) => `${i + 1}. ${o.label}${o.url ? `\n   ${o.url}` : ''}`);
+  return `${text}\n\n${lines.join('\n')}\n\nBalas dengan angka pilihan Anda ya.`;
+}
+
+// BUG FIX (customer tidak dapat balasan setelah pencet "Minggu Ini"/"Minggu
+// Depan"): sebelumnya kalau wabaSendOfferMessage gagal (mis. Meta menolak
+// format pesan interactive, atau customer service window sudah tertutup),
+// error cuma di-log ke console dan customer tidak menerima apa-apa sama
+// sekali — AI terlihat "berhenti di tengah jalan". Wrapper ini menambahkan
+// safety net: kalau kirim interactive gagal, otomatis fallback kirim versi
+// TEKS BIASA bernomor supaya customer tetap dapat daftar jadwalnya.
+async function wabaSendOfferMessageSafe(to, text, options) {
+  try {
+    return await wabaSendOfferMessage(to, text, options);
+  } catch (err) {
+    console.error('[WABA] Gagal kirim pesan interaktif (tombol/list), fallback ke teks biasa:', err.message);
+    return sendViaWaba(to, schedOptionsToPlainText(text, options));
+  }
+}
+
 // WhatsApp Cloud API MENOLAK pesan bebas (type: "text") sebagai pesan
 // PERTAMA ke nomor yang belum pernah membalas nomor bisnis kita (tidak ada
 // "customer service window" terbuka). Untuk kontak pertama, WAJIB pakai
@@ -649,22 +812,59 @@ async function tgProcessMessage(message) {
   if (conv.handledBy !== 'ai') return; // mode manual — admin yang membalas, AI diam
 
   try {
-    const replyText = await tgHandleMessageAndMaybeSchedule(conv, message.text);
-    if (replyText) {
-      await sendViaTelegram(conv.chatId, replyText);
+    const reply = await tgHandleMessageAndMaybeSchedule(conv, message.text);
+    if (reply && reply.text) {
+      await sendViaTelegramSafe(conv.chatId, reply.text, reply.replyMarkup);
       const outMsg = {
         id: conv.messages.length + 1,
         dir: 'out',
         from: 'ai',
-        text: replyText,
+        text: reply.text,
         time: Date.now(),
       };
       conv.messages.push(outMsg);
-      conv.lastMessageText = replyText;
+      conv.lastMessageText = reply.text;
       conv.lastMessageTime = outMsg.time;
     }
   } catch (err) {
     console.error('[Telegram] Gagal auto-reply AI:', err.message);
+  }
+}
+
+// Ditangani terpisah dari tgProcessMessage (pesan teks biasa) karena bentuk
+// payload-nya beda: update.callback_query, bukan update.message. Dipicu saat
+// customer memencet tombol "Minggu Ini/Depan" atau tombol pilih slot internal
+// (id "range:*" / "pick:*", lihat schedResolveButtonId). Untuk slot Calendly,
+// tombolnya berupa URL langsung ke Calendly jadi TIDAK lewat sini sama sekali.
+async function tgProcessCallbackQuery(callbackQuery) {
+  const dataId = callbackQuery.data || '';
+  await tgAnswerCallbackQuery(callbackQuery.id); // wajib, biar tombol berhenti "loading" di HP customer
+
+  if (!callbackQuery.message || !callbackQuery.message.chat) return;
+  const conv = tgGetOrCreateConversation(callbackQuery.message.chat, callbackQuery.from);
+  if (conv.handledBy !== 'ai') return; // mode manual — admin yang pegang, AI diam
+
+  const result = await schedResolveButtonId(conv, dataId);
+  if (!result) return; // id tidak dikenali / tawaran sudah kadaluarsa
+
+  // Catat pilihan customer sebagai pesan masuk juga (dir: 'in') supaya riwayat
+  // chat di dashboard tetap runtut & mudah dibaca, seolah customer mengetiknya.
+  conv.messages.push({
+    id: conv.messages.length + 1,
+    dir: 'in',
+    from: 'user',
+    text: `[Tombol] ${result.chosenLabel}`,
+    time: Date.now(),
+  });
+
+  try {
+    await sendViaTelegramSafe(conv.chatId, result.text, tgOptionsToKeyboard(result.options));
+    const outMsg = { id: conv.messages.length + 1, dir: 'out', from: 'ai', text: result.text, time: Date.now() };
+    conv.messages.push(outMsg);
+    conv.lastMessageText = result.text;
+    conv.lastMessageTime = outMsg.time;
+  } catch (err) {
+    console.error('[Telegram] Gagal kirim balasan tombol:', err.message);
   }
 }
 
@@ -678,6 +878,8 @@ async function tgPollOnce() {
     tgOffset = update.update_id + 1;
     if (update.message) {
       await tgProcessMessage(update.message);
+    } else if (update.callback_query) {
+      await tgProcessCallbackQuery(update.callback_query);
     }
   }
 }
@@ -741,9 +943,10 @@ async function startTelegramPolling() {
 //     appointment masuk ke halaman Appointment → admin klik tombol
 //     "Konfirmasi & Follow-up" → automasi follow-up (endpoint 5b di bawah).
 // =============================================================
-const APPT_BUSINESS_HOURS = { startHour: 9, endHour: 17 }; // jam kerja 09.00–17.00 WIB
-const APPT_WORKING_DAYS = [1, 2, 3, 4, 5]; // Senin–Jumat (0=Minggu, 6=Sabtu)
-const APPT_SLOT_STEP_HOURS = 2; // jarak antar slot yang ditawarkan, biar tidak terlalu padat
+const APPT_BUSINESS_HOURS = { startHour: 8, endHour: 17 }; // jam kerja 08.00–17.00 WIB
+const APPT_LUNCH_BREAK = { startHour: 12, endHour: 13 }; // jam istirahat 12.00–13.00, TIDAK ditawarkan sbg slot
+const APPT_WORKING_DAYS = [1, 2, 3, 4, 5, 6]; // Senin–Sabtu (0=Minggu, 6=Sabtu) — Minggu libur
+const APPT_SLOT_STEP_HOURS = 1; // 1 slot = 1 jam (selaras dengan APPT_DEFAULT_DURATION 60 menit)
 const APPT_DEFAULT_DURATION = 60;
 // Server tidak tahu daftar staff (itu konfigurasi frontend di appointment.js
 // / SELLER_CONFIG.staffList) — pakai fallback yang bisa dioverride lewat .env
@@ -779,20 +982,33 @@ function apptIsSlotTaken(dateStr, timeStr) {
 // appointment manual (AP_DATA) saat ini masih tersimpan di sisi frontend
 // dan belum dikirim ke server — lihat catatan di README/summary.
 function apptGetAvailableSlots(limit = 3, lookaheadDays = 10) {
+  const now = new Date();
+  return apptGetAvailableSlotsInRange(limit, now, new Date(now.getTime() + lookaheadDays * 86400000));
+}
+
+// Versi generik dibatasi rentang tanggal [startDate, endDate] eksplisit —
+// dipakai supaya AI bisa menawarkan slot HANYA di "minggu ini" atau "minggu
+// depan" (lihat schedWeekRange), bukan asal N hari ke depan dari sekarang.
+function apptGetAvailableSlotsInRange(limit, startDate, endDate) {
   const slots = [];
   const now = new Date();
-  for (let d = 0; d < lookaheadDays && slots.length < limit; d++) {
-    const day = new Date(now.getFullYear(), now.getMonth(), now.getDate() + d);
-    if (!APPT_WORKING_DAYS.includes(day.getDay())) continue;
+  let cursor = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+  const endDay = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
 
-    for (let h = APPT_BUSINESS_HOURS.startHour; h < APPT_BUSINESS_HOURS.endHour; h += APPT_SLOT_STEP_HOURS) {
-      if (d === 0 && h <= now.getHours()) continue; // lewati jam yang sudah lewat hari ini
-      const dateStr = `${day.getFullYear()}-${apptPad(day.getMonth() + 1)}-${apptPad(day.getDate())}`;
-      const timeStr = `${apptPad(h)}.00`;
-      if (apptIsSlotTaken(dateStr, timeStr)) continue;
-      slots.push({ date: dateStr, time: timeStr });
-      if (slots.length >= limit) break;
+  while (cursor <= endDay && slots.length < limit) {
+    if (APPT_WORKING_DAYS.includes(cursor.getDay())) {
+      const isToday = cursor.toDateString() === now.toDateString();
+      const dateStr = `${cursor.getFullYear()}-${apptPad(cursor.getMonth() + 1)}-${apptPad(cursor.getDate())}`;
+      for (let h = APPT_BUSINESS_HOURS.startHour; h < APPT_BUSINESS_HOURS.endHour; h += APPT_SLOT_STEP_HOURS) {
+        if (h >= APPT_LUNCH_BREAK.startHour && h < APPT_LUNCH_BREAK.endHour) continue; // lewati jam istirahat
+        if (isToday && h <= now.getHours()) continue; // lewati jam yang sudah lewat hari ini
+        const timeStr = `${apptPad(h)}.00`;
+        if (apptIsSlotTaken(dateStr, timeStr)) continue;
+        slots.push({ date: dateStr, time: timeStr });
+        break; // ambil SATU slot (jam paling awal yang kosong) per hari, lalu lanjut ke hari berikutnya — supaya tawaran menyebar ke beberapa hari, bukan numpuk di 1 hari
+      }
     }
+    cursor = new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate() + 1);
   }
   return slots;
 }
@@ -816,7 +1032,7 @@ function buildSchedulingIntentPrompt(conv, incomingText, offeredSlots) {
     .map((m) => `${roleLabel[m.dir === 'in' ? 'in' : m.from]}: ${m.text}`)
     .join('\n');
   const slotListText = offeredSlots.length
-    ? offeredSlots.map((s, i) => `${i + 1}. ${apptFormatSlotLabel(s)}`).join('\n')
+    ? offeredSlots.map((s, i) => `${i + 1}. ${schedFormatSlotLabel(s)}`).join('\n')
     : '(belum ada slot yang ditawarkan sebelumnya)';
 
   return `Kamu adalah sistem klasifikasi niat (intent classifier) untuk chat sales B2B Indonesia.
@@ -938,14 +1154,25 @@ async function calendlyFetch(pathOrUrl, options = {}) {
 // 7 hari per request, jadi di-loop per "jendela" 6 hari sampai jumlah slot
 // yang diminta terkumpul atau lookaheadDays habis.
 async function calendlyGetAvailableSlots(limit = 3, lookaheadDays = 14) {
+  const now = new Date();
+  return calendlyGetAvailableSlotsInRange(limit, now, new Date(now.getTime() + lookaheadDays * 86400000));
+}
+
+// Versi generik dibatasi rentang tanggal [startDate, endDate] eksplisit —
+// dipakai supaya AI bisa menawarkan slot HANYA di "minggu ini" atau "minggu
+// depan" (lihat schedWeekRange), bukan asal N hari ke depan dari sekarang.
+async function calendlyGetAvailableSlotsInRange(limit, startDate, endDate) {
   if (!calendlyConfigured()) return [];
   const slots = [];
-  const now = new Date();
-  const hardEnd = new Date(now.getTime() + lookaheadDays * 86400000);
-  let windowStart = now;
+  // Dipakai supaya slot yang ditawarkan MENYEBAR ke beberapa hari (maks 1 slot
+  // per tanggal), bukan numpuk semua di hari pertama yang kosong — sebelumnya
+  // kalau hari pertama di rentang punya >= `limit` jam kosong, customer cuma
+  // ditawari 1 hari itu saja (mis. 3 opsi jam yang sama-sama hari Rabu).
+  const seenDates = new Set();
+  let windowStart = startDate;
 
-  while (slots.length < limit && windowStart < hardEnd) {
-    const windowEnd = new Date(Math.min(windowStart.getTime() + 6 * 86400000, hardEnd.getTime()));
+  while (slots.length < limit && windowStart < endDate) {
+    const windowEnd = new Date(Math.min(windowStart.getTime() + 6 * 86400000, endDate.getTime()));
     try {
       const qs = new URLSearchParams({
         event_type: CALENDLY_EVENT_TYPE_URI,
@@ -955,6 +1182,9 @@ async function calendlyGetAvailableSlots(limit = 3, lookaheadDays = 14) {
       const data = await calendlyFetch(`/event_type_available_times?${qs.toString()}`);
       for (const s of (data.collection || [])) {
         if (s.status !== 'available') continue;
+        const dateKey = new Date(s.start_time).toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' });
+        if (seenDates.has(dateKey)) continue; // sudah ada slot dari tanggal ini, lanjut ke tanggal lain
+        seenDates.add(dateKey);
         slots.push({ startTime: s.start_time, schedulingUrl: s.scheduling_url });
         if (slots.length >= limit) break;
       }
@@ -1031,65 +1261,220 @@ function apptCreateFromCalendlyBooking(payload, eventInfo) {
   return record;
 }
 
-// Handler utama pesan masuk saat conv.handledBy === 'ai'. Urutan prioritas:
-//  1) Kalau AI baru saja menawarkan slot INTERNAL & customer memilih salah
-//     satunya → buat appointment, balas konfirmasi. (Jalur ini otomatis
-//     tidak pernah dipakai kalau Calendly terhubung, lihat poin 2.)
-//  2) Kalau customer terlihat ingin jadwal & belum ada tawaran aktif:
-//     - Calendly terhubung → ambil slot ASLI dari Calendly + kirim link
-//       booking personal (customer booking langsung di halaman Calendly,
-//       appointment masuk otomatis lewat webhook).
-//     - Calendly belum terhubung (atau gagal) → fallback ke slot internal
-//       seperti sebelumnya (customer pilih nomor lewat chat).
-//  3) Selain itu → balasan bebas seperti sebelumnya (tgGenerateReplyWithOllama).
-async function tgHandleMessageAndMaybeSchedule(conv, incomingText) {
-  const intent = await classifySchedulingIntent(conv, incomingText, conv.scheduling.offeredSlots);
+// =============================================================
+// SISTEM PENJADWALAN GENERIK — dipakai bersama oleh Telegram & WhatsApp.
+// Alurnya sekarang 2 langkah supaya daftar tombol tidak kepanjangan:
+//   1) Customer terlihat ingin jadwal → AI tanya dulu: "minggu ini atau
+//      minggu depan?" (cuma 2 tombol, conv.scheduling.stage = 'awaiting_range')
+//   2) Setelah rentang dipilih → AI ambil MAKS 3 slot kosong di rentang itu
+//      (dari Calendly kalau terhubung, atau slot internal sebagai fallback)
+//      dan tawarkan sebagai tombol pilihan (stage = 'offered').
+// Representasi tombol dibuat GENERIK ({id, label, url?}) supaya bisa
+// diterjemahkan ke format Telegram (inline keyboard) maupun WhatsApp
+// (reply buttons / list / cta_url) tanpa duplikasi logic penjadwalan.
+// =============================================================
 
-  if (conv.scheduling.stage === 'offered' && intent.picksSlotIndex) {
-    const chosen = conv.scheduling.offeredSlots[intent.picksSlotIndex - 1];
-    if (chosen) {
-      apptCreateFromChat(conv, chosen, conv.scheduling.meetingType || intent.meetingTypeGuess);
-      const firstName = (conv.name || '').split(' ')[0] || '';
-      conv.scheduling = { stage: 'idle', offeredSlots: [], meetingType: null };
-      return `Baik${firstName ? ' ' + firstName : ''}, jadwal Anda sudah kami catat untuk ${apptFormatSlotLabel(chosen)}. Tim kami akan segera mengonfirmasi dan menghubungi Anda kembali. Terima kasih! 🙏`;
-    }
+// Label tampilan untuk 1 slot, apapun sumbernya (internal atau Calendly).
+function schedFormatSlotLabel(slot) {
+  return slot.source === 'calendly' ? calendlyFormatSlotLabel(slot.startTime) : apptFormatSlotLabel(slot);
+}
+
+// Rentang tanggal [start, end] untuk "minggu ini" (dari sekarang s.d. Minggu
+// pekan ini) atau "minggu depan" (Senin s.d. Minggu pekan berikutnya).
+function schedWeekRange(rangeKey) {
+  const now = new Date();
+  const day = now.getDay(); // 0 = Minggu .. 6 = Sabtu
+  const mondayOffset = day === 0 ? -6 : 1 - day;
+  const thisMonday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + mondayOffset);
+
+  if (rangeKey === 'next_week') {
+    const nextMonday = new Date(thisMonday.getFullYear(), thisMonday.getMonth(), thisMonday.getDate() + 7);
+    const nextSunday = new Date(nextMonday.getFullYear(), nextMonday.getMonth(), nextMonday.getDate() + 6, 23, 59, 59);
+    return { start: nextMonday, end: nextSunday, label: 'minggu depan' };
   }
+  const thisSunday = new Date(thisMonday.getFullYear(), thisMonday.getMonth(), thisMonday.getDate() + 6, 23, 59, 59);
+  return { start: now, end: thisSunday, label: 'minggu ini' };
+}
 
-  if (intent.wantsSchedule && conv.scheduling.stage !== 'offered') {
-    const meetingType = intent.meetingTypeGuess;
-    const firstName = (conv.name || '').split(' ')[0] || '';
+// Interpretasi jawaban customer yang MENGETIK (bukan pencet tombol) saat
+// AI baru tanya "minggu ini atau minggu depan". Sengaja pakai keyword
+// sederhana (bukan panggil Ollama lagi) supaya tetap ringan & cepat —
+// default ke "minggu ini" kalau tidak jelas.
+function schedParseRangeChoice(text) {
+  return /depan|minggu\s*(depan|dpn)|next\s*week/i.test(text || '') ? 'next_week' : 'this_week';
+}
 
-    // ── Jalur Calendly (slot & booking asli) ──
-    if (calendlyConfigured()) {
-      try {
-        const [slots, bookingUrl] = await Promise.all([
-          calendlyGetAvailableSlots(3),
-          calendlyCreateSchedulingLink(),
-        ]);
-        conv.scheduling = { stage: 'idle', offeredSlots: [], meetingType: null };
+function schedBuildRangeQuestion(meetingType) {
+  return {
+    text: `Baik! Untuk jadwal ${apptTypeLabel(meetingType)}, Anda maunya di minggu ini atau minggu depan?`,
+    options: [
+      { id: 'range:this_week', label: 'Minggu Ini' },
+      { id: 'range:next_week', label: 'Minggu Depan' },
+    ],
+  };
+}
 
-        if (bookingUrl) {
-          const previewText = slots.length
-            ? `\n\nBeberapa slot terdekat yang kosong:\n${slots.map((s, i) => `${i + 1}. ${calendlyFormatSlotLabel(s.startTime)}`).join('\n')}`
-            : '';
-          return `Tentu${firstName ? ' ' + firstName : ''}! Silakan pilih & booking jadwal ${apptTypeLabel(meetingType)} langsung lewat link berikut ya:\n${bookingUrl}${previewText}\n\nSetelah Anda booking, jadwalnya otomatis tercatat di sistem kami.`;
-        }
-      } catch (e) {
-        console.error('[Calendly] Gagal membuat link booking, fallback ke slot internal:', e.message);
-        // lanjut ke jalur internal di bawah
+// Ambil MAKS 3 slot kosong di rentang [start, end] yang dipilih customer, lalu
+// bungkus jadi { text, options, offeredSlots } siap dikirim. Prioritas ambil
+// dari Calendly (kalau terhubung) — TIDAK fallback ke slot internal saat
+// Calendly terhubung tapi kosong di rentang itu, supaya AI tidak menawarkan
+// slot "internal" yang sebetulnya tidak ada di kalender asli.
+async function schedBuildSlotOffer(meetingType, rangeKey) {
+  const { start, end, label: rangeLabel } = schedWeekRange(rangeKey);
+  const typeLabel = apptTypeLabel(meetingType);
+
+  if (calendlyConfigured()) {
+    try {
+      const slots = await calendlyGetAvailableSlotsInRange(3, start, end);
+      if (slots.length) {
+        const offered = slots.map((s) => ({ source: 'calendly', startTime: s.startTime, schedulingUrl: s.schedulingUrl }));
+        return {
+          text: `Berikut slot kosong untuk ${typeLabel} di ${rangeLabel}. Silakan pilih salah satu:`,
+          options: offered.map((s, i) => ({ id: `pick:${i}`, label: `📅 ${schedFormatSlotLabel(s)}`, url: s.schedulingUrl })),
+          offeredSlots: offered,
+        };
       }
-    }
-
-    // ── Jalur internal (fallback / Calendly belum terhubung) ──
-    const slots = apptGetAvailableSlots(3);
-    if (slots.length) {
-      const listText = slots.map((s, i) => `${i + 1}. ${apptFormatSlotLabel(s)}`).join('\n');
-      conv.scheduling = { stage: 'offered', offeredSlots: slots, meetingType };
-      return `Tentu! Berikut beberapa slot yang masih kosong untuk ${apptTypeLabel(meetingType)}:\n\n${listText}\n\nSilakan balas dengan nomor atau sebutkan jadwal yang Anda pilih ya.`;
+      return {
+        text: `Mohon maaf, tidak ada slot kosong untuk ${typeLabel} di ${rangeLabel}. Silakan coba rentang lain atau hubungi tim kami langsung ya.`,
+        options: [],
+        offeredSlots: [],
+      };
+    } catch (e) {
+      console.error('[Calendly] Gagal ambil slot in-range, fallback ke slot internal:', e.message);
+      // lanjut ke jalur internal di bawah
     }
   }
 
-  return tgGenerateReplyWithOllama(conv, incomingText);
+  const internalSlots = apptGetAvailableSlotsInRange(3, start, end);
+  if (!internalSlots.length) {
+    return {
+      text: `Mohon maaf, tidak ada slot kosong untuk ${typeLabel} di ${rangeLabel}. Silakan coba rentang lain ya.`,
+      options: [],
+      offeredSlots: [],
+    };
+  }
+  const offered = internalSlots.map((s) => ({ source: 'internal', date: s.date, time: s.time }));
+  return {
+    text: `Berikut slot kosong untuk ${typeLabel} di ${rangeLabel}. Silakan pilih salah satu:`,
+    options: offered.map((s, i) => ({ id: `pick:${i}`, label: `🗓️ ${schedFormatSlotLabel(s)}` })),
+    offeredSlots: offered,
+  };
+}
+
+// Konfirmasi begitu customer memilih salah satu slot (index 0-based) dari
+// conv.scheduling.offeredSlots — dipanggil baik dari jalur ketik nomor MAUPUN
+// dari jalur pencet tombol (Telegram callback_query / WhatsApp interactive
+// reply), lihat schedResolveButtonId di bawah.
+//   - Slot "internal": appointment langsung dibuat & dicatat di sini.
+//   - Slot "calendly": booking SESUNGGUHNYA terjadi di halaman Calendly (lalu
+//     appointment masuk otomatis lewat webhook) — jadi di sini AI cukup
+//     kasih SATU tombol link langsung ke slot yang dipilih.
+function schedConfirmPick(conv, index) {
+  const slot = conv.scheduling.offeredSlots && conv.scheduling.offeredSlots[index];
+  if (!slot) return null;
+  const firstName = (conv.name || '').split(' ')[0] || '';
+
+  if (slot.source === 'internal') {
+    apptCreateFromChat(conv, { date: slot.date, time: slot.time }, conv.scheduling.meetingType);
+    conv.scheduling = { stage: 'idle', offeredSlots: [], meetingType: null };
+    return {
+      text: `Baik${firstName ? ' ' + firstName : ''}, jadwal Anda sudah kami catat untuk ${schedFormatSlotLabel(slot)}. Tim kami akan segera mengonfirmasi dan menghubungi Anda kembali. Terima kasih! 🙏`,
+      options: [],
+    };
+  }
+
+  conv.scheduling = { stage: 'idle', offeredSlots: [], meetingType: null };
+  return {
+    text: `Baik${firstName ? ' ' + firstName : ''}, untuk ${schedFormatSlotLabel(slot)}, silakan konfirmasi & selesaikan booking lewat tombol di bawah ya:`,
+    options: [{ id: 'noop', label: 'Konfirmasi & Booking Sekarang', url: slot.schedulingUrl }],
+  };
+}
+
+// Dipanggil saat customer MEMENCET tombol (Telegram callback_data ATAU
+// WhatsApp button_reply/list_reply id) — id-nya berformat "range:<key>" atau
+// "pick:<index>". Return null kalau id tidak dikenali / tawarannya sudah
+// basi (mis. customer pencet tombol lama setelah state berubah).
+async function schedResolveButtonId(conv, id) {
+  if (!conv.scheduling) conv.scheduling = { stage: 'idle', offeredSlots: [], meetingType: null };
+  const [kind, val] = String(id).split(':');
+
+  if (kind === 'range') {
+    if (conv.scheduling.stage !== 'awaiting_range') return null;
+    const offer = await schedBuildSlotOffer(conv.scheduling.meetingType, val);
+    conv.scheduling = {
+      stage: offer.offeredSlots.length ? 'offered' : 'idle',
+      offeredSlots: offer.offeredSlots,
+      meetingType: conv.scheduling.meetingType,
+    };
+    return { text: offer.text, options: offer.options, chosenLabel: val === 'next_week' ? 'Minggu Depan' : 'Minggu Ini' };
+  }
+
+  if (kind === 'pick') {
+    if (conv.scheduling.stage !== 'offered') return null;
+    const idx = Number(val);
+    const slot = conv.scheduling.offeredSlots[idx];
+    const chosenLabel = slot ? schedFormatSlotLabel(slot) : `pilihan #${idx}`;
+    const result = schedConfirmPick(conv, idx);
+    if (!result) return null;
+    return { text: result.text, options: result.options, chosenLabel };
+  }
+
+  return null;
+}
+
+// Terjemahkan daftar options generik → inline keyboard Telegram. Tombol
+// dengan `url` jadi tombol link (langsung buka Calendly), sisanya jadi
+// tombol callback_data yang ditangani tgProcessCallbackQuery di bawah.
+function tgOptionsToKeyboard(options) {
+  if (!options || !options.length) return null;
+  const rows = options.map((o) => [o.url ? { text: o.label, url: o.url } : { text: o.label, callback_data: o.id }]);
+  return { inline_keyboard: rows };
+}
+
+// Handler utama pesan masuk (dipakai Telegram & WhatsApp, generic terhadap
+// bentuk objek `conv`). Return value berupa { text, replyMarkup } — khusus
+// format Telegram; untuk WhatsApp, kirim pakai wabaSendOfferMessage(text, options)
+// yang menerjemahkan options generik ini ke format interactive WhatsApp sendiri
+// (lihat wabaProcessIncomingMessage). Urutan prioritas:
+//  1) Stage 'awaiting_range' & pesan ini teks bebas → tafsirkan sbg pilihan minggu.
+//  2) Stage 'offered' & pesan ini terlihat memilih salah satu slot → konfirmasi.
+//  3) Stage 'idle' & customer terlihat ingin jadwal → tanya dulu minggu ini/depan.
+//  4) Selain itu → balasan bebas seperti biasa (tgGenerateReplyWithOllama).
+async function tgHandleMessageAndMaybeSchedule(conv, incomingText) {
+  if (!conv.scheduling) conv.scheduling = { stage: 'idle', offeredSlots: [], meetingType: null };
+
+  if (conv.scheduling.stage === 'awaiting_range') {
+    const rangeKey = schedParseRangeChoice(incomingText);
+    const offer = await schedBuildSlotOffer(conv.scheduling.meetingType, rangeKey);
+    conv.scheduling = {
+      stage: offer.offeredSlots.length ? 'offered' : 'idle',
+      offeredSlots: offer.offeredSlots,
+      meetingType: conv.scheduling.meetingType,
+    };
+    return { text: offer.text, replyMarkup: tgOptionsToKeyboard(offer.options), options: offer.options };
+  }
+
+  if (conv.scheduling.stage === 'offered') {
+    const intent = await classifySchedulingIntent(conv, incomingText, conv.scheduling.offeredSlots);
+    if (intent.picksSlotIndex) {
+      const result = schedConfirmPick(conv, intent.picksSlotIndex - 1);
+      if (result) return { text: result.text, replyMarkup: tgOptionsToKeyboard(result.options), options: result.options };
+    }
+    // Tidak jelas pilih yang mana — biarkan lanjut ke balasan bebas di bawah,
+    // state 'offered' tetap dipertahankan (tombol lama masih berlaku).
+  }
+
+  if (conv.scheduling.stage === 'idle') {
+    const intent = await classifySchedulingIntent(conv, incomingText, []);
+    if (intent.wantsSchedule) {
+      conv.scheduling = { stage: 'awaiting_range', offeredSlots: [], meetingType: intent.meetingTypeGuess };
+      const q = schedBuildRangeQuestion(intent.meetingTypeGuess);
+      return { text: q.text, replyMarkup: tgOptionsToKeyboard(q.options), options: q.options };
+    }
+  }
+
+  const freeText = await tgGenerateReplyWithOllama(conv, incomingText);
+  return { text: freeText, replyMarkup: null, options: [] };
 }
 
 // =============================================================
@@ -1252,10 +1637,42 @@ function wabaGetOrCreateConversation(waId, profileName) {
 }
 
 async function wabaProcessIncomingMessage(message, contactProfile) {
-  if (!message.text || !message.text.body) return; // lewati dulu pesan non-teks (gambar, stiker, dll)
-
   const waId = message.from;
   const conv = wabaGetOrCreateConversation(waId, contactProfile && contactProfile.name);
+
+  // ── Pesan hasil pencet TOMBOL (reply button / list) ──
+  // Bentuknya beda dari pesan teks biasa: message.type === 'interactive', dan
+  // id pilihannya ada di button_reply.id atau list_reply.id (bukan message.text).
+  if (message.type === 'interactive' && message.interactive) {
+    const picked = message.interactive.button_reply || message.interactive.list_reply;
+    if (!picked) return;
+
+    conv.messages.push({
+      id: conv.messages.length + 1,
+      dir: 'in',
+      from: 'user',
+      text: `[Tombol] ${picked.title || picked.id}`,
+      time: message.timestamp ? Number(message.timestamp) * 1000 : Date.now(),
+    });
+    conv.unread += 1;
+    if (conv.handledBy !== 'ai') return; // mode manual — admin yang pegang, AI diam
+
+    try {
+      const result = await schedResolveButtonId(conv, picked.id);
+      if (result) {
+        await wabaSendOfferMessageSafe(conv.chatId, result.text, result.options);
+        const outMsg = { id: conv.messages.length + 1, dir: 'out', from: 'ai', text: result.text, time: Date.now() };
+        conv.messages.push(outMsg);
+        conv.lastMessageText = result.text;
+        conv.lastMessageTime = outMsg.time;
+      }
+    } catch (err) {
+      console.error('[WABA] Gagal kirim balasan tombol:', err.message);
+    }
+    return;
+  }
+
+  if (!message.text || !message.text.body) return; // lewati pesan non-teks lain (gambar, stiker, dll)
 
   const incomingTime = message.timestamp ? Number(message.timestamp) * 1000 : Date.now();
   const incomingMsg = {
@@ -1275,13 +1692,15 @@ async function wabaProcessIncomingMessage(message, contactProfile) {
   try {
     // Reuse logic penjadwalan & generate balasan yang sama dengan Telegram —
     // fungsinya generic terhadap bentuk objek `conv` (name/messages/scheduling),
-    // jadi aman dipakai lintas channel tanpa duplikasi logic.
-    const replyText = await tgHandleMessageAndMaybeSchedule(conv, message.text.body);
-    if (replyText) {
-      await sendViaWaba(conv.chatId, replyText);
-      const outMsg = { id: conv.messages.length + 1, dir: 'out', from: 'ai', text: replyText, time: Date.now() };
+    // jadi aman dipakai lintas channel tanpa duplikasi logic. reply.options
+    // (daftar tombol generik) diterjemahkan wabaSendOfferMessage ke format
+    // interactive WhatsApp yang sesuai (button/list/cta_url) secara otomatis.
+    const reply = await tgHandleMessageAndMaybeSchedule(conv, message.text.body);
+    if (reply && reply.text) {
+      await wabaSendOfferMessageSafe(conv.chatId, reply.text, reply.options);
+      const outMsg = { id: conv.messages.length + 1, dir: 'out', from: 'ai', text: reply.text, time: Date.now() };
       conv.messages.push(outMsg);
-      conv.lastMessageText = replyText;
+      conv.lastMessageText = reply.text;
       conv.lastMessageTime = outMsg.time;
     }
   } catch (err) {
