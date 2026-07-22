@@ -1332,6 +1332,37 @@ async function calendlyCreateSchedulingLink() {
   return data.resource && data.resource.booking_url;
 }
 
+// Setelah webhook "invitee.created" diterima, link conferencing (Zoom/Google
+// Meet, kalau Event Type memakai integrasi itu di Calendly) BISA BELUM SIAP
+// sesaat — Calendly men-generate link-nya SECARA ASYNC setelah invitee
+// booking, jadi payload webhook awal kadang location-nya masih berstatus
+// "initiated"/"processing" (belum ada join_url). Fungsi ini ambil ULANG
+// detail event dari Calendly API (pakai `eventInfo.uri`) beberapa kali dengan
+// jeda singkat, sampai location berstatus "pushed" (link sudah siap) atau
+// percobaan habis — supaya field [Lokasi] appointment terisi link Zoom yang
+// benar, bukan kosong/placeholder.
+async function calendlyGetFreshEventInfo(eventInfo, attempts = 4, delayMs = 1500) {
+  if (!eventInfo.uri) return eventInfo;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      const data = await calendlyFetch(eventInfo.uri);
+      const fresh = data && data.resource;
+      if (fresh) {
+        const status = fresh.location && fresh.location.status;
+        // Tidak semua Event Type punya conferencing (mis. lokasi fisik/telepon)
+        // — status cuma relevan kalau memang ada; kalau tidak ada status
+        // sama sekali, anggap datanya sudah final.
+        if (!status || status === 'pushed' || i === attempts - 1) return fresh;
+      }
+    } catch (e) {
+      console.error('[Calendly] Gagal ambil detail event terbaru, pakai data webhook awal:', e.message);
+      return eventInfo; // fallback ke data webhook kalau API gagal
+    }
+    await new Promise((resolve) => setTimeout(resolve, delayMs));
+  }
+  return eventInfo;
+}
+
 // Buat appointment dari hasil booking Calendly (dipanggil dari webhook
 // invitee.created). Polanya SENGAJA dibuat semirip mungkin dengan
 // apptCreateFromChat supaya masuk ke aiAppointments yang sama dan otomatis
@@ -1343,6 +1374,11 @@ function apptCreateFromCalendlyBooking(payload, eventInfo) {
   const dateStr = `${d.getFullYear()}-${apptPad(d.getMonth() + 1)}-${apptPad(d.getDate())}`;
   const timeStr = `${apptPad(d.getHours())}.${apptPad(d.getMinutes())}`;
   const locationInfo = eventInfo.location || {};
+  // Prioritas: link conferencing (Zoom/Google Meet dari integrasi Calendly,
+  // field `join_url`) → field `location` generik (dipakai jenis lokasi fisik,
+  // "ask_invitee", atau custom) → kosong kalau memang tidak ada sama sekali.
+  const meetingLocation = locationInfo.join_url || locationInfo.location || '';
+  const hasZoomLink = !!locationInfo.join_url;
 
   const record = {
     id: `cal-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
@@ -1358,15 +1394,24 @@ function apptCreateFromCalendlyBooking(payload, eventInfo) {
     sales: APPT_DEFAULT_STAFF,
     status: 'menunggu',
     createdBy: 'calendly',
-    location: locationInfo.join_url || locationInfo.location || '',
+    location: meetingLocation,
     notes: `Dibuat otomatis dari booking Calendly (${payload.email || '-'}).`,
-    aiNote: 'Appointment ini dibuat otomatis lewat link Calendly yang dikirim AI ke customer via chat. Mohon konfirmasi, lengkapi lokasi/link meeting bila belum ada, lalu kirim follow-up.',
+    aiNote: hasZoomLink
+      ? 'Appointment ini dibuat otomatis lewat link Calendly yang dikirim AI ke customer via chat. Link meeting Zoom sudah otomatis terisi di kolom Lokasi. Mohon konfirmasi lalu kirim follow-up.'
+      : 'Appointment ini dibuat otomatis lewat link Calendly yang dikirim AI ke customer via chat. Mohon konfirmasi, lengkapi lokasi/link meeting bila belum ada, lalu kirim follow-up.',
     chatId: null,
     leadId: null,
     calendlyEventUri: eventInfo.uri || null,
     timeline: [
       { type: 'success', event: 'Customer booking langsung lewat Calendly', sub: calendlyFormatSlotLabel(startIso), time: 'Baru saja' },
-      { type: 'ai', event: 'Appointment otomatis dibuat dari webhook Calendly', sub: `Menunggu konfirmasi admin — PIC sementara: ${APPT_DEFAULT_STAFF}`, time: 'Baru saja' },
+      {
+        type: 'ai',
+        event: 'Appointment otomatis dibuat dari webhook Calendly',
+        sub: hasZoomLink
+          ? `Link Zoom otomatis terisi — menunggu konfirmasi admin (PIC sementara: ${APPT_DEFAULT_STAFF})`
+          : `Menunggu konfirmasi admin — PIC sementara: ${APPT_DEFAULT_STAFF}`,
+        time: 'Baru saja',
+      },
     ],
   };
   aiAppointments.push(record);
@@ -2394,20 +2439,26 @@ app.get('/api/calendly/availability', async (req, res) => {
 // didapat saat membuat webhook subscription (lihat POST .../webhook/register
 // di bawah) — perlu raw body, jadi middleware express.json() perlu diberi
 // opsi `verify` untuk menyimpan rawBody sebelum di-parse.
-app.post('/api/calendly/webhook', (req, res) => {
+app.post('/api/calendly/webhook', async (req, res) => {
   res.sendStatus(200); // ack cepat, Calendly retry kalau lambat/non-200
 
   try {
     const { event, payload } = req.body || {};
     if (event !== 'invitee.created' || !payload) return;
 
-    const eventInfo = payload.scheduled_event || {};
+    let eventInfo = payload.scheduled_event || {};
     if (!eventInfo.start_time) {
       console.warn('[Calendly] Payload invitee.created tanpa scheduled_event.start_time, dilewati:', JSON.stringify(payload));
       return;
     }
 
     console.log(`[Calendly] Booking baru dari ${payload.email || '-'} untuk ${eventInfo.start_time}`);
+
+    // Ambil ulang detail event (dgn retry singkat) supaya link Zoom/Meet dari
+    // integrasi conferencing Calendly (kalau ada) sudah siap sebelum dipakai
+    // mengisi [Lokasi] — lihat catatan di calendlyGetFreshEventInfo.
+    eventInfo = await calendlyGetFreshEventInfo(eventInfo);
+
     apptCreateFromCalendlyBooking(payload, eventInfo);
   } catch (err) {
     console.error('[Calendly] Gagal proses webhook:', err.message);
