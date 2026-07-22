@@ -30,11 +30,6 @@ const fs = require('fs');
 const path = require('path');
 const multer = require('multer');
 
-// Ekstraktor teks per tipe file — dibuat OPSIONAL (try/catch) supaya server
-// tetap bisa start walau salah satu belum di-`npm install`. Kalau modulnya
-// belum ada, upload tetap tersimpan tapi isinya diberi catatan "gagal
-// ekstrak" (bisa dilihat & diedit manual dari tab Teks Langsung).
-// Install semua sekaligus: npm install multer pdf-parse mammoth xlsx
 let pdfParseLib = null;
 let mammothLib = null;
 let xlsxLib = null;
@@ -49,14 +44,10 @@ app.use(express.json({ limit: '2mb' }));
 const PORT = process.env.PORT || 3001;
 const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
 const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'llama3.1';
+
 // Model terpisah untuk pipeline insight (opsional). Analisis JSON terstruktur
-// biasanya lebih stabil di model yang lebih besar/instruction-tuned baik;
-// kalau tidak diisi, pakai OLLAMA_MODEL yang sama dengan follow-up.
 const PIPELINE_OLLAMA_MODEL = process.env.PIPELINE_OLLAMA_MODEL || OLLAMA_MODEL;
 // Token Telegram TIDAK LAGI diambil dari .env secara permanen — sekarang diatur
-// secara runtime lewat halaman Integrasi (POST/DELETE /api/telegram/config).
-// .env cuma dipakai sebagai fallback awal kalau server baru pertama kali start
-// dan belum ada token yang dikirim dari frontend.
 let TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
 let TELEGRAM_DEFAULT_CHAT_ID = process.env.TELEGRAM_DEFAULT_CHAT_ID || '';
 // Kredensial WhatsApp Business API (WABA / Meta Cloud API) — sejajar dengan
@@ -933,18 +924,8 @@ async function startTelegramPolling() {
   if (myEpoch === tgPollEpoch) tgPollingActive = false;
 }
 
-// =============================================================
-// 2e) APPOINTMENT DARI PERCAKAPAN (BARU)
-//     AI menawarkan slot jadwal yang masih kosong ke customer lewat chat
-//     Telegram (mis. saat customer bertanya "boleh jadwalkan demo?"). Begitu
-//     customer memilih salah satu slot, appointment otomatis dibuat di sini
-//     (status "menunggu" konfirmasi admin) dan disinkronkan ke halaman
-//     Appointment lewat polling GET /api/appointments/ai-created.
-//     Alurnya: Percakapan → AI tawarkan slot → customer pilih →
-//     appointment masuk ke halaman Appointment → admin klik tombol
-//     "Konfirmasi & Follow-up" → automasi follow-up (endpoint 5b di bawah).
-// =============================================================
-const APPT_WORKING_DAYS = [1, 2, 3, 4, 5, 6]; // Senin–Sabtu (0=Minggu, 6=Sabtu) — Minggu libur
+const APPT_WORKING_DAYS = [1, 2, 3, 4, 5, 6]; 
+// Senin–Sabtu (0=Minggu, 6=Sabtu) — Minggu libur
 // Jam kerja sekarang dibagi jadi 4 jendela tetap per hari (bukan lagi loop
 // per-jam) — dipakai sebagai daftar JAM yang ditawarkan setelah customer
 // memilih TANGGAL (lihat alur baru: pilih minggu → pilih tanggal → pilih jam).
@@ -1417,27 +1398,6 @@ function apptCreateFromCalendlyBooking(payload, eventInfo) {
   aiAppointments.push(record);
   return record;
 }
-
-// =============================================================
-// SISTEM PENJADWALAN GENERIK — dipakai bersama oleh Telegram & WhatsApp.
-// Alurnya SEKARANG 3 langkah (sebelumnya 2 langkah dengan tanggal+jam
-// digabung jadi 1 tombol, yang bikin daftarnya kepanjangan & jamnya tidak
-// konsisten dgn jam kerja bisnis):
-//   1) Customer terlihat ingin jadwal → AI tanya dulu: "minggu ini atau
-//      minggu depan?" (cuma 2 tombol, conv.scheduling.stage = 'awaiting_range')
-//   2) Setelah rentang dipilih → AI tawarkan daftar TANGGAL kosong (Senin–
-//      Sabtu saja, Minggu libur; mulai dari HARI INI kalau "minggu ini") di
-//      rentang tsb — TANPA jam (stage = 'awaiting_date').
-//   3) Setelah tanggal dipilih → AI tawarkan daftar JAM kosong utk tanggal
-//      itu (4 jendela tetap: 08.00-09.30 / 10.00-11.30 / 13.00-14.30 /
-//      15.00-16.30 — atau jam ASLI dari Calendly kalau terhubung) (stage =
-//      'awaiting_time').
-//   4) Setelah jam dipilih → appointment otomatis dibuat (atau, khusus
-//      Calendly, dikirim SATU tombol link booking final).
-// Representasi tombol dibuat GENERIK ({id, label, url?}) supaya bisa
-// diterjemahkan ke format Telegram (inline keyboard) maupun WhatsApp
-// (reply buttons / list / cta_url) tanpa duplikasi logic penjadwalan.
-// =============================================================
 
 function schedFreshState() {
   return { stage: 'idle', offeredDates: [], offeredTimes: [], meetingType: null, rangeKey: null };
