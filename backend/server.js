@@ -935,6 +935,7 @@ const APPT_TIME_SLOTS = [
   { start: '13.00', end: '14.30' },
   { start: '15.00', end: '16.30' },
 ];
+
 const APPT_DEFAULT_DURATION = 90; // menit — selaras dengan lebar tiap jendela di APPT_TIME_SLOTS
 // Server tidak tahu daftar staff (itu konfigurasi frontend di appointment.js
 // / SELLER_CONFIG.staffList) — pakai fallback yang bisa dioverride lewat .env
@@ -1247,6 +1248,11 @@ function calendlyDateKey(iso) {
 // minggu → PILIH TANGGAL → pilih jam). Minggu (Sunday) selalu dikecualikan
 // sesuai aturan bisnis (Senin–Sabtu saja), terlepas dari pengaturan
 // availability di sisi Calendly.
+// PENTING: error API (token invalid, rate limit, dll) SENGAJA TIDAK ditelan
+// jadi "0 tanggal" di sini — dilempar ke pemanggil (schedBuildDateOffer)
+// supaya customer dapat pesan yang jujur ("kendala teknis"), bukan pesan
+// "tidak ada tanggal kosong" yang menyesatkan (seolah kalendernya memang
+// penuh, padahal request-nya gagal).
 async function calendlyGetAvailableDatesInRange(startDate, endDate) {
   if (!calendlyConfigured()) return [];
   const seenDates = new Set();
@@ -1254,22 +1260,17 @@ async function calendlyGetAvailableDatesInRange(startDate, endDate) {
 
   while (windowStart < endDate) {
     const windowEnd = new Date(Math.min(windowStart.getTime() + 6 * 86400000, endDate.getTime()));
-    try {
-      const qs = new URLSearchParams({
-        event_type: CALENDLY_EVENT_TYPE_URI,
-        start_time: windowStart.toISOString(),
-        end_time: windowEnd.toISOString(),
-      });
-      const data = await calendlyFetch(`/event_type_available_times?${qs.toString()}`);
-      for (const s of (data.collection || [])) {
-        if (s.status !== 'available') continue;
-        const d = new Date(s.start_time);
-        if (d.getDay() === 0) continue; // Minggu libur, tidak ditawarkan
-        seenDates.add(calendlyDateKey(s.start_time));
-      }
-    } catch (e) {
-      console.error('[Calendly] Gagal ambil tanggal available_times:', e.message);
-      break;
+    const qs = new URLSearchParams({
+      event_type: CALENDLY_EVENT_TYPE_URI,
+      start_time: windowStart.toISOString(),
+      end_time: windowEnd.toISOString(),
+    });
+    const data = await calendlyFetch(`/event_type_available_times?${qs.toString()}`);
+    for (const s of (data.collection || [])) {
+      if (s.status !== 'available') continue;
+      const d = new Date(s.start_time);
+      if (d.getDay() === 0) continue; // Minggu libur, tidak ditawarkan
+      seenDates.add(calendlyDateKey(s.start_time));
     }
     windowStart = new Date(windowEnd.getTime() + 1000);
   }
@@ -1278,24 +1279,28 @@ async function calendlyGetAvailableDatesInRange(startDate, endDate) {
 
 // Daftar JAM (available times ASLI dari Calendly) utk SATU tanggal tertentu —
 // dipakai utk langkah 3 alur baru, setelah customer memilih tanggal.
+// Sama seperti di atas: error API dibiarkan menjalar (tidak ditelan jadi []).
 async function calendlyGetAvailableTimesForDate(dateStr) {
   if (!calendlyConfigured()) return [];
-  try {
-    const startOfDay = new Date(`${dateStr}T00:00:00+07:00`);
-    const endOfDay = new Date(`${dateStr}T23:59:59+07:00`);
-    const qs = new URLSearchParams({
-      event_type: CALENDLY_EVENT_TYPE_URI,
-      start_time: startOfDay.toISOString(),
-      end_time: endOfDay.toISOString(),
-    });
-    const data = await calendlyFetch(`/event_type_available_times?${qs.toString()}`);
-    return (data.collection || [])
-      .filter((s) => s.status === 'available')
-      .map((s) => ({ date: dateStr, startTime: s.start_time, schedulingUrl: s.scheduling_url, source: 'calendly' }));
-  } catch (e) {
-    console.error('[Calendly] Gagal ambil jam available_times utk tanggal:', e.message);
-    return [];
-  }
+  const now = new Date();
+  let startOfDay = new Date(`${dateStr}T00:00:00+07:00`);
+  const endOfDay = new Date(`${dateStr}T23:59:59+07:00`);
+  // Kalau tanggalnya HARI INI, tengah malam (00:00) sudah pasti di masa lalu
+  // — pakai SEKARANG + buffer 2 menit sebagai gantinya, sama seperti
+  // schedWeekRange, supaya tidak kena error "supplied parameters invalid".
+  const bufferedNow = new Date(now.getTime() + 2 * 60 * 1000);
+  if (startOfDay < bufferedNow) startOfDay = bufferedNow;
+  if (startOfDay >= endOfDay) return []; // sudah lewat jam operasional hari ini
+
+  const qs = new URLSearchParams({
+    event_type: CALENDLY_EVENT_TYPE_URI,
+    start_time: startOfDay.toISOString(),
+    end_time: endOfDay.toISOString(),
+  });
+  const data = await calendlyFetch(`/event_type_available_times?${qs.toString()}`);
+  return (data.collection || [])
+    .filter((s) => s.status === 'available')
+    .map((s) => ({ date: dateStr, startTime: s.start_time, schedulingUrl: s.scheduling_url, source: 'calendly' }));
 }
 
 // Buat scheduling link personal SEKALI-PAKAI (max_event_count: 1) untuk
@@ -1430,7 +1435,13 @@ function schedWeekRange(rangeKey) {
     const nextSaturday = new Date(nextMonday.getFullYear(), nextMonday.getMonth(), nextMonday.getDate() + 5, 23, 59, 59);
     return { start: nextMonday, end: nextSaturday, label: 'minggu depan' };
   }
-  return { start: now, end: thisSaturday, label: 'minggu ini' };
+  // "minggu ini" pakai start_time = SEKARANG + buffer 2 menit (bukan `now`
+  // apa adanya) — Calendly API menolak start_time yang sudah "di masa lalu"
+  // saat request diterima, dan tanpa buffer, jeda network sedikit saja bisa
+  // bikin `now` yang kita kirim jadi telat beberapa detik/menit begitu
+  // sampai di server Calendly → error "The supplied parameters are invalid."
+  const bufferedNow = new Date(now.getTime() + 2 * 60 * 1000);
+  return { start: bufferedNow, end: thisSaturday, label: 'minggu ini' };
 }
 
 // Interpretasi jawaban customer yang MENGETIK (bukan pencet tombol) saat
@@ -1452,59 +1463,63 @@ function schedBuildRangeQuestion(meetingType) {
 }
 
 // Langkah 2: tawarkan daftar TANGGAL (Senin–Sabtu, tanpa jam) di rentang
-// [start, end] yang dipilih customer. Prioritas ambil dari Calendly (kalau
-// terhubung) — TIDAK fallback ke tanggal internal saat Calendly terhubung
-// tapi kosong di rentang itu, supaya AI tidak menawarkan tanggal yang
-// sebetulnya tidak ada di kalender asli.
+// [start, end] yang dipilih customer. SELALU 100% dari kalender ASLI
+// Calendly (calendlyGetAvailableDatesInRange) — TIDAK ada fallback ke data
+// dummy/internal (APPT_TIME_SLOTS). Kalau Calendly belum terhubung sama
+// sekali, kasih tahu apa adanya (bukan pura-pura ada slot kosong).
+// Error API (token invalid, rate limit, dll) dibedakan dari "memang tidak
+// ada slot kosong" — supaya customer tidak dikasih info yang menyesatkan
+// dan admin bisa lihat error asli di log server.
 async function schedBuildDateOffer(meetingType, rangeKey) {
   const { start, end, label: rangeLabel } = schedWeekRange(rangeKey);
   const typeLabel = apptTypeLabel(meetingType);
 
-  if (calendlyConfigured()) {
-    try {
-      const dates = await calendlyGetAvailableDatesInRange(start, end);
-      if (dates.length) {
-        return {
-          text: `Berikut tanggal kosong untuk ${typeLabel} di ${rangeLabel}. Silakan pilih salah satu:`,
-          options: dates.map((d) => ({ id: `date:${d.date}`, label: `📅 ${schedFormatDateLabel(d)}` })),
-          offeredDates: dates,
-        };
-      }
+  if (!calendlyConfigured()) {
+    console.error('[Calendly] schedBuildDateOffer dipanggil tapi Calendly belum dikonfigurasi (token/Event Type URI kosong).');
+    return {
+      text: `Mohon maaf, penjadwalan otomatis belum aktif saat ini. Silakan hubungi tim kami langsung ya.`,
+      options: [],
+      offeredDates: [],
+    };
+  }
+
+  try {
+    const dates = await calendlyGetAvailableDatesInRange(start, end);
+    if (!dates.length) {
       return {
         text: `Mohon maaf, tidak ada tanggal kosong untuk ${typeLabel} di ${rangeLabel}. Silakan coba rentang lain atau hubungi tim kami langsung ya.`,
         options: [],
         offeredDates: [],
       };
-    } catch (e) {
-      console.error('[Calendly] Gagal ambil tanggal in-range, fallback ke tanggal internal:', e.message);
-      // lanjut ke jalur internal di bawah
     }
-  }
-
-  const internalDates = apptGetAvailableDatesInRange(start, end);
-  if (!internalDates.length) {
     return {
-      text: `Mohon maaf, tidak ada tanggal kosong untuk ${typeLabel} di ${rangeLabel}. Silakan coba rentang lain ya.`,
+      text: `Berikut tanggal kosong untuk ${typeLabel} di ${rangeLabel}. Silakan pilih salah satu:`,
+      options: dates.map((d) => ({ id: `date:${d.date}`, label: `📅 ${schedFormatDateLabel(d)}` })),
+      offeredDates: dates,
+    };
+  } catch (e) {
+    console.error('[Calendly] Gagal ambil tanggal available_times (schedBuildDateOffer):', e.message);
+    return {
+      text: `Mohon maaf, sedang ada kendala teknis mengambil jadwal dari sistem kami. Boleh dicoba lagi sebentar, atau hubungi tim kami langsung ya.`,
       options: [],
       offeredDates: [],
     };
   }
-  return {
-    text: `Berikut tanggal kosong untuk ${typeLabel} di ${rangeLabel}. Silakan pilih salah satu:`,
-    options: internalDates.map((d) => ({ id: `date:${d.date}`, label: `🗓️ ${schedFormatDateLabel(d)}` })),
-    offeredDates: internalDates,
-  };
 }
 
 // Langkah 3: setelah tanggal dipilih, tawarkan daftar JAM kosong utk
 // tanggal itu — 4 jendela tetap (APPT_TIME_SLOTS) utk sumber internal, atau
 // jam ASLI dari Calendly (event_type_available_times) kalau tanggal itu
 // berasal dari Calendly.
-async function schedBuildTimeOffer(meetingType, dateStr, source) {
+// Langkah 3: setelah tanggal dipilih, tawarkan daftar JAM kosong — SELALU
+// 100% dari jam ASLI Calendly (calendlyGetAvailableTimesForDate) utk
+// tanggal itu, TIDAK dari APPT_TIME_SLOTS. Sama seperti schedBuildDateOffer:
+// error API dibedakan dari "jam memang penuh".
+async function schedBuildTimeOffer(meetingType, dateStr) {
   const typeLabel = apptTypeLabel(meetingType);
   const dateLabel = apptFormatDateLabel(dateStr);
 
-  if (source === 'calendly') {
+  try {
     const times = await calendlyGetAvailableTimesForDate(dateStr);
     if (!times.length) {
       return {
@@ -1518,47 +1533,32 @@ async function schedBuildTimeOffer(meetingType, dateStr, source) {
       options: times.map((t, i) => ({ id: `time:${i}`, label: `⏰ ${calendlyFormatTimeLabel(t.startTime)}` })),
       offeredTimes: times,
     };
-  }
-
-  const times = apptGetAvailableTimesForDate(dateStr);
-  if (!times.length) {
+  } catch (e) {
+    console.error('[Calendly] Gagal ambil jam available_times (schedBuildTimeOffer):', e.message);
     return {
-      text: `Mohon maaf, jam untuk ${dateLabel} sudah penuh. Silakan pilih tanggal lain ya.`,
+      text: `Mohon maaf, sedang ada kendala teknis mengambil jam untuk ${dateLabel}. Boleh dicoba lagi sebentar ya.`,
       options: [],
       offeredTimes: [],
     };
   }
-  return {
-    text: `Baik, untuk ${typeLabel} di ${dateLabel}. Berikut jam yang tersedia, silakan pilih salah satu:`,
-    options: times.map((t, i) => ({ id: `time:${i}`, label: `⏰ ${apptFormatTimeLabel(t)}` })),
-    offeredTimes: times,
-  };
 }
 
 // Langkah 4: konfirmasi begitu customer memilih salah satu JAM (index
 // 0-based) dari conv.scheduling.offeredTimes — dipanggil baik dari jalur
 // ketik nomor MAUPUN dari jalur pencet tombol, lihat schedResolveButtonId.
-//   - Slot "internal": appointment langsung dibuat & dicatat di sini.
-//   - Slot "calendly": booking SESUNGGUHNYA terjadi di halaman Calendly (lalu
-//     appointment masuk otomatis lewat webhook) — jadi di sini AI cukup
-//     kasih SATU tombol link langsung ke slot yang dipilih.
-function schedConfirmTime(conv, index) {
+// Tanggal & jam di sini SELALU dari Calendly (lihat schedBuildDateOffer /
+// schedBuildTimeOffer di atas), jadi `slot.schedulingUrl` yang dikembalikan
+// `event_type_available_times` sudah berupa deep-link PERSIS ke jam itu —
+// dipakai langsung, TIDAK generate scheduling link generik lagi. Booking
+// SESUNGGUHNYA terjadi di halaman Calendly itu, appointment baru tercatat
+// otomatis begitu webhook invitee.created diterima (+ link Zoom otomatis).
+async function schedConfirmTime(conv, index) {
   const slot = conv.scheduling.offeredTimes && conv.scheduling.offeredTimes[index];
   if (!slot) return null;
   const firstName = (conv.name || '').split(' ')[0] || '';
-
-  if (slot.source === 'internal') {
-    apptCreateFromChat(conv, { date: slot.date, time: slot.time }, conv.scheduling.meetingType);
-    const label = apptFormatSlotLabel(slot);
-    conv.scheduling = schedFreshState();
-    return {
-      text: `Baik${firstName ? ' ' + firstName : ''}, jadwal Anda sudah kami catat untuk ${label}. Tim kami akan segera mengonfirmasi dan menghubungi Anda kembali. Terima kasih! 🙏`,
-      options: [],
-    };
-  }
-
   const label = calendlyFormatSlotLabel(slot.startTime);
   conv.scheduling = schedFreshState();
+
   return {
     text: `Baik${firstName ? ' ' + firstName : ''}, untuk ${label}, silakan konfirmasi & selesaikan booking lewat tombol di bawah ya:`,
     options: [{ id: 'noop', label: 'Konfirmasi & Booking Sekarang', url: slot.schedulingUrl }],
@@ -1592,7 +1592,7 @@ async function schedResolveButtonId(conv, id) {
     const dateStr = val;
     const matched = conv.scheduling.offeredDates.find((d) => d.date === dateStr);
     if (!matched) return null;
-    const offer = await schedBuildTimeOffer(conv.scheduling.meetingType, dateStr, matched.source);
+    const offer = await schedBuildTimeOffer(conv.scheduling.meetingType, dateStr);
     conv.scheduling = {
       stage: offer.offeredTimes.length ? 'awaiting_time' : 'idle',
       offeredDates: conv.scheduling.offeredDates,
@@ -1608,7 +1608,7 @@ async function schedResolveButtonId(conv, id) {
     const idx = Number(val);
     const slot = conv.scheduling.offeredTimes[idx];
     const chosenLabel = slot ? schedFormatTimeLabel(slot) : `pilihan #${idx}`;
-    const result = schedConfirmTime(conv, idx);
+    const result = await schedConfirmTime(conv, idx);
     if (!result) return null;
     return { text: result.text, options: result.options, chosenLabel };
   }
@@ -1657,7 +1657,7 @@ async function tgHandleMessageAndMaybeSchedule(conv, incomingText) {
     if (intent.picksSlotIndex) {
       const picked = conv.scheduling.offeredDates[intent.picksSlotIndex - 1];
       if (picked) {
-        const offer = await schedBuildTimeOffer(conv.scheduling.meetingType, picked.date, picked.source);
+        const offer = await schedBuildTimeOffer(conv.scheduling.meetingType, picked.date);
         conv.scheduling = {
           stage: offer.offeredTimes.length ? 'awaiting_time' : 'idle',
           offeredDates: conv.scheduling.offeredDates,
@@ -1676,7 +1676,7 @@ async function tgHandleMessageAndMaybeSchedule(conv, incomingText) {
     const timeLabels = conv.scheduling.offeredTimes.map((t) => schedFormatTimeLabel(t));
     const intent = await classifySchedulingIntent(conv, incomingText, timeLabels);
     if (intent.picksSlotIndex) {
-      const result = schedConfirmTime(conv, intent.picksSlotIndex - 1);
+      const result = await schedConfirmTime(conv, intent.picksSlotIndex - 1);
       if (result) return { text: result.text, replyMarkup: tgOptionsToKeyboard(result.options), options: result.options };
     }
     // Tidak jelas pilih jam yang mana — biarkan lanjut ke balasan bebas di
