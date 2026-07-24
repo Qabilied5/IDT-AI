@@ -54,6 +54,34 @@ async function cyAutoSyncOnLoad() {
   await cySyncToBackend(token, cyGetEventUri());
 }
 
+// ── DAFTAR EVENT TYPE (biar tidak perlu copas URI manual tiap kali bikin/
+//    hapus Event Type baru di Calendly) ───────────────────────────────
+// Ambil semua Event Type milik akun ini beserta `uri`-nya (format API,
+// bukan link publik "Copy link" yang beda format dan TIDAK bisa dipakai
+// langsung di kolom Event Type URI).
+async function cyFetchEventTypes(token) {
+  if (!token) return { ok: false, error: 'Personal Access Token kosong' };
+  try {
+    const meRes = await fetch('https://api.calendly.com/users/me', {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const meData = await meRes.json();
+    if (!meRes.ok || !meData.resource) {
+      return { ok: false, error: (meData.message || meData.title) || 'Token tidak valid' };
+    }
+    const evRes = await fetch(`https://api.calendly.com/event_types?user=${encodeURIComponent(meData.resource.uri)}&count=100`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const evData = await evRes.json();
+    if (!evRes.ok) {
+      return { ok: false, error: (evData.message || evData.title) || 'Gagal ambil daftar Event Type' };
+    }
+    return { ok: true, eventTypes: evData.collection || [] };
+  } catch (e) {
+    return { ok: false, error: 'Gagal terhubung — periksa koneksi internet' };
+  }
+}
+
 // ── TEST CONNECTION ───────────────────────────────────────────────
 // Calendly API dites dengan GET /users/me pakai Personal Access Token
 // sebagai Bearer token — mirip cara test WABA (GET Phone Number ID).
@@ -104,6 +132,15 @@ function cyBuildModal() {
         <div>
           <label class="pc-field-label">Event Type URI <span style="color:var(--gray-400)">(opsional, bisa diisi belakangan)</span></label>
           <input class="pc-field-input" type="text" id="cy-input-eventuri" placeholder="https://api.calendly.com/event_types/xxxxxxxx">
+          <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+            <button type="button" class="pc-btn-ghost" onclick="cyHandleLoadEventTypes()" id="cy-load-events-btn" style="font-size:11px;padding:4px 8px">
+              <i class="ti ti-refresh"></i> Muat Daftar Event Type
+            </button>
+            <select id="cy-eventtype-select" style="display:none;flex:1;font-size:12px" class="pc-field-input" onchange="cyHandleSelectEventType()">
+              <option value="">— pilih Event Type —</option>
+            </select>
+          </div>
+          <div id="cy-eventtype-status" style="font-size:11px;min-height:14px;margin-top:4px"></div>
         </div>
         <div id="cy-status-row" style="font-size:12px;min-height:16px"></div>
         <div id="cy-saved-badge" style="display:none;font-size:11px;color:var(--green);font-weight:600">● Kredensial Tersimpan</div>
@@ -161,6 +198,51 @@ function cyToggleVisibility() {
   const input = document.getElementById('cy-input-token');
   if (!input) return;
   input.type = input.type === 'password' ? 'text' : 'password';
+}
+
+async function cyHandleLoadEventTypes() {
+  const token = (document.getElementById('cy-input-token')?.value || '').trim();
+  const statusEl = document.getElementById('cy-eventtype-status');
+  const select = document.getElementById('cy-eventtype-select');
+  if (!token) {
+    if (statusEl) { statusEl.textContent = '✕ Isi Personal Access Token dulu'; statusEl.style.color = 'var(--red)'; }
+    return;
+  }
+
+  const btn = document.getElementById('cy-load-events-btn');
+  if (btn) { btn.disabled = true; }
+  if (statusEl) { statusEl.textContent = '⏳ Memuat daftar Event Type…'; statusEl.style.color = 'var(--gray-400)'; }
+
+  const result = await cyFetchEventTypes(token);
+
+  if (btn) { btn.disabled = false; }
+
+  if (!result.ok) {
+    if (statusEl) { statusEl.textContent = '✕ ' + result.error; statusEl.style.color = 'var(--red)'; }
+    return;
+  }
+  if (!result.eventTypes.length) {
+    if (statusEl) { statusEl.textContent = 'Tidak ada Event Type ditemukan di akun ini'; statusEl.style.color = 'var(--gray-400)'; }
+    return;
+  }
+
+  if (select) {
+    select.innerHTML = '<option value="">— pilih Event Type —</option>' + result.eventTypes.map((ev) => {
+      const durasi = ev.duration ? `${ev.duration} menit` : '';
+      const status = ev.active ? '' : ' (nonaktif)';
+      return `<option value="${ev.uri}">${ev.name}${durasi ? ' — ' + durasi : ''}${status}</option>`;
+    }).join('');
+    select.style.display = 'block';
+  }
+  if (statusEl) { statusEl.textContent = `✓ ${result.eventTypes.length} Event Type ditemukan — silakan pilih di atas`; statusEl.style.color = 'var(--green)'; }
+}
+
+function cyHandleSelectEventType() {
+  const select = document.getElementById('cy-eventtype-select');
+  const input = document.getElementById('cy-input-eventuri');
+  if (select && input && select.value) {
+    input.value = select.value;
+  }
 }
 
 async function cyHandleTest() {

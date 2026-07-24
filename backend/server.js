@@ -929,6 +929,7 @@ const APPT_WORKING_DAYS = [1, 2, 3, 4, 5, 6];
 // Jam kerja sekarang dibagi jadi 4 jendela tetap per hari (bukan lagi loop
 // per-jam) — dipakai sebagai daftar JAM yang ditawarkan setelah customer
 // memilih TANGGAL (lihat alur baru: pilih minggu → pilih tanggal → pilih jam).
+
 const APPT_TIME_SLOTS = [
   { start: '08.00', end: '09.30' },
   { start: '10.00', end: '11.30' },
@@ -1164,6 +1165,7 @@ async function calendlyFetch(pathOrUrl, options = {}) {
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
+    console.error('[Calendly] API error, detail lengkap:', res.status, JSON.stringify(data));
     throw new Error(data.message || data.title || `Calendly API error ${res.status}`);
   }
   return data;
@@ -1366,6 +1368,18 @@ function apptCreateFromCalendlyBooking(payload, eventInfo) {
   const meetingLocation = locationInfo.join_url || locationInfo.location || '';
   const hasZoomLink = !!locationInfo.join_url;
 
+  // Durasi dihitung OTOMATIS dari selisih start_time & end_time yang
+  // dikirim Calendly di webhook — bukan angka tetap — supaya kalau durasi
+  // Event Type-nya diubah lagi (mis. 30 → 60 menit) di dashboard Calendly,
+  // appointment yang tercatat di sini otomatis ikut akurat tanpa perlu
+  // ganti kode. APPT_DEFAULT_DURATION cuma dipakai sebagai fallback kalau
+  // end_time entah kenapa tidak ada/tidak valid di payload webhook.
+  const endIso = eventInfo.end_time;
+  const rawDurationMinutes = endIso ? Math.round((new Date(endIso) - new Date(startIso)) / 60000) : NaN;
+  const durationMinutes = Number.isFinite(rawDurationMinutes) && rawDurationMinutes > 0
+    ? rawDurationMinutes
+    : APPT_DEFAULT_DURATION;
+
   const record = {
     id: `cal-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
     nama: payload.name || '-',
@@ -1374,7 +1388,7 @@ function apptCreateFromCalendlyBooking(payload, eventInfo) {
     email: payload.email || '',
     date: dateStr,
     time: timeStr,
-    duration: APPT_DEFAULT_DURATION,
+    duration: durationMinutes,
     type: 'konsultasi',
     typeLabel: apptTypeLabel('konsultasi'),
     sales: APPT_DEFAULT_STAFF,
@@ -1757,7 +1771,7 @@ Data lead:
 - Skor AI: ${lead.aiScore || 'WARM'}
 
 Aturan:
-- Output HANYA frasa pendeknya saja, contoh: "peluang menjadi supplier di Indotrading" atau "kebutuhan pengadaan produk industri lewat RFQ kami"
+- Output HANYA frasa pendeknya saja
 - JANGAN pakai newline, markdown, tanda kutip, atau titik di akhir.
 - Maksimal 8 kata.`;
 }

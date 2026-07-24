@@ -1,0 +1,345 @@
+/* ==========================================================================
+   REVENUE PAGE — page.css/revenue.css
+   Menggunakan prefix "rv-" agar tidak bentrok dengan halaman lain.
+   Variable warna (--red, --green, --gray-*, dst) mengikuti core.css bila
+   tersedia; disertakan fallback agar tetap tampil rapi jika tidak ada.
+   ========================================================================== */
+
+#revenue-page {
+  gap: 20px;
+}
+
+/* ── Page Header ─────────────────────────────────────────────────────── */
+.rv-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
+.rv-page-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--gray-800, #1f2937);
+}
+
+.rv-page-sub {
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--gray-600, #6b7280);
+}
+
+.rv-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+  flex-wrap: wrap;
+}
+
+/* ── Date range dropdown ─────────────────────────────────────────────── */
+.rv-range-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 20;
+  background: var(--white, #fff);
+  border: 1px solid var(--gray-200, #e5e7eb);
+  border-radius: 12px;
+  box-shadow: 0 12px 28px rgba(17, 24, 39, .12);
+  padding: 6px;
+  min-width: 180px;
+}
+
+.rv-range-opt {
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--gray-800, #1f2937);
+  cursor: pointer;
+}
+
+.rv-range-opt:hover {
+  background: var(--gray-50, #f9fafb);
+}
+
+.rv-range-opt.active {
+  background: var(--red-light, #fef2f2);
+  color: var(--red, #dc2626);
+  font-weight: 600;
+}
+
+/* ── KPI Strip ────────────────────────────────────────────────────────── */
+.rv-kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+
+.rv-kpi {
+  background: var(--white, #fff);
+  border: 1px solid var(--gray-200, #e5e7eb);
+  border-radius: 14px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.rv-kpi.accent-total { border-top: 3px solid var(--gray-800, #1f2937); }
+.rv-kpi.accent-ai    { border-top: 3px solid var(--red, #dc2626); }
+.rv-kpi.accent-human { border-top: 3px solid #3b82f6; }
+
+.rv-kpi-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--gray-600, #6b7280);
+}
+
+.rv-kpi-val {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--gray-800, #1f2937);
+  line-height: 1.1;
+}
+
+.rv-kpi-unit {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gray-600, #6b7280);
+  margin-left: 2px;
+}
+
+.rv-trend {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.rv-trend.up   { color: var(--green, #16a34a); }
+.rv-trend.down { color: var(--red, #dc2626); }
+
+/* ── Chart Row ────────────────────────────────────────────────────────── */
+.rv-chart-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 14px;
+  align-items: stretch;
+}
+
+.rv-chart-card {
+  background: var(--white, #fff);
+  border: 1px solid var(--gray-200, #e5e7eb);
+  border-radius: 14px;
+  padding: 16px 18px;
+}
+
+.rv-sec-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.rv-sec-title {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--gray-800, #1f2937);
+}
+
+.rv-sec-sub {
+  font-size: 12px;
+  color: var(--gray-600, #6b7280);
+  margin-top: 2px;
+}
+
+.rv-sec-action {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--red, #dc2626);
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  cursor: pointer;
+}
+
+.rv-chart-legend {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 12px;
+  color: var(--gray-600, #6b7280);
+}
+
+.rv-leg-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 4px;
+}
+
+.rv-chart-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.rv-chart-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--gray-400, #9ca3af);
+}
+
+/* ── Donut ────────────────────────────────────────────────────────────── */
+.rv-donut-wrap {
+  position: relative;
+  width: 140px;
+  height: 140px;
+  margin: 0 auto 14px;
+}
+
+.rv-donut-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  pointer-events: none;
+}
+
+.rv-donut-total {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--gray-800, #1f2937);
+}
+
+.rv-donut-label {
+  font-size: 10.5px;
+  color: var(--gray-400, #9ca3af);
+}
+
+.rv-channel-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rv-ch-leg-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--gray-600, #6b7280);
+}
+
+.rv-ch-leg-row strong {
+  margin-left: auto;
+  color: var(--gray-800, #1f2937);
+  font-size: 13px;
+}
+
+/* ── Tables ───────────────────────────────────────────────────────────── */
+.rv-table-card {
+  background: var(--white, #fff);
+  border: 1px solid var(--gray-200, #e5e7eb);
+  border-radius: 14px;
+  padding: 16px 18px;
+}
+
+.rv-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.rv-table th {
+  text-align: left;
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: .02em;
+  color: var(--gray-400, #9ca3af);
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--gray-200, #e5e7eb);
+}
+
+.rv-table td {
+  padding: 11px 10px;
+  border-bottom: 1px solid var(--gray-100, #f3f4f6);
+  color: var(--gray-800, #1f2937);
+  vertical-align: middle;
+}
+
+.rv-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.rv-table tbody tr:hover {
+  background: var(--gray-50, #f9fafb);
+}
+
+/* Mini bar untuk kontribusi AI di tabel channel */
+.rv-bar-mini {
+  display: inline-block;
+  width: 70px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--gray-100, #f3f4f6);
+  overflow: hidden;
+  vertical-align: middle;
+  margin-right: 6px;
+}
+
+.rv-bar-fill-mini {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--red, #dc2626);
+}
+
+/* Badge sumber transaksi */
+.rv-source-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.rv-source-badge.ai {
+  background: var(--red-light, #fef2f2);
+  color: var(--red, #dc2626);
+}
+
+.rv-source-badge.human {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.rv-amount {
+  font-weight: 700;
+}
+
+/* ── Responsive ───────────────────────────────────────────────────────── */
+@media (max-width: 1200px) {
+  .rv-kpi-strip { grid-template-columns: repeat(2, 1fr); }
+  .rv-chart-row { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 640px) {
+  .rv-kpi-strip { grid-template-columns: 1fr; }
+  .rv-table { font-size: 12px; }
+}

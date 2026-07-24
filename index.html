@@ -16,6 +16,7 @@
   <link rel="stylesheet" href="page.css/aicall.css">
   <link rel="stylesheet" href="page.css/pipeline.css">
   <link rel="stylesheet" href="page.css/pipeline-ai.css">
+  <link rel="stylesheet" href="page.css/revenue.css">
   <link rel="stylesheet" href="desktopOnly.css">
   <style>
     /* Style tambahan untuk channel WhatsApp (WABA) di halaman Percakapan —
@@ -2754,9 +2755,131 @@
 
 
 <!-- REVENUE PAGE [HUMAN & AI] -->
-<div id="revenue-page" style="display: none;">
-  <p>Sedang dibuat</p>
-</div>
+        <div id="revenue-page" class="rv-page" style="display:none; flex-direction: column;">
+
+          <!-- ── Page Header ─────────────────────────────────────────── -->
+          <div class="rv-page-header">
+            <div>
+              <div class="rv-page-title">Revenue</div>
+              <div class="rv-page-sub">Ringkasan pendapatan yang dihasilkan oleh AI Agent dan tim Human.</div>
+            </div>
+            <div class="rv-header-actions">
+              <button class="tb-btn" id="rv-range-btn">
+                <i class="ti ti-calendar-week"></i> 30 hari terakhir
+                <i class="ti ti-chevron-down" style="font-size:11px;margin-left:2px"></i>
+              </button>
+              <div class="rv-range-dropdown" id="rv-range-dropdown" style="display:none">
+                <div class="rv-range-opt" data-val="7">7 hari terakhir</div>
+                <div class="rv-range-opt active" data-val="30">30 hari terakhir</div>
+                <div class="rv-range-opt" data-val="90">90 hari terakhir</div>
+              </div>
+              <button class="tb-btn"><i class="ti ti-file-export"></i> Ekspor</button>
+              <button class="tb-btn tb-btn-red" id="rv-refresh-btn"><i class="ti ti-refresh"></i> Perbarui</button>
+            </div>
+          </div>
+
+          <!-- ── KPI Strip ────────────────────────────────────────────── -->
+          <div class="rv-kpi-strip">
+            <div class="rv-kpi accent-total">
+              <div class="rv-kpi-label"><i class="ti ti-report-money"></i> Total Revenue</div>
+              <div class="rv-kpi-val" id="rv-kpi-total">Rp0</div>
+              <div class="rv-trend up" id="rv-kpi-total-trend"><i class="ti ti-trending-up"></i> +0% vs periode lalu</div>
+            </div>
+            <div class="rv-kpi accent-ai">
+              <div class="rv-kpi-label"><i class="ti ti-robot"></i> Revenue dari AI</div>
+              <div class="rv-kpi-val" id="rv-kpi-ai">Rp0</div>
+              <div class="rv-trend up" id="rv-kpi-ai-trend"><i class="ti ti-trending-up"></i> +0% &middot; <span id="rv-kpi-ai-share">0%</span> dari total</div>
+            </div>
+            <div class="rv-kpi accent-human">
+              <div class="rv-kpi-label"><i class="ti ti-user"></i> Revenue dari Human</div>
+              <div class="rv-kpi-val" id="rv-kpi-human">Rp0</div>
+              <div class="rv-trend up" id="rv-kpi-human-trend"><i class="ti ti-trending-up"></i> +0% &middot; <span id="rv-kpi-human-share">0%</span> dari total</div>
+            </div>
+            <div class="rv-kpi">
+              <div class="rv-kpi-label"><i class="ti ti-shopping-cart"></i> Rata-rata Order Value</div>
+              <div class="rv-kpi-val" id="rv-kpi-aov">Rp0</div>
+              <div class="rv-trend up" id="rv-kpi-aov-trend"><i class="ti ti-trending-up"></i> +0% vs periode lalu</div>
+            </div>
+          </div>
+
+          <!-- ── Chart Row ────────────────────────────────────────────── -->
+          <div class="rv-chart-row">
+            <div class="rv-chart-card rv-chart-main">
+              <div class="rv-sec-head">
+                <div class="rv-sec-title">Tren Revenue Harian — AI vs Human</div>
+                <div class="rv-chart-legend">
+                  <span class="rv-leg-dot" style="background:var(--red,#dc2626)"></span>AI Agent
+                  <span class="rv-leg-dot" style="background:var(--gray-800,#1f2937)"></span>Human
+                </div>
+              </div>
+              <div class="rv-chart-wrap" style="height:200px"><canvas id="rv-trend-chart"></canvas></div>
+              <div class="rv-chart-labels" id="rv-trend-labels"></div>
+            </div>
+
+            <div class="rv-chart-card rv-chart-side">
+              <div class="rv-sec-head">
+                <div class="rv-sec-title">Proporsi Sumber Revenue</div>
+              </div>
+              <div class="rv-donut-wrap">
+                <canvas id="rv-donut-chart" width="140" height="140"></canvas>
+                <div class="rv-donut-center">
+                  <div class="rv-donut-total" id="rv-donut-total">Rp0</div>
+                  <div class="rv-donut-label">total revenue</div>
+                </div>
+              </div>
+              <div class="rv-channel-legend">
+                <div class="rv-ch-leg-row"><span class="rv-leg-dot" style="background:var(--red,#dc2626)"></span><span>AI Agent</span><strong id="rv-leg-ai">0%</strong></div>
+                <div class="rv-ch-leg-row"><span class="rv-leg-dot" style="background:var(--gray-800,#1f2937)"></span><span>Human</span><strong id="rv-leg-human">0%</strong></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── Breakdown per Channel ────────────────────────────────── -->
+          <div class="rv-table-card">
+            <div class="rv-sec-head">
+              <div class="rv-sec-title">Breakdown Revenue per Channel</div>
+              <div class="rv-sec-sub">Perbandingan kontribusi AI dan Human pada tiap channel</div>
+            </div>
+            <table class="rv-table">
+              <thead>
+                <tr>
+                  <th>Channel</th>
+                  <th>Revenue AI</th>
+                  <th>Revenue Human</th>
+                  <th>Total</th>
+                  <th>Kontribusi AI</th>
+                </tr>
+              </thead>
+              <tbody id="rv-channel-tbody">
+                <!-- Diisi oleh revenue.js -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- ── Transaksi Terbaru ────────────────────────────────────── -->
+          <div class="rv-table-card">
+            <div class="rv-sec-head">
+              <div class="rv-sec-title">Transaksi Terbaru</div>
+              <div class="rv-sec-action">Lihat semua <i class="ti ti-chevron-right" style="font-size:11px"></i></div>
+            </div>
+            <table class="rv-table">
+              <thead>
+                <tr>
+                  <th>Tanggal</th>
+                  <th>Customer</th>
+                  <th>Produk / Layanan</th>
+                  <th>Sumber</th>
+                  <th>Nominal</th>
+                </tr>
+              </thead>
+              <tbody id="rv-transaction-tbody">
+                <!-- Diisi oleh revenue.js -->
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+        <!-- ENDING PAGE REVENUE -->
 
 <div id="integrasi-page" style="display: none;">
  
@@ -5689,6 +5812,9 @@
 </div>
 <!-- ENDING MODAL WABA INPUT -->
 
+<!-- REVENUE PAGE -->
+ 
+<!-- REVENUE PAGE ENDS -->
 
 <!-- JS SETUP -->
 <script src="script.js"></script>
@@ -5705,6 +5831,7 @@
 <script src="script_page/knowledge-base.js"></script>
 <script src="script_page/aicall.js"></script>
 <script src="script_page/pipeline.js"></script>
+<script src="script_page/revenue.js"></script>
 
 <!-- AI SETUP -->
 <script src="SetupAI/pipeline-ai.js"></script>
